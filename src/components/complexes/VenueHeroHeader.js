@@ -1,0 +1,245 @@
+import React from 'react';
+import {
+  StyleSheet,
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  Platform,
+} from 'react-native';
+import { ArrowLeft, MapPin, Phone } from 'lucide-react-native';
+import { theme } from '../../styles/theme';
+import { RatingBadge } from '../common/RatingBadge';
+import { AmenityChip } from '../common/AmenityChip';
+import { SportsBadgeGroup } from '../common/SportsBadgeGroup';
+
+export function VenueHeroHeader({ venue, onBack }) {
+  if (!venue) return null;
+
+  const sportsList = venue.sports && venue.sports.length > 0 ? venue.sports : [];
+
+  return (
+    <View style={styles.container}>
+      {/* Top Sticky/Overlay Navigation Header with SFACCO Brand Identity */}
+      <View style={styles.topNavRow}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={onBack}
+          style={styles.backButton}
+        >
+          <ArrowLeft size={18} color={theme.colors.textPrimary} />
+          <Text style={styles.backText}>Voltar</Text>
+        </TouchableOpacity>
+
+        <View style={styles.logoContainer}>
+          <Text style={styles.letraS}>S</Text>
+          <Text style={styles.brandName}>facco</Text>
+        </View>
+      </View>
+
+      {/* Hero Cover Image Banner */}
+      <View style={styles.heroWrapper}>
+        <Image
+          source={{ uri: venue.image_url }}
+          style={styles.coverImage}
+          resizeMode="cover"
+        />
+
+        {/* Floating Top Right Badge - Status */}
+        {venue.is_open_today ? (
+          <View style={styles.statusBadge}>
+            <View style={styles.statusDot} />
+            <Text style={styles.statusText}>Aberto hoje</Text>
+          </View>
+        ) : null}
+
+        {/* Floating Bottom Left Badge - Multi-Sport Tags */}
+        {sportsList.length > 0 ? (
+          <View style={styles.sportsContainer}>
+            <SportsBadgeGroup sports={sportsList} maxVisible={2} />
+          </View>
+        ) : null}
+      </View>
+
+      {/* Main Complex Info Content */}
+      <View style={styles.infoBody}>
+        {/* Title & Rating */}
+        <View style={styles.titleRow}>
+          <Text style={styles.venueName} numberOfLines={2}>
+            {venue.name}
+          </Text>
+          <RatingBadge rating={venue.rating} reviewCount={venue.review_count} />
+        </View>
+
+        {/* Location & Contact Meta */}
+        <View style={styles.metaContainer}>
+          <View style={styles.metaRow}>
+            <MapPin size={15} color={theme.colors.primary} style={{ marginTop: 1 }} />
+            <Text style={styles.metaText} numberOfLines={2}>
+              {venue.address ? `${venue.address} • ` : ''}{venue.city}, {venue.state}
+            </Text>
+          </View>
+
+          {venue.phone ? (
+            <View style={styles.metaRow}>
+              <Phone size={14} color={theme.colors.textMuted} />
+              <Text style={styles.metaText}>{venue.phone}</Text>
+            </View>
+          ) : null}
+        </View>
+
+        {/* Amenity Chips */}
+        {venue.amenities && venue.amenities.length > 0 ? (
+          <View style={styles.amenitiesContainer}>
+            {venue.amenities.map((item, idx) => (
+              <AmenityChip key={idx} label={item} />
+            ))}
+          </View>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: theme.colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.borderSubtle,
+    marginBottom: theme.spacing.md,
+  },
+  topNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: theme.spacing.md,
+    paddingTop: Platform.OS === 'ios' ? 10 : 12,
+    paddingBottom: 10,
+    backgroundColor: theme.colors.surface,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  backText: {
+    fontSize: theme.typography.sizes.bodySmall,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  letraS: {
+    fontFamily:
+      Platform.OS === 'web'
+        ? "'Great Vibes', cursive, 'GreatVibes_400Regular'"
+        : 'GreatVibes_400Regular',
+    fontSize: 34,
+    color: 'rgb(136, 19, 55)',
+    marginRight: -3,
+    textShadowColor: 'rgba(136, 19, 55, 0.3)',
+    textShadowOffset: { width: 0.5, height: 0.5 },
+    textShadowRadius: 1,
+  },
+  brandName: {
+    fontFamily:
+      Platform.OS === 'web'
+        ? "'Josefin Sans', sans-serif, 'JosefinSans_700Bold'"
+        : 'JosefinSans_700Bold',
+    fontSize: 26,
+    fontWeight: '700',
+    color: 'rgb(136, 19, 55)',
+    letterSpacing: -0.5,
+  },
+  heroWrapper: {
+    position: 'relative',
+    height: 200,
+    width: '100%',
+    backgroundColor: theme.colors.backgroundSecondary,
+    overflow: 'hidden',
+  },
+  coverImage: {
+    width: '100%',
+    height: '100%',
+  },
+  statusBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: theme.radius.full,
+    gap: 6,
+    zIndex: 1,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.success,
+  },
+  statusText: {
+    color: theme.colors.white,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  sportsContainer: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    zIndex: 10,
+  },
+  infoBody: {
+    padding: theme.spacing.md,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: theme.spacing.sm,
+  },
+  venueName: {
+    flex: 1,
+    fontSize: 22,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+    letterSpacing: -0.4,
+  },
+  metaContainer: {
+    gap: 6,
+    marginBottom: theme.spacing.md,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+  },
+  metaText: {
+    flex: 1,
+    fontSize: theme.typography.sizes.body,
+    color: theme.colors.textSecondary,
+    fontWeight: '500',
+  },
+  amenitiesContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    columnGap: 16,
+    rowGap: 8,
+    paddingTop: theme.spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.borderSubtle,
+  },
+});

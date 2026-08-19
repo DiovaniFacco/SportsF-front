@@ -1,0 +1,143 @@
+import React, { useState } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Platform } from 'react-native';
+import { Activity } from 'lucide-react-native';
+import { theme } from '../../styles/theme';
+
+export function SportsBadgeGroup({ sports = [], maxVisible = 2 }) {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  if (!sports || sports.length === 0) return null;
+
+  const visibleSports = sports.slice(0, maxVisible);
+  const remainingSports = sports.slice(maxVisible);
+  const remainingCount = remainingSports.length;
+
+  return (
+    <View style={styles.container}>
+      {/* First N Visible Sports */}
+      {visibleSports.map((sport, idx) => (
+        <View key={idx} style={styles.sportTag}>
+          <Activity size={11} color={theme.colors.white} />
+          <Text style={styles.sportTagText}>{sport}</Text>
+        </View>
+      ))}
+
+      {/* +X Badge with Tooltip on Hover/Tap */}
+      {remainingCount > 0 ? (
+        <View style={styles.moreBadgeWrapper}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={(e) => {
+              e.stopPropagation && e.stopPropagation();
+              setShowTooltip((prev) => !prev);
+            }}
+            {...(Platform.OS === 'web'
+              ? {
+                  onMouseEnter: () => setShowTooltip(true),
+                  onMouseLeave: () => setShowTooltip(false),
+                }
+              : {})}
+            style={styles.moreBadge}
+          >
+            <Text style={styles.moreBadgeText}>+{remainingCount}</Text>
+          </TouchableOpacity>
+
+          {/* Floating Popover Tooltip for Remaining Sports */}
+          {showTooltip ? (
+            <View style={styles.tooltipPopover}>
+              <Text style={styles.tooltipTitle}>Outras modalidades:</Text>
+              <View style={styles.tooltipSportsList}>
+                {remainingSports.map((sport, idx) => (
+                  <View key={idx} style={styles.tooltipSportChip}>
+                    <Text style={styles.tooltipSportText}>{sport}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    zIndex: 10,
+  },
+  sportTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.82)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: theme.radius.full,
+    gap: 5,
+  },
+  sportTagText: {
+    color: theme.colors.white,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  moreBadgeWrapper: {
+    position: 'relative',
+    zIndex: 20,
+  },
+  moreBadge: {
+    backgroundColor: 'rgba(15, 23, 42, 0.82)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: theme.radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  moreBadgeText: {
+    color: theme.colors.white,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  tooltipPopover: {
+    position: 'absolute',
+    bottom: 30,
+    left: 0,
+    minWidth: 150,
+    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+    padding: 10,
+    borderRadius: theme.radius.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    zIndex: 999,
+  },
+  tooltipTitle: {
+    color: '#94A3B8',
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  tooltipSportsList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+  tooltipSportChip: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: theme.radius.sm,
+  },
+  tooltipSportText: {
+    color: theme.colors.white,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+});
