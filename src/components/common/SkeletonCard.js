@@ -1,9 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { StyleSheet, View, Animated } from 'react-native';
+import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 
 export function SkeletonCard() {
   const pulseAnim = useRef(new Animated.Value(0.4)).current;
+  const { colors } = useTheme();
 
   useEffect(() => {
     const pulseLoop = Animated.loop(
@@ -25,22 +27,22 @@ export function SkeletonCard() {
   }, [pulseAnim]);
 
   return (
-    <View style={styles.card}>
-      <Animated.View style={[styles.imagePlaceholder, { opacity: pulseAnim }]} />
+    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <Animated.View style={[styles.imagePlaceholder, { opacity: pulseAnim, backgroundColor: colors.borderSubtle }]} />
       <View style={styles.content}>
         <View style={styles.row}>
-          <Animated.View style={[styles.titlePlaceholder, { opacity: pulseAnim }]} />
-          <Animated.View style={[styles.badgePlaceholder, { opacity: pulseAnim }]} />
+          <Animated.View style={[styles.titlePlaceholder, { opacity: pulseAnim, backgroundColor: colors.border }]} />
+          <Animated.View style={[styles.badgePlaceholder, { opacity: pulseAnim, backgroundColor: colors.border }]} />
         </View>
-        <Animated.View style={[styles.subtitlePlaceholder, { opacity: pulseAnim }]} />
+        <Animated.View style={[styles.subtitlePlaceholder, { opacity: pulseAnim, backgroundColor: colors.borderSubtle }]} />
         <View style={styles.tagsRow}>
-          <Animated.View style={[styles.tagPlaceholder, { opacity: pulseAnim }]} />
-          <Animated.View style={[styles.tagPlaceholder, { opacity: pulseAnim }]} />
-          <Animated.View style={[styles.tagPlaceholder, { opacity: pulseAnim }]} />
+          <Animated.View style={[styles.tagPlaceholder, { opacity: pulseAnim, backgroundColor: colors.borderSubtle }]} />
+          <Animated.View style={[styles.tagPlaceholder, { opacity: pulseAnim, backgroundColor: colors.borderSubtle }]} />
+          <Animated.View style={[styles.tagPlaceholder, { opacity: pulseAnim, backgroundColor: colors.borderSubtle }]} />
         </View>
-        <View style={styles.footer}>
-          <Animated.View style={[styles.pricePlaceholder, { opacity: pulseAnim }]} />
-          <Animated.View style={[styles.btnPlaceholder, { opacity: pulseAnim }]} />
+        <View style={[styles.footer, { borderTopColor: colors.borderSubtle }]}>
+          <Animated.View style={[styles.pricePlaceholder, { opacity: pulseAnim, backgroundColor: colors.border }]} />
+          <Animated.View style={[styles.btnPlaceholder, { opacity: pulseAnim, backgroundColor: colors.border }]} />
         </View>
       </View>
     </View>
@@ -49,16 +51,13 @@ export function SkeletonCard() {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: theme.colors.border,
     marginBottom: theme.spacing.md,
     overflow: 'hidden',
   },
   imagePlaceholder: {
     height: 180,
-    backgroundColor: theme.colors.borderSubtle,
     width: '100%',
   },
   content: {
@@ -73,19 +72,16 @@ const styles = StyleSheet.create({
   titlePlaceholder: {
     height: 20,
     width: '60%',
-    backgroundColor: theme.colors.border,
     borderRadius: theme.radius.xs,
   },
   badgePlaceholder: {
     height: 18,
     width: 50,
-    backgroundColor: theme.colors.border,
     borderRadius: theme.radius.full,
   },
   subtitlePlaceholder: {
     height: 14,
     width: '80%',
-    backgroundColor: theme.colors.borderSubtle,
     borderRadius: theme.radius.xs,
     marginBottom: theme.spacing.md,
   },
@@ -97,7 +93,6 @@ const styles = StyleSheet.create({
   tagPlaceholder: {
     height: 22,
     width: 70,
-    backgroundColor: theme.colors.borderSubtle,
     borderRadius: theme.radius.sm,
   },
   footer: {
@@ -106,18 +101,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: theme.spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: theme.colors.borderSubtle,
   },
   pricePlaceholder: {
     height: 24,
     width: 90,
-    backgroundColor: theme.colors.border,
     borderRadius: theme.radius.xs,
   },
   btnPlaceholder: {
     height: 36,
     width: 100,
-    backgroundColor: theme.colors.border,
     borderRadius: theme.radius.md,
   },
 });

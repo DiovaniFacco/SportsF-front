@@ -1,10 +1,13 @@
 import React from 'react';
 import { StyleSheet, View, Text, Image, TouchableOpacity } from 'react-native';
 import { ShieldCheck, Users, ChevronRight, SunMedium, Layers } from 'lucide-react-native';
+import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { SportsBadgeGroup } from '../common/SportsBadgeGroup';
 
 export function CourtCard({ court, onSelectCourt }) {
+  const { colors } = useTheme();
+
   if (!court) return null;
 
   const sportsList = court.sports && court.sports.length > 0
@@ -15,10 +18,10 @@ export function CourtCard({ court, onSelectCourt }) {
     <TouchableOpacity
       activeOpacity={0.94}
       onPress={() => onSelectCourt && onSelectCourt(court)}
-      style={styles.cardContainer}
+      style={[styles.cardContainer, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}
     >
       {/* Court Cover Image Header */}
-      <View style={styles.imageWrapper}>
+      <View style={[styles.imageWrapper, { backgroundColor: colors.backgroundSecondary }]}>
         <Image
           source={{ uri: court.image_url }}
           style={styles.coverImage}
@@ -26,18 +29,18 @@ export function CourtCard({ court, onSelectCourt }) {
         />
 
         {/* Structure Status Badge (Covered vs Outdoor) */}
-        <View style={styles.statusBadge}>
+        <View style={[styles.statusBadge, { backgroundColor: colors.statusBadgeBg }]}>
           {court.is_covered ? (
-            <ShieldCheck size={12} color={theme.colors.success} />
+            <ShieldCheck size={12} color={colors.success} />
           ) : (
-            <SunMedium size={12} color={theme.colors.warning} />
+            <SunMedium size={12} color={colors.warning} />
           )}
           <Text style={styles.statusText}>
             {court.is_covered ? 'Coberta Climatizada' : 'Ao Ar Livre'}
           </Text>
         </View>
 
-        {/* Multi-sport tags wrapper for court (max 2 visible + tooltip) */}
+        {/* Multi-sport tags wrapper for court */}
         {sportsList.length > 0 ? (
           <View style={styles.sportsContainer}>
             <SportsBadgeGroup sports={sportsList} maxVisible={2} />
@@ -49,7 +52,7 @@ export function CourtCard({ court, onSelectCourt }) {
       <View style={styles.contentBody}>
         {/* Title */}
         <View style={styles.titleRow}>
-          <Text style={styles.courtName} numberOfLines={1}>
+          <Text style={[styles.courtName, { color: colors.textPrimary }]} numberOfLines={1}>
             {court.name}
           </Text>
         </View>
@@ -58,39 +61,39 @@ export function CourtCard({ court, onSelectCourt }) {
         <View style={styles.specsContainer}>
           {/* Capacity Pill */}
           {court.capacity ? (
-            <View style={styles.specChip}>
-              <Users size={13} color={theme.colors.primary} />
-              <Text style={styles.specChipText}>{court.capacity}</Text>
+            <View style={[styles.specChip, { backgroundColor: colors.backgroundSecondary }]}>
+              <Users size={13} color={colors.primary} />
+              <Text style={[styles.specChipText, { color: colors.textSecondary }]}>{court.capacity}</Text>
             </View>
           ) : null}
 
           {/* Surface Pill */}
           {court.surface ? (
-            <View style={styles.specChip}>
-              <Layers size={13} color={theme.colors.textMuted} />
-              <Text style={styles.specChipText}>{court.surface}</Text>
+            <View style={[styles.specChip, { backgroundColor: colors.backgroundSecondary }]}>
+              <Layers size={13} color={colors.textMuted} />
+              <Text style={[styles.specChipText, { color: colors.textSecondary }]}>{court.surface}</Text>
             </View>
           ) : null}
         </View>
 
         {/* Footer Info (Price + CTA) */}
-        <View style={styles.cardFooter}>
+        <View style={[styles.cardFooter, { borderTopColor: colors.borderSubtle }]}>
           <View style={styles.priceContainer}>
-            <Text style={styles.priceLabel}>valor por hora</Text>
+            <Text style={[styles.priceLabel, { color: colors.textMuted }]}>valor por hora</Text>
             <View style={styles.priceRow}>
-              <Text style={styles.currency}>R$</Text>
-              <Text style={styles.priceValue}>{Math.round(court.hourly_rate)}</Text>
-              <Text style={styles.perHour}>/hora</Text>
+              <Text style={[styles.currency, { color: colors.primary }]}>R$</Text>
+              <Text style={[styles.priceValue, { color: colors.textPrimary }]}>{Math.round(court.hourly_rate)}</Text>
+              <Text style={[styles.perHour, { color: colors.textSecondary }]}>/hora</Text>
             </View>
           </View>
 
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={() => onSelectCourt && onSelectCourt(court)}
-            style={styles.ctaButton}
+            style={[styles.ctaButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
           >
             <Text style={styles.ctaText}>Ver horários</Text>
-            <ChevronRight size={14} color={theme.colors.white} style={{ marginLeft: 2 }} />
+            <ChevronRight size={14} color={colors.white} style={{ marginLeft: 2 }} />
           </TouchableOpacity>
         </View>
       </View>
@@ -100,11 +103,10 @@ export function CourtCard({ court, onSelectCourt }) {
 
 const styles = StyleSheet.create({
   cardContainer: {
-    backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.lg,
     marginBottom: theme.spacing.lg,
     overflow: 'visible',
-    shadowColor: theme.colors.secondary,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.06,
     shadowRadius: 12,
@@ -114,7 +116,6 @@ const styles = StyleSheet.create({
     position: 'relative',
     height: 175,
     width: '100%',
-    backgroundColor: theme.colors.backgroundSecondary,
     borderTopLeftRadius: theme.radius.lg,
     borderTopRightRadius: theme.radius.lg,
     overflow: 'hidden',
@@ -129,7 +130,6 @@ const styles = StyleSheet.create({
     right: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(15, 23, 42, 0.75)',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: theme.radius.full,
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   statusText: {
-    color: theme.colors.white,
+    color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '600',
   },
@@ -156,7 +156,6 @@ const styles = StyleSheet.create({
   courtName: {
     fontSize: theme.typography.sizes.h3,
     fontWeight: '800',
-    color: theme.colors.textPrimary,
     letterSpacing: -0.3,
   },
   specsContainer: {
@@ -170,7 +169,6 @@ const styles = StyleSheet.create({
   specChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.backgroundSecondary,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: theme.radius.sm,
@@ -178,7 +176,6 @@ const styles = StyleSheet.create({
   },
   specChipText: {
     fontSize: theme.typography.sizes.bodySmall,
-    color: theme.colors.textSecondary,
     fontWeight: '600',
   },
   cardFooter: {
@@ -187,14 +184,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: theme.spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: theme.colors.borderSubtle,
   },
   priceContainer: {
     justifyContent: 'center',
   },
   priceLabel: {
     fontSize: 11,
-    color: theme.colors.textMuted,
     marginBottom: 1,
   },
   priceRow: {
@@ -204,35 +199,30 @@ const styles = StyleSheet.create({
   currency: {
     fontSize: 12,
     fontWeight: '700',
-    color: theme.colors.primary,
     marginRight: 2,
   },
   priceValue: {
     fontSize: 22,
     fontWeight: '800',
-    color: theme.colors.textPrimary,
     fontVariant: ['tabular-nums'],
   },
   perHour: {
     fontSize: 12,
-    color: theme.colors.textSecondary,
     marginLeft: 2,
   },
   ctaButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.primary,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: theme.radius.md,
-    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
     elevation: 3,
   },
   ctaText: {
-    color: theme.colors.white,
+    color: '#FFFFFF',
     fontSize: theme.typography.sizes.button,
     fontWeight: '700',
   },

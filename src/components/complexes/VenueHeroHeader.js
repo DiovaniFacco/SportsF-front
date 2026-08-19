@@ -8,37 +8,40 @@ import {
   Platform,
 } from 'react-native';
 import { ArrowLeft, MapPin, Phone } from 'lucide-react-native';
+import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { RatingBadge } from '../common/RatingBadge';
 import { AmenityChip } from '../common/AmenityChip';
 import { SportsBadgeGroup } from '../common/SportsBadgeGroup';
 
 export function VenueHeroHeader({ venue, onBack }) {
+  const { colors } = useTheme();
+
   if (!venue) return null;
 
   const sportsList = venue.sports && venue.sports.length > 0 ? venue.sports : [];
 
   return (
-    <View style={styles.container}>
-      {/* Top Sticky/Overlay Navigation Header with SFACCO Brand Identity */}
-      <View style={styles.topNavRow}>
+    <View style={[styles.container, { backgroundColor: colors.surface, borderBottomColor: colors.borderSubtle }]}>
+      {/* Top Navigation Header with SFACCO Brand Identity */}
+      <View style={[styles.topNavRow, { backgroundColor: colors.surface }]}>
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={onBack}
-          style={styles.backButton}
+          style={[styles.backButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
         >
-          <ArrowLeft size={18} color={theme.colors.textPrimary} />
-          <Text style={styles.backText}>Voltar</Text>
+          <ArrowLeft size={18} color={colors.textPrimary} />
+          <Text style={[styles.backText, { color: colors.textPrimary }]}>Voltar</Text>
         </TouchableOpacity>
 
         <View style={styles.logoContainer}>
-          <Text style={styles.letraS}>S</Text>
-          <Text style={styles.brandName}>facco</Text>
+          <Text style={[styles.letraS, { color: colors.letraS }]}>S</Text>
+          <Text style={[styles.brandName, { color: colors.brandName }]}>facco</Text>
         </View>
       </View>
 
       {/* Hero Cover Image Banner */}
-      <View style={styles.heroWrapper}>
+      <View style={[styles.heroWrapper, { backgroundColor: colors.backgroundSecondary }]}>
         <Image
           source={{ uri: venue.image_url }}
           style={styles.coverImage}
@@ -47,8 +50,8 @@ export function VenueHeroHeader({ venue, onBack }) {
 
         {/* Floating Top Right Badge - Status */}
         {venue.is_open_today ? (
-          <View style={styles.statusBadge}>
-            <View style={styles.statusDot} />
+          <View style={[styles.statusBadge, { backgroundColor: colors.statusBadgeBg }]}>
+            <View style={[styles.statusDot, { backgroundColor: colors.success }]} />
             <Text style={styles.statusText}>Aberto hoje</Text>
           </View>
         ) : null}
@@ -65,7 +68,7 @@ export function VenueHeroHeader({ venue, onBack }) {
       <View style={styles.infoBody}>
         {/* Title & Rating */}
         <View style={styles.titleRow}>
-          <Text style={styles.venueName} numberOfLines={2}>
+          <Text style={[styles.venueName, { color: colors.textPrimary }]} numberOfLines={2}>
             {venue.name}
           </Text>
           <RatingBadge rating={venue.rating} reviewCount={venue.review_count} />
@@ -74,23 +77,23 @@ export function VenueHeroHeader({ venue, onBack }) {
         {/* Location & Contact Meta */}
         <View style={styles.metaContainer}>
           <View style={styles.metaRow}>
-            <MapPin size={15} color={theme.colors.primary} style={{ marginTop: 1 }} />
-            <Text style={styles.metaText} numberOfLines={2}>
+            <MapPin size={15} color={colors.primary} style={{ marginTop: 1 }} />
+            <Text style={[styles.metaText, { color: colors.textSecondary }]} numberOfLines={2}>
               {venue.address ? `${venue.address} • ` : ''}{venue.city}, {venue.state}
             </Text>
           </View>
 
           {venue.phone ? (
             <View style={styles.metaRow}>
-              <Phone size={14} color={theme.colors.textMuted} />
-              <Text style={styles.metaText}>{venue.phone}</Text>
+              <Phone size={14} color={colors.textMuted} />
+              <Text style={[styles.metaText, { color: colors.textSecondary }]}>{venue.phone}</Text>
             </View>
           ) : null}
         </View>
 
         {/* Amenity Chips */}
         {venue.amenities && venue.amenities.length > 0 ? (
-          <View style={styles.amenitiesContainer}>
+          <View style={[styles.amenitiesContainer, { borderTopColor: colors.borderSubtle }]}>
             {venue.amenities.map((item, idx) => (
               <AmenityChip key={idx} label={item} />
             ))}
@@ -103,9 +106,7 @@ export function VenueHeroHeader({ venue, onBack }) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.borderSubtle,
     marginBottom: theme.spacing.md,
   },
   topNavRow: {
@@ -115,7 +116,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
     paddingTop: Platform.OS === 'ios' ? 10 : 12,
     paddingBottom: 10,
-    backgroundColor: theme.colors.surface,
   },
   backButton: {
     flexDirection: 'row',
@@ -124,14 +124,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.backgroundSecondary,
     borderWidth: 1,
-    borderColor: theme.colors.border,
   },
   backText: {
     fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
-    color: theme.colors.textPrimary,
   },
   logoContainer: {
     flexDirection: 'row',
@@ -143,7 +140,6 @@ const styles = StyleSheet.create({
         ? "'Great Vibes', cursive, 'GreatVibes_400Regular'"
         : 'GreatVibes_400Regular',
     fontSize: 34,
-    color: 'rgb(136, 19, 55)',
     marginRight: -3,
     textShadowColor: 'rgba(136, 19, 55, 0.3)',
     textShadowOffset: { width: 0.5, height: 0.5 },
@@ -156,14 +152,12 @@ const styles = StyleSheet.create({
         : 'JosefinSans_700Bold',
     fontSize: 26,
     fontWeight: '700',
-    color: 'rgb(136, 19, 55)',
     letterSpacing: -0.5,
   },
   heroWrapper: {
     position: 'relative',
     height: 200,
     width: '100%',
-    backgroundColor: theme.colors.backgroundSecondary,
     overflow: 'hidden',
   },
   coverImage: {
@@ -176,7 +170,6 @@ const styles = StyleSheet.create({
     right: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(15, 23, 42, 0.75)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: theme.radius.full,
@@ -187,10 +180,9 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.success,
   },
   statusText: {
-    color: theme.colors.white,
+    color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '700',
   },
@@ -214,7 +206,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 22,
     fontWeight: '800',
-    color: theme.colors.textPrimary,
     letterSpacing: -0.4,
   },
   metaContainer: {
@@ -229,7 +220,6 @@ const styles = StyleSheet.create({
   metaText: {
     flex: 1,
     fontSize: theme.typography.sizes.body,
-    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   amenitiesContainer: {
@@ -240,6 +230,5 @@ const styles = StyleSheet.create({
     rowGap: 8,
     paddingTop: theme.spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: theme.colors.borderSubtle,
   },
 });

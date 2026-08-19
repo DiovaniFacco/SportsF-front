@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import Svg, { Circle, Path, Polygon, Line } from 'react-native-svg';
 import { Trophy, Dribbble } from 'lucide-react-native';
+import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { getSports } from '../../api/sports';
 
@@ -116,6 +117,7 @@ const ICON_MAP = {
 };
 
 export function SportChip({ selectedSport, onSelectSport }) {
+  const { colors } = useTheme();
   const [categories, setCategories] = useState([
     { id: 'Todos', label: 'Todos', IconComponent: AllSportsIcon }
   ]);
@@ -140,10 +142,10 @@ export function SportChip({ selectedSport, onSelectSport }) {
   }, []);
 
   return (
-    <View style={styles.sectionContainer}>
+    <View style={[styles.sectionContainer, { backgroundColor: colors.surface }]}>
       {/* Section Header */}
       <View style={styles.headerRow}>
-        <Text style={styles.sectionTitle}>Esportes</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Esportes</Text>
       </View>
 
       {/* Horizontal Cards List */}
@@ -155,7 +157,7 @@ export function SportChip({ selectedSport, onSelectSport }) {
         {categories.map((item) => {
           const isSelected = selectedSport === item.id;
           const { IconComponent } = item;
-          const iconColor = isSelected ? theme.colors.white : theme.colors.textPrimary;
+          const iconColor = isSelected ? colors.white : colors.textPrimary;
 
           return (
             <TouchableOpacity
@@ -164,7 +166,10 @@ export function SportChip({ selectedSport, onSelectSport }) {
               onPress={() => onSelectSport(item.id)}
               style={[
                 styles.card,
-                isSelected ? styles.cardSelected : styles.cardDefault,
+                isSelected ? styles.cardSelected : styles.cardUnselected,
+                isSelected
+                  ? { backgroundColor: colors.primary, shadowColor: colors.primary }
+                  : { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
               ]}
             >
               <View
@@ -178,7 +183,7 @@ export function SportChip({ selectedSport, onSelectSport }) {
               <Text
                 style={[
                   styles.cardLabel,
-                  isSelected ? styles.labelSelected : styles.labelDefault,
+                  { color: isSelected ? colors.white : colors.textPrimary, fontWeight: isSelected ? '700' : '600' },
                 ]}
                 numberOfLines={1}
               >
@@ -194,24 +199,23 @@ export function SportChip({ selectedSport, onSelectSport }) {
 
 const styles = StyleSheet.create({
   sectionContainer: {
-    backgroundColor: theme.colors.surface,
     paddingTop: theme.spacing.xs,
-    paddingBottom: theme.spacing.md,
+    paddingBottom: theme.spacing.xs,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: theme.spacing.md,
-    marginBottom: theme.spacing.sm,
+    marginBottom: 4,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: theme.colors.textPrimary,
   },
   scrollContainer: {
     paddingHorizontal: theme.spacing.md,
+    paddingVertical: 10,
     gap: 10,
   },
   card: {
@@ -222,18 +226,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 8,
   },
-  cardDefault: {
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
   cardSelected: {
-    backgroundColor: theme.colors.primary,
-    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
+  },
+  cardUnselected: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   iconCircle: {
     width: 40,
@@ -253,12 +257,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     textAlign: 'center',
   },
-  labelDefault: {
-    color: theme.colors.textPrimary,
-    fontWeight: '600',
-  },
-  labelSelected: {
-    color: theme.colors.white,
-    fontWeight: '700',
-  },
 });
+

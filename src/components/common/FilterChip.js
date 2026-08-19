@@ -1,18 +1,35 @@
 import React from 'react';
 import { StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 
 export function FilterChip({ label, icon: IconComponent, isSelected, onPress }) {
+  const { colors } = useTheme();
+
   return (
     <TouchableOpacity
       activeOpacity={0.7}
       onPress={onPress}
-      style={[styles.chip, isSelected ? styles.chipSelected : styles.chipDefault]}
+      style={[
+        styles.chip,
+        isSelected
+          ? { backgroundColor: colors.primary, shadowColor: colors.primary }
+          : { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, borderWidth: 1 },
+      ]}
     >
       {IconComponent ? (
-        <IconComponent size={14} color={isSelected ? theme.colors.white : theme.colors.primary} strokeWidth={isSelected ? 2 : 1.75} />
+        <IconComponent
+          size={14}
+          color={isSelected ? colors.white : colors.primary}
+          strokeWidth={isSelected ? 2 : 1.75}
+        />
       ) : null}
-      <Text style={[styles.label, isSelected ? styles.labelSelected : styles.labelDefault]}>
+      <Text
+        style={[
+          styles.label,
+          { color: isSelected ? colors.white : colors.textSecondary, fontWeight: isSelected ? '700' : '600' },
+        ]}
+      >
         {label}
       </Text>
     </TouchableOpacity>
@@ -27,13 +44,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: theme.radius.full,
     gap: 6,
-  },
-  chipDefault: {
-    backgroundColor: 'transparent',
-  },
-  chipSelected: {
-    backgroundColor: theme.colors.primary,
-    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.22,
     shadowRadius: 6,
@@ -41,13 +51,5 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: theme.typography.sizes.bodySmall,
-    fontWeight: '600',
-  },
-  labelDefault: {
-    color: theme.colors.textSecondary,
-  },
-  labelSelected: {
-    color: theme.colors.white,
-    fontWeight: '700',
   },
 });

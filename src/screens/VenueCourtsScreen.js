@@ -10,6 +10,7 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 import { theme } from '../styles/theme';
 import { getVenueDetails } from '../api/venues';
 import { VenueHeroHeader } from '../components/complexes/VenueHeroHeader';
@@ -20,7 +21,8 @@ import { ErrorState } from '../components/common/ErrorState';
 import { BottomNav } from '../components/common/BottomNav';
 import { FilterChip } from '../components/common/FilterChip';
 
-export function VenueCourtsScreen({ venueId, onBack }) {
+export function VenueCourtsScreen({ venueId, onBack, onSelectCourt }) {
+  const { colors, isDark } = useTheme();
   const [venue, setVenue] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -54,11 +56,15 @@ export function VenueCourtsScreen({ venueId, onBack }) {
   };
 
   const handleSelectCourt = (court) => {
-    Alert.alert(
-      court.name,
-      `Superfície: ${court.surface}\nValor/hora: R$ ${Math.round(court.hourly_rate)}\n\nNa próxima etapa, a grade de horários disponíveis para esta quadra será aberta.`,
-      [{ text: 'Entendido', style: 'default' }]
-    );
+    if (onSelectCourt) {
+      onSelectCourt(court, venue);
+    } else {
+      Alert.alert(
+        court.name,
+        `Superfície: ${court.surface}\nValor/hora: R$ ${Math.round(court.hourly_rate)}`,
+        [{ text: 'Entendido', style: 'default' }]
+      );
+    }
   };
 
   const courtsList = venue?.courts || [];
@@ -112,8 +118,8 @@ export function VenueCourtsScreen({ venueId, onBack }) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            colors={[theme.colors.primary]}
-            tintColor={theme.colors.primary}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
           />
         }
         ListHeaderComponent={
@@ -124,14 +130,14 @@ export function VenueCourtsScreen({ venueId, onBack }) {
             {/* Section Title Header for Available Courts */}
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleRow}>
-                <Text style={styles.sectionTitle}>Quadras disponíveis</Text>
-                <View style={styles.countBadge}>
-                  <Text style={styles.countBadgeText}>
+                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Quadras disponíveis</Text>
+                <View style={[styles.countBadge, { backgroundColor: colors.primaryLight }]}>
+                  <Text style={[styles.countBadgeText, { color: colors.primary }]}>
                     {filteredCourts.length} {filteredCourts.length === 1 ? 'quadra' : 'quadras'}
                   </Text>
                 </View>
               </View>
-              <Text style={styles.sectionSubtitle}>
+              <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
                 Escolha a quadra ideal para ver os horários de agendamento.
               </Text>
 
@@ -161,8 +167,8 @@ export function VenueCourtsScreen({ venueId, onBack }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.surface} />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.surface} />
 
       {/* Main Body */}
       <View style={styles.body}>{renderContent()}</View>
@@ -182,7 +188,6 @@ export function VenueCourtsScreen({ venueId, onBack }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
   body: {
     flex: 1,
@@ -209,11 +214,9 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: theme.typography.sizes.h3,
     fontWeight: '800',
-    color: theme.colors.textPrimary,
     letterSpacing: -0.3,
   },
   countBadge: {
-    backgroundColor: theme.colors.primaryLight,
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: theme.radius.full,
@@ -221,11 +224,9 @@ const styles = StyleSheet.create({
   countBadgeText: {
     fontSize: 12,
     fontWeight: '700',
-    color: theme.colors.primary,
   },
   sectionSubtitle: {
     fontSize: theme.typography.sizes.bodySmall,
-    color: theme.colors.textSecondary,
     marginBottom: theme.spacing.sm,
   },
   filterScroll: {
@@ -234,5 +235,6 @@ const styles = StyleSheet.create({
   filterScrollContent: {
     gap: 8,
     paddingRight: theme.spacing.md,
+    paddingVertical: 6,
   },
 });

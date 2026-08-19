@@ -10,7 +10,8 @@ import {
   Beer,
   Wifi,
   Check,
-} from 'lucide-react';
+} from 'lucide-react-native';
+import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 
 const AMENITY_ICONS = [
@@ -34,11 +35,12 @@ function getAmenityIcon(label = '') {
 
 export function AmenityChip({ label }) {
   const IconComponent = getAmenityIcon(label);
+  const { colors } = useTheme();
 
   return (
     <View style={styles.row}>
-      <IconComponent size={13} color={theme.colors.textMuted} strokeWidth={1.75} />
-      <Text style={styles.text} numberOfLines={1}>
+      <IconComponent size={13} color={colors.textMuted} strokeWidth={1.75} />
+      <Text style={[styles.text, { color: colors.textSecondary }]} numberOfLines={1}>
         {label}
       </Text>
     </View>
@@ -54,7 +56,6 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: theme.typography.sizes.bodySmall,
-    color: theme.colors.textSecondary,
     fontWeight: '500',
     flexShrink: 1,
   },

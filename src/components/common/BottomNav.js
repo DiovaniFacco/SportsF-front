@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Platform } from 'react-native';
-import { Compass, Calendar, Bookmark, User } from 'lucide-react';
+import { Compass, Calendar, Bookmark, User } from 'lucide-react-native';
+import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 
 const NAV_ITEMS = [
@@ -11,12 +12,14 @@ const NAV_ITEMS = [
 ];
 
 export function BottomNav({ activeTab = 'explorar', onTabChange }) {
+  const { colors } = useTheme();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
       {NAV_ITEMS.map((item) => {
         const isActive = activeTab === item.id;
         const IconComponent = item.icon;
-        const iconColor = isActive ? theme.colors.primary : theme.colors.textMuted;
+        const iconColor = isActive ? colors.primary : colors.textMuted;
 
         return (
           <TouchableOpacity
@@ -26,10 +29,15 @@ export function BottomNav({ activeTab = 'explorar', onTabChange }) {
             style={styles.navButton}
           >
             <IconComponent size={20} color={iconColor} strokeWidth={isActive ? 2.5 : 1.75} />
-            <Text style={[styles.label, isActive ? styles.labelActive : styles.labelInactive]}>
+            <Text
+              style={[
+                styles.label,
+                { color: isActive ? colors.primary : colors.textMuted, fontWeight: isActive ? '700' : '500' },
+              ]}
+            >
               {item.label}
             </Text>
-            {isActive ? <View style={styles.activeDot} /> : null}
+            {isActive ? <View style={[styles.activeDot, { backgroundColor: colors.primary }]} /> : null}
           </TouchableOpacity>
         );
       })}
@@ -40,14 +48,12 @@ export function BottomNav({ activeTab = 'explorar', onTabChange }) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.surface,
     borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
     paddingVertical: 8,
     paddingBottom: Platform.OS === 'ios' ? 22 : 10,
     justifyContent: 'space-around',
     alignItems: 'center',
-    shadowColor: theme.colors.secondary,
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -63,20 +69,11 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: theme.typography.sizes.caption,
-    fontWeight: '500',
-  },
-  labelInactive: {
-    color: theme.colors.textMuted,
-  },
-  labelActive: {
-    color: theme.colors.primary,
-    fontWeight: '700',
   },
   activeDot: {
     width: 4,
     height: 4,
     borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.primary,
     marginTop: 1,
   },
 });

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Platform } from 'react-native';
 import { Activity } from 'lucide-react-native';
+import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 
 export function SportsBadgeGroup({ sports = [], maxVisible = 2 }) {
   const [showTooltip, setShowTooltip] = useState(false);
+  const { colors } = useTheme();
 
   if (!sports || sports.length === 0) return null;
 
@@ -16,9 +18,9 @@ export function SportsBadgeGroup({ sports = [], maxVisible = 2 }) {
     <View style={styles.container}>
       {/* First N Visible Sports */}
       {visibleSports.map((sport, idx) => (
-        <View key={idx} style={styles.sportTag}>
-          <Activity size={11} color={theme.colors.white} />
-          <Text style={styles.sportTagText}>{sport}</Text>
+        <View key={idx} style={[styles.sportTag, { backgroundColor: colors.statusBadgeBg }]}>
+          <Activity size={11} color={colors.white} />
+          <Text style={[styles.sportTagText, { color: colors.white }]}>{sport}</Text>
         </View>
       ))}
 
@@ -37,19 +39,19 @@ export function SportsBadgeGroup({ sports = [], maxVisible = 2 }) {
                   onMouseLeave: () => setShowTooltip(false),
                 }
               : {})}
-            style={styles.moreBadge}
+            style={[styles.moreBadge, { backgroundColor: colors.statusBadgeBg }]}
           >
-            <Text style={styles.moreBadgeText}>+{remainingCount}</Text>
+            <Text style={[styles.moreBadgeText, { color: colors.white }]}>+{remainingCount}</Text>
           </TouchableOpacity>
 
           {/* Floating Popover Tooltip for Remaining Sports */}
           {showTooltip ? (
-            <View style={styles.tooltipPopover}>
-              <Text style={styles.tooltipTitle}>Outras modalidades:</Text>
+            <View style={[styles.tooltipPopover, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
+              <Text style={[styles.tooltipTitle, { color: colors.textMuted }]}>Outras modalidades:</Text>
               <View style={styles.tooltipSportsList}>
                 {remainingSports.map((sport, idx) => (
-                  <View key={idx} style={styles.tooltipSportChip}>
-                    <Text style={styles.tooltipSportText}>{sport}</Text>
+                  <View key={idx} style={[styles.tooltipSportChip, { backgroundColor: colors.backgroundSecondary }]}>
+                    <Text style={[styles.tooltipSportText, { color: colors.textPrimary }]}>{sport}</Text>
                   </View>
                 ))}
               </View>
@@ -72,14 +74,12 @@ const styles = StyleSheet.create({
   sportTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(15, 23, 42, 0.82)',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: theme.radius.full,
     gap: 5,
   },
   sportTagText: {
-    color: theme.colors.white,
     fontSize: 11,
     fontWeight: '700',
   },
@@ -88,7 +88,6 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   moreBadge: {
-    backgroundColor: 'rgba(15, 23, 42, 0.82)',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: theme.radius.full,
@@ -96,7 +95,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   moreBadgeText: {
-    color: theme.colors.white,
     fontSize: 11,
     fontWeight: '700',
   },
@@ -105,7 +103,6 @@ const styles = StyleSheet.create({
     bottom: 30,
     left: 0,
     minWidth: 150,
-    backgroundColor: 'rgba(15, 23, 42, 0.95)',
     padding: 10,
     borderRadius: theme.radius.md,
     shadowColor: '#000',
@@ -114,11 +111,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
     zIndex: 999,
   },
   tooltipTitle: {
-    color: '#94A3B8',
     fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -130,13 +125,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   tooltipSportChip: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: theme.radius.sm,
   },
   tooltipSportText: {
-    color: theme.colors.white,
     fontSize: 11,
     fontWeight: '600',
   },

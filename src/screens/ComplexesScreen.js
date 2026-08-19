@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   StatusBar,
 } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 import { theme } from '../styles/theme';
 import { getVenues } from '../api/venues';
 import { Header } from '../components/common/Header';
@@ -18,6 +19,7 @@ import { ErrorState } from '../components/common/ErrorState';
 import { BottomNav } from '../components/common/BottomNav';
 
 export function ComplexesScreen({ onSelectVenue }) {
+  const { colors, isDark } = useTheme();
   const [searchValue, setSearchValue] = useState('');
   const [selectedSport, setSelectedSport] = useState('Todos');
   const [selectedCity, setSelectedCity] = useState('São Paulo, SP');
@@ -115,8 +117,8 @@ export function ComplexesScreen({ onSelectVenue }) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            colors={[theme.colors.primary]}
-            tintColor={theme.colors.primary}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
           />
         }
       />
@@ -124,25 +126,27 @@ export function ComplexesScreen({ onSelectVenue }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.surface} />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.surface} />
 
-      {/* Top Header */}
-      <Header
-        searchValue={searchValue}
-        setSearchValue={setSearchValue}
-        selectedCity={selectedCity}
-        onSelectCity={setSelectedCity}
-      />
+      <View style={styles.mainWrapper}>
+        {/* Top Header */}
+        <Header
+          searchValue={searchValue}
+          setSearchValue={setSearchValue}
+          selectedCity={selectedCity}
+          onSelectCity={setSelectedCity}
+        />
 
-      {/* Sport Category Filter Chips */}
-      <SportChip
-        selectedSport={selectedSport}
-        onSelectSport={setSelectedSport}
-      />
+        {/* Sport Category Filter Chips */}
+        <SportChip
+          selectedSport={selectedSport}
+          onSelectSport={setSelectedSport}
+        />
 
-      {/* Main Body List */}
-      <View style={styles.body}>{renderContent()}</View>
+        {/* Main Body List */}
+        <View style={styles.body}>{renderContent()}</View>
+      </View>
 
       {/* Mobile Bottom Navigation */}
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
@@ -153,16 +157,20 @@ export function ComplexesScreen({ onSelectVenue }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
-  body: {
+  mainWrapper: {
     flex: 1,
     width: '100%',
     maxWidth: 1024,
     alignSelf: 'center',
+  },
+  body: {
+    flex: 1,
+    width: '100%',
   },
   listPadding: {
     padding: theme.spacing.md,
     paddingBottom: theme.spacing.xl,
   },
 });
+

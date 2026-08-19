@@ -4,11 +4,39 @@ import { useFonts, GreatVibes_400Regular } from '@expo-google-fonts/great-vibes'
 import { JosefinSans_700Bold } from '@expo-google-fonts/josefin-sans';
 import { ComplexesScreen } from './src/screens/ComplexesScreen';
 import { VenueCourtsScreen } from './src/screens/VenueCourtsScreen';
-import { theme } from './src/styles/theme';
+import { CourtSlotsScreen } from './src/screens/CourtSlotsScreen';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+
+function MainAppContent() {
+  const [selectedVenue, setSelectedVenue] = useState(null);
+  const [selectedCourt, setSelectedCourt] = useState(null);
+  const { colors } = useTheme();
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {selectedCourt ? (
+        <CourtSlotsScreen
+          court={selectedCourt}
+          venue={selectedVenue}
+          onBack={() => setSelectedCourt(null)}
+        />
+      ) : selectedVenue ? (
+        <VenueCourtsScreen
+          venueId={selectedVenue.id}
+          onBack={() => setSelectedVenue(null)}
+          onSelectCourt={(court, venueObj) => {
+            if (venueObj) setSelectedVenue(venueObj);
+            setSelectedCourt(court);
+          }}
+        />
+      ) : (
+        <ComplexesScreen onSelectVenue={(venue) => setSelectedVenue(venue)} />
+      )}
+    </View>
+  );
+}
 
 export default function App() {
-  const [selectedVenue, setSelectedVenue] = useState(null);
-
   const [fontsLoaded] = useFonts({
     GreatVibes_400Regular,
     JosefinSans_700Bold,
@@ -33,22 +61,14 @@ export default function App() {
   }
 
   return (
-    <View style={styles.container}>
-      {selectedVenue ? (
-        <VenueCourtsScreen
-          venueId={selectedVenue.id}
-          onBack={() => setSelectedVenue(null)}
-        />
-      ) : (
-        <ComplexesScreen onSelectVenue={(venue) => setSelectedVenue(venue)} />
-      )}
-    </View>
+    <ThemeProvider>
+      <MainAppContent />
+    </ThemeProvider>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
 });

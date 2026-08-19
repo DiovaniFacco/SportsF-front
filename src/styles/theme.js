@@ -1,59 +1,108 @@
-// FACCO Design Tokens v2.2.0 — Vinho Imperial Escuro & Slate
-export const theme = {
-  colors: {
-    primary: '#881337',        // Vinho Imperial Escuro (Deep Wine Crimson)
-    primaryHover: '#701A28',   // Vinho Ultra Escuro
-    primaryActive: '#4C0519',  // Vinho Profundo
-    primaryLight: '#FFF1F2',   // Fundo Suave Vinho
+// FACCO Design Tokens v2.3.0 — Vinho Imperial & Slate / Dark Mode
 
-    secondary: '#0F172A',      // Slate Charcoal
-    secondaryHover: '#1E293B',
-    secondaryLight: '#F1F5F9',
+export const lightColors = {
+  primary: '#881337',        // Vinho Imperial Escuro (Deep Wine Crimson)
+  primaryHover: '#701A28',   // Vinho Ultra Escuro
+  primaryActive: '#4C0519',  // Vinho Profundo
+  primaryLight: '#FFF1F2',   // Fundo Suave Vinho
 
-    gold: '#D97706',           // Dourado para badges e estrelas
-    goldSurface: '#FEF3C7',
+  secondary: '#0F172A',      // Slate Charcoal
+  secondaryHover: '#1E293B',
+  secondaryLight: '#F1F5F9',
 
-    background: '#F8FAFC',
-    backgroundSecondary: '#F1F5F9',
+  gold: '#D97706',           // Dourado para badges e estrelas
+  goldSurface: '#FEF3C7',
 
-    surface: '#FFFFFF',
-    surfaceElevated: '#FFFFFF',
+  background: '#F8FAFC',
+  backgroundSecondary: '#F1F5F9',
 
-    textPrimary: '#0F172A',
-    textSecondary: '#475569',
-    textMuted: '#64748B',
-    textDisabled: '#94A3B8',
+  surface: '#FFFFFF',
+  surfaceElevated: '#FFFFFF',
+  cardBg: '#FFFFFF',
+  searchBg: '#FAFAFA',
 
-    success: '#10B981',
-    successSurface: '#ECFDF5',
+  textPrimary: '#0F172A',
+  textSecondary: '#475569',
+  textMuted: '#64748B',
+  textDisabled: '#94A3B8',
 
-    warning: '#F59E0B',
-    warningSurface: '#FEF3C7',
+  success: '#10B981',
+  successSurface: '#ECFDF5',
 
-    error: '#BE123C',
-    errorSurface: '#FFF1F2',
+  warning: '#F59E0B',
+  warningSurface: '#FEF3C7',
 
-    info: '#2563EB',
-    infoSurface: '#EFF6FF',
+  error: '#BE123C',
+  errorSurface: '#FFF1F2',
 
-    holding: '#7C3AED',
-    holdingSurface: '#F5F3FF',
+  info: '#2563EB',
+  infoSurface: '#EFF6FF',
 
-    border: '#E2E8F0',
-    borderStrong: '#CBD5E1',
-    borderSubtle: '#F1F5F9',
-    white: '#FFFFFF',
-  },
+  holding: '#7C3AED',
+  holdingSurface: '#F5F3FF',
 
-  dark: {
-    background: '#0F0910',
-    surface: '#1A0F1A',
-    surfaceElevated: '#2D192D',
-    textPrimary: '#F8FAFC',
-    textSecondary: '#94A3B8',
-    border: '#3D223D',
-    primary: '#FB7185',
-  },
+  border: '#E2E8F0',
+  borderStrong: '#CBD5E1',
+  borderSubtle: '#F1F5F9',
+  white: '#FFFFFF',
+
+  letraS: '#881337',
+  brandName: '#881337',
+  statusBadgeBg: 'rgba(15, 23, 42, 0.75)',
+};
+
+export const darkColors = {
+  primary: '#881337',        // Mesmo vermelho/vinho (#881337) do modo claro
+  primaryHover: '#701A28',
+  primaryActive: '#4C0519',
+  primaryLight: 'rgba(136, 19, 55, 0.25)',
+
+  secondary: '#F8FAFC',
+  secondaryHover: '#E2E8F0',
+  secondaryLight: '#1E293B',
+
+  gold: '#F59E0B',
+  goldSurface: 'rgba(245, 158, 11, 0.18)',
+
+  background: '#030712',            // Fundo ultra escuro (Obsidian / Pitch Dark)
+  backgroundSecondary: '#0B0F17',   // Fundo secundário bem escuro
+
+  surface: '#0F172A',               // Superfície/Cards (Slate 900 escuro)
+  surfaceElevated: '#1E293B',
+  cardBg: '#0F172A',
+  searchBg: '#0B0F17',
+
+  textPrimary: '#F8FAFC',
+  textSecondary: '#94A3B8',
+  textMuted: '#64748B',
+  textDisabled: '#475569',
+
+  success: '#34D399',
+  successSurface: 'rgba(52, 211, 153, 0.18)',
+
+  warning: '#FBBF24',
+  warningSurface: 'rgba(251, 191, 36, 0.18)',
+
+  error: '#F87171',
+  errorSurface: 'rgba(248, 113, 113, 0.18)',
+
+  info: '#60A5FA',
+  infoSurface: 'rgba(96, 165, 250, 0.18)',
+
+  holding: '#A78BFA',
+  holdingSurface: 'rgba(167, 139, 250, 0.18)',
+
+  border: '#1E293B',
+  borderStrong: '#334155',
+  borderSubtle: '#0B0F17',
+  white: '#FFFFFF',
+
+  letraS: '#881337',                // Mesmo vermelho da letra S do modo claro
+  brandName: '#881337',             // Mesmo vermelho do facco do modo claro
+  statusBadgeBg: 'rgba(3, 7, 18, 0.85)',
+};
+
+const baseTokens = {
 
   spacing: {
     1: 4,
@@ -166,3 +215,14 @@ export const theme = {
     toast: 70,
   },
 };
+
+export function getTheme(isDark = false) {
+  return {
+    ...baseTokens,
+    colors: isDark ? darkColors : lightColors,
+    isDark,
+  };
+}
+
+export const theme = getTheme(false);
+
