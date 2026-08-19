@@ -84,18 +84,25 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const isManager = useMemo(() => {
+    if (!user) return false;
+    const role = user.role?.toUpperCase();
+    return role === 'GESTOR_ESPACO' || role === 'ADMIN' || role === 'GESTOR';
+  }, [user]);
+
   const value = useMemo(
     () => ({
       user,
       token,
       isLoading,
       isAuthenticated: !!user && !!token,
+      isManager,
       login,
       register,
       loginWithGoogle,
       logout,
     }),
-    [user, token, isLoading]
+    [user, token, isLoading, isManager]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -18,7 +18,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { BottomNav } from '../components/common/BottomNav';
 
-export function ComplexesScreen({ onSelectVenue, onOpenAuth }) {
+export function ComplexesScreen({ onSelectVenue, onOpenAuth, onOpenManager }) {
   const { colors, isDark } = useTheme();
   const [searchValue, setSearchValue] = useState('');
   const [selectedSport, setSelectedSport] = useState('Todos');
@@ -29,6 +29,13 @@ export function ComplexesScreen({ onSelectVenue, onOpenAuth }) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('explorar');
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    if (tabId === 'gestao' && onOpenManager) {
+      onOpenManager();
+    }
+  };
 
   const fetchVenuesData = useCallback(
     async (isRefresh = false) => {
@@ -137,6 +144,7 @@ export function ComplexesScreen({ onSelectVenue, onOpenAuth }) {
           selectedCity={selectedCity}
           onSelectCity={setSelectedCity}
           onOpenAuth={onOpenAuth}
+          onOpenManager={onOpenManager}
         />
 
         {/* Sport Category Filter Chips */}
@@ -150,7 +158,7 @@ export function ComplexesScreen({ onSelectVenue, onOpenAuth }) {
       </View>
 
       {/* Mobile Bottom Navigation */}
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
     </SafeAreaView>
   );
 }

@@ -1,22 +1,29 @@
 import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Platform } from 'react-native';
-import { Compass, Calendar, Bookmark, User } from 'lucide-react-native';
+import { Compass, Calendar, Bookmark, User, Building2 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import { theme } from '../../styles/theme';
-
-const NAV_ITEMS = [
-  { id: 'explorar', label: 'Explorar', icon: Compass },
-  { id: 'agendamentos', label: 'Agendamentos', icon: Calendar },
-  { id: 'favoritos', label: 'Favoritos', icon: Bookmark },
-  { id: 'perfil', label: 'Perfil', icon: User },
-];
 
 export function BottomNav({ activeTab = 'explorar', onTabChange }) {
   const { colors } = useTheme();
+  const { isManager } = useAuth();
+
+  const navItems = [
+    { id: 'explorar', label: 'Explorar', icon: Compass },
+    { id: 'agendamentos', label: 'Agendamentos', icon: Calendar },
+    { id: 'favoritos', label: 'Favoritos', icon: Bookmark },
+  ];
+
+  if (isManager) {
+    navItems.push({ id: 'gestao', label: 'Gestão', icon: Building2 });
+  }
+
+  navItems.push({ id: 'perfil', label: 'Perfil', icon: User });
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
-      {NAV_ITEMS.map((item) => {
+      {navItems.map((item) => {
         const isActive = activeTab === item.id;
         const IconComponent = item.icon;
         const iconColor = isActive ? colors.primary : colors.textMuted;

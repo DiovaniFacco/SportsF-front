@@ -7,14 +7,17 @@ import { VenueCourtsScreen } from './src/screens/VenueCourtsScreen';
 import { CourtSlotsScreen } from './src/screens/CourtSlotsScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { RegisterScreen } from './src/screens/RegisterScreen';
+import { ManagerHomeScreen } from './src/screens/manager/ManagerHomeScreen';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
-import { AuthProvider } from './src/context/AuthContext';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
 
 function MainAppContent() {
   const [selectedVenue, setSelectedVenue] = useState(null);
   const [selectedCourt, setSelectedCourt] = useState(null);
   const [authScreen, setAuthScreen] = useState(null); // null | 'login' | 'register'
+  const [isManagerView, setIsManagerView] = useState(false);
   const { colors } = useTheme();
+  const { isManager } = useAuth();
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -29,6 +32,10 @@ function MainAppContent() {
           onNavigateLogin={() => setAuthScreen('login')}
           onBack={() => setAuthScreen(null)}
           onRegisterSuccess={() => setAuthScreen(null)}
+        />
+      ) : isManagerView ? (
+        <ManagerHomeScreen
+          onBackToUserView={() => setIsManagerView(false)}
         />
       ) : selectedCourt ? (
         <CourtSlotsScreen
@@ -50,6 +57,7 @@ function MainAppContent() {
         <ComplexesScreen
           onSelectVenue={(venue) => setSelectedVenue(venue)}
           onOpenAuth={() => setAuthScreen('login')}
+          onOpenManager={() => setIsManagerView(true)}
         />
       )}
     </View>

@@ -1,11 +1,11 @@
 import React from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Platform } from 'react-native';
-import { Search, X, SlidersHorizontal, Sun, Moon, LogIn, LogOut, User } from 'lucide-react-native';
+import { Search, X, SlidersHorizontal, Sun, Moon, LogIn, LogOut, User, Building2 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { theme } from '../../styles/theme';
 
-export function Header({ searchValue, setSearchValue, onOpenFilter, onOpenAuth }) {
+export function Header({ searchValue, setSearchValue, onOpenFilter, onOpenAuth, onOpenManager }) {
   const { colors, isDark, toggleTheme } = useTheme();
   const { user, isAuthenticated, logout } = useAuth();
 
@@ -34,6 +34,18 @@ export function Header({ searchValue, setSearchValue, onOpenFilter, onOpenAuth }
               <Moon size={18} color={colors.textPrimary} />
             )}
           </TouchableOpacity>
+
+          {/* Botão de Painel de Gestão para Gestores */}
+          {user && (user.role === 'GESTOR_ESPACO' || user.role === 'ADMIN') ? (
+            <TouchableOpacity
+              activeOpacity={0.75}
+              onPress={onOpenManager}
+              style={[styles.authBadge, { backgroundColor: colors.primary + '18', borderColor: colors.primary }]}
+            >
+              <Building2 size={15} color={colors.primary} style={{ marginRight: 5 }} />
+              <Text style={[styles.authBadgeText, { color: colors.primary }]}>Gestão</Text>
+            </TouchableOpacity>
+          ) : null}
 
           {/* Auth State Button */}
           {isAuthenticated ? (
