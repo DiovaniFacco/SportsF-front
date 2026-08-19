@@ -64,7 +64,7 @@ export function SelectionFooter({ selectedSlots, selectedDate, courtName, onClea
           onPress={handleConfirm}
           style={[styles.confirmButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
         >
-          <Text style={styles.confirmText}>Selecionar</Text>
+          <Text style={styles.confirmText}>Agendar</Text>
           <CheckCircle size={16} color="#FFFFFF" style={{ marginLeft: 4 }} />
         </TouchableOpacity>
       </View>

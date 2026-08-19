@@ -13,6 +13,8 @@ export async function getAvailableSlots(courtId, dateStr) {
     });
 
     if (response.data && Array.isArray(response.data.slots)) {
+      const now = new Date();
+      response.data.slots = response.data.slots.filter(s => new Date(s.start_time.replace(' ', 'T')) > now);
       return response.data;
     }
     return generateMockSlots(courtId, dateStr);
@@ -29,6 +31,7 @@ function generateMockSlots(courtId, dateStr) {
   const baseDate = dateStr || new Date().toISOString().split('T')[0];
   const dateObj = new Date(baseDate + 'T12:00:00');
   const dayOfWeek = dateObj.getDay();
+  const now = new Date();
 
   // Gera slots das 07:00 às 23:00
   const slots = [];
@@ -41,6 +44,11 @@ function generateMockSlots(courtId, dateStr) {
     const formattedTime = `${startStr} - ${endStr}`;
     const fullStart = `${baseDate} ${startStr}:00`;
     const fullEnd = `${baseDate} ${endStr}:00`;
+
+    const slotStartDate = new Date(`${baseDate}T${startStr}:00`);
+    if (slotStartDate <= now) {
+      continue; // Ignora horários que já passaram
+    }
 
     // Horários de pico (18h às 22h) têm acréscimo no valor
     const isPeakHour = hour >= 18 && hour < 22;

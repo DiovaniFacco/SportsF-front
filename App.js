@@ -35,6 +35,7 @@ function MainAppContent() {
           court={selectedCourt}
           venue={selectedVenue}
           onBack={() => setSelectedCourt(null)}
+          onOpenAuth={() => setAuthScreen('login')}
         />
       ) : selectedVenue ? (
         <VenueCourtsScreen

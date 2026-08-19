@@ -21,19 +21,23 @@ import {
   Calendar,
 } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { theme } from '../styles/theme';
 import { getAvailableSlots } from '../api/slots';
+import { createBooking } from '../api/bookings';
 import { DateSelector } from '../components/slots/DateSelector';
 import { SlotLegend } from '../components/slots/SlotLegend';
 import { SlotCard } from '../components/slots/SlotCard';
 import { SelectionFooter } from '../components/slots/SelectionFooter';
+import { BookingConfirmationModal } from '../components/slots/BookingConfirmationModal';
 import { SkeletonCard } from '../components/common/SkeletonCard';
 import { ErrorState } from '../components/common/ErrorState';
 import { EmptyState } from '../components/common/EmptyState';
 import { BottomNav } from '../components/common/BottomNav';
 
-export function CourtSlotsScreen({ court, venue, onBack }) {
+export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth }) {
   const { colors, isDark } = useTheme();
+  const { user, isAuthenticated } = useAuth();
 
   const getTodayStr = () => {
     const today = new Date();
@@ -50,6 +54,12 @@ export function CourtSlotsScreen({ court, venue, onBack }) {
   const [error, setError] = useState(null);
   const [selectedSlots, setSelectedSlots] = useState([]);
   const [activeTab, setActiveTab] = useState('explorar');
+
+  // Booking Modal States
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [modalError, setModalError] = useState(null);
+  const [successBooking, setSuccessBooking] = useState(null);
 
   const fetchSlots = useCallback(async (isRefresh = false) => {
     if (!court) return;
@@ -92,9 +102,74 @@ export function CourtSlotsScreen({ court, venue, onBack }) {
     });
   };
 
+  const handleOpenConfirmModal = () => {
+    setModalError(null);
+    setSuccessBooking(null);
+    if (!isAuthenticated) {
+      if (onOpenAuth) {
+        onOpenAuth();
+      } else {
+        setModalError('Você precisa estar conectado para realizar um agendamento. Por favor, faça login.');
+        setIsModalVisible(true);
+      }
+      return;
+    }
+    setIsModalVisible(true);
+  };
+
+  const handleConfirmBooking = async ({ notes }) => {
+    if (!isAuthenticated) {
+      setModalError('Você precisa estar conectado para realizar um agendamento.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setModalError(null);
+
+    try {
+      let lastBooking = null;
+      for (const slot of selectedSlots) {
+        const res = await createBooking({
+          courtId: court.id,
+          startTime: slot.start_time,
+          endTime: slot.end_time,
+          notes,
+        });
+        lastBooking = res.booking;
+      }
+
+      setSuccessBooking(lastBooking || { success: true });
+
+      // Auto-refresh the slots from the backend to mark booked slots as unavailable
+      await fetchSlots(true);
+    } catch (err) {
+      console.error('Erro ao confirmar agendamento:', err);
+      const errMsg =
+        err.response?.data?.message ||
+        err.response?.data?.errors?.start_time?.[0] ||
+        err.response?.data?.errors?.user?.[0] ||
+        'Não foi possível concluir o agendamento. Este horário pode ter sido reservado por outro cliente.';
+      setModalError(errMsg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleFinishSuccess = () => {
+    setIsModalVisible(false);
+    setSelectedSlots([]);
+    setSuccessBooking(null);
+    setModalError(null);
+  };
+
   if (!court) return null;
 
-  const slotsList = slotsData?.slots || [];
+  const now = new Date();
+  const slotsList = (slotsData?.slots || []).filter((s) => {
+    if (!s.start_time) return true;
+    const slotDate = new Date(s.start_time.replace(' ', 'T'));
+    return slotDate > now;
+  });
 
   // Agrupar horários por período
   const morningSlots = slotsList.filter((s) => {
@@ -280,6 +355,26 @@ export function CourtSlotsScreen({ court, venue, onBack }) {
         selectedDate={selectedDate}
         courtName={court.name}
         onClearSelection={() => setSelectedSlots([])}
+        onConfirmSelection={handleOpenConfirmModal}
+      />
+
+      {/* Booking Confirmation Modal */}
+      <BookingConfirmationModal
+        visible={isModalVisible}
+        onClose={() => {
+          setIsModalVisible(false);
+          setModalError(null);
+        }}
+        selectedSlots={selectedSlots}
+        selectedDate={selectedDate}
+        court={court}
+        venue={venue}
+        user={user}
+        onConfirmBooking={handleConfirmBooking}
+        isSubmitting={isSubmitting}
+        error={modalError}
+        successBooking={successBooking}
+        onFinishSuccess={handleFinishSuccess}
       />
 
       {/* Mobile Bottom Navigation (only shown if no slots are selected to prevent overlap) */}
