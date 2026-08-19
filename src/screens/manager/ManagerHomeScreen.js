@@ -33,6 +33,8 @@ import { getVenues } from '../../api/venues';
 import { getCourtsByVenue, deleteCourt } from '../../api/courts';
 import { ManagerCourtCard } from '../../components/manager/ManagerCourtCard';
 import { CourtFormModal } from '../../components/manager/CourtFormModal';
+import { ManagerScheduleView } from '../../components/manager/ManagerScheduleView';
+import { ManualBookingModal } from '../../components/manager/ManualBookingModal';
 import { EmptyState } from '../../components/common/EmptyState';
 import { ErrorState } from '../../components/common/ErrorState';
 
@@ -46,11 +48,19 @@ export function ManagerHomeScreen({ onBackToUserView }) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  const [activeTab, setActiveTab] = useState('quadras'); // 'quadras' | 'agenda' | 'bloqueios'
+  const [activeTab, setActiveTab] = useState('quadras'); // 'quadras' | 'agenda'
 
-  // Modal State
+  // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCourt, setEditingCourt] = useState(null);
+  const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+  const [manualModalParams, setManualModalParams] = useState(null);
+
+  const handleOpenManualModal = (params = null) => {
+    setManualModalParams(params);
+    setIsManualModalOpen(true);
+  };
+
 
   const fetchManagerData = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -258,25 +268,41 @@ export function ManagerHomeScreen({ onBackToUserView }) {
           </View>
         </View>
 
-        {/* Botão de Ação Rápida Principal: Criar Nova Quadra */}
+        {/* Botão de Ação Rápida Principal */}
         <View style={styles.actionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             {activeTab === 'quadras' ? 'Gerenciamento de Quadras' : 'Horários e Agendamentos'}
           </Text>
 
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={handleOpenAddModal}
-            style={[styles.btnAddCourt, { backgroundColor: colors.primary }]}
-          >
-            <Plus size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
-            <Text style={styles.btnAddCourtText}>Nova Quadra</Text>
-          </TouchableOpacity>
+          {activeTab === 'quadras' ? (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleOpenAddModal}
+              style={[styles.btnAddCourt, { backgroundColor: colors.primary }]}
+            >
+              <Plus size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+              <Text style={styles.btnAddCourtText}>Nova Quadra</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => handleOpenManualModal()}
+              style={[styles.btnAddCourt, { backgroundColor: colors.primary }]}
+            >
+              <Plus size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+              <Text style={styles.btnAddCourtText}>Novo Agendamento Balcão</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Conteúdo Principal da Aba */}
         <View style={styles.body}>
-          {loading && !refreshing ? (
+          {activeTab === 'agenda' ? (
+            <ManagerScheduleView
+              courts={courts}
+              onOpenManualModal={handleOpenManualModal}
+            />
+          ) : loading && !refreshing ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.primary} />
               <Text style={[styles.loadingText, { color: colors.textMuted }]}>Carregando quadras...</Text>
@@ -320,6 +346,21 @@ export function ManagerHomeScreen({ onBackToUserView }) {
         court={editingCourt}
         venueId={activeVenue?.id || 1}
         onClose={() => setIsModalOpen(false)}
+        onSuccess={fetchManagerData}
+      />
+
+      {/* Modal de Agendamento Manual / Balcão */}
+      <ManualBookingModal
+        visible={isManualModalOpen}
+        courts={courts}
+        initialCourtId={manualModalParams?.courtId}
+        initialStartTime={manualModalParams?.startTime}
+        initialEndTime={manualModalParams?.endTime}
+        initialDate={manualModalParams?.date}
+        onClose={() => {
+          setIsManualModalOpen(false);
+          setManualModalParams(null);
+        }}
         onSuccess={fetchManagerData}
       />
     </SafeAreaView>
