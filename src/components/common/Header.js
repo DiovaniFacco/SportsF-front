@@ -1,39 +1,68 @@
 import React from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Platform } from 'react-native';
-import { Search, X, SlidersHorizontal, Sun, Moon } from 'lucide-react-native';
+import { Search, X, SlidersHorizontal, Sun, Moon, LogIn, LogOut, User } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import { theme } from '../../styles/theme';
 
-export function Header({ searchValue, setSearchValue, onOpenFilter }) {
+export function Header({ searchValue, setSearchValue, onOpenFilter, onOpenAuth }) {
   const { colors, isDark, toggleTheme } = useTheme();
+  const { user, isAuthenticated, logout } = useAuth();
+
+  const userName = user?.name ? user.name.split(' ')[0] : 'Esportista';
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
-      {/* Top Bar: Brand Logo & Theme Toggle Action */}
+      {/* Top Bar: Brand Logo & Controls (Theme Toggle + Auth Status) */}
       <View style={styles.topBar}>
         <View style={styles.logoContainer}>
-          <Text style={[styles.letraS, { color: colors.letraS, textShadowColor: colors.isDark ? 'rgba(251, 113, 133, 0.4)' : 'rgba(136, 19, 55, 0.4)' }]}>S</Text>
+          <Text style={[styles.letraS, { color: colors.letraS, textShadowColor: isDark ? 'rgba(251, 113, 133, 0.4)' : 'rgba(136, 19, 55, 0.4)' }]}>S</Text>
           <Text style={[styles.brandName, { color: colors.brandName }]}>facco</Text>
         </View>
 
-        {/* Theme Toggle Button */}
-        <TouchableOpacity
-          activeOpacity={0.75}
-          onPress={toggleTheme}
-          style={[styles.themeBtn, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-          accessibilityLabel={isDark ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
-        >
-          {isDark ? (
-            <Sun size={18} color="#F59E0B" />
+        <View style={styles.rightActions}>
+          {/* Theme Toggle Button */}
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={toggleTheme}
+            style={[styles.themeBtn, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+            accessibilityLabel={isDark ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
+          >
+            {isDark ? (
+              <Sun size={18} color="#F59E0B" />
+            ) : (
+              <Moon size={18} color={colors.textPrimary} />
+            )}
+          </TouchableOpacity>
+
+          {/* Auth State Button */}
+          {isAuthenticated ? (
+            <TouchableOpacity
+              activeOpacity={0.75}
+              onPress={logout}
+              style={[styles.authBadge, { backgroundColor: colors.primaryLight, borderColor: colors.primary }]}
+              accessibilityLabel="Sair da conta"
+            >
+              <LogOut size={15} color={colors.primary} style={{ marginRight: 5 }} />
+              <Text style={[styles.authBadgeText, { color: colors.primary }]}>Sair</Text>
+            </TouchableOpacity>
           ) : (
-            <Moon size={18} color={colors.textPrimary} />
+            <TouchableOpacity
+              activeOpacity={0.75}
+              onPress={onOpenAuth}
+              style={[styles.authBadge, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+              accessibilityLabel="Entrar ou Cadastrar"
+            >
+              <LogIn size={15} color="#FFFFFF" style={{ marginRight: 5 }} />
+              <Text style={[styles.authBadgeText, { color: '#FFFFFF' }]}>Entrar</Text>
+            </TouchableOpacity>
           )}
-        </TouchableOpacity>
+        </View>
       </View>
 
       {/* Greeting & Hero Title */}
       <View style={styles.heroTextContainer}>
-        <Text style={[styles.greetingText, { color: colors.textSecondary }]}>Olá, Diovani 👋</Text>
+        <Text style={[styles.greetingText, { color: colors.textSecondary }]}>Olá, {userName}</Text>
         <Text style={[styles.heroTitleMain, { color: colors.textPrimary }]}>Encontre e reserve</Text>
         <Text style={[styles.heroTitleHighlight, { color: colors.primary }]}>sua quadra</Text>
       </View>
@@ -113,6 +142,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  rightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  authBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    height: 36,
+    borderRadius: theme.radius.full,
+    borderWidth: 1,
+  },
+  authBadgeText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   heroTextContainer: {
     marginBottom: theme.spacing.md,

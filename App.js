@@ -5,16 +5,32 @@ import { JosefinSans_700Bold } from '@expo-google-fonts/josefin-sans';
 import { ComplexesScreen } from './src/screens/ComplexesScreen';
 import { VenueCourtsScreen } from './src/screens/VenueCourtsScreen';
 import { CourtSlotsScreen } from './src/screens/CourtSlotsScreen';
+import { LoginScreen } from './src/screens/LoginScreen';
+import { RegisterScreen } from './src/screens/RegisterScreen';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { AuthProvider } from './src/context/AuthContext';
 
 function MainAppContent() {
   const [selectedVenue, setSelectedVenue] = useState(null);
   const [selectedCourt, setSelectedCourt] = useState(null);
+  const [authScreen, setAuthScreen] = useState(null); // null | 'login' | 'register'
   const { colors } = useTheme();
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {selectedCourt ? (
+      {authScreen === 'login' ? (
+        <LoginScreen
+          onNavigateRegister={() => setAuthScreen('register')}
+          onBack={() => setAuthScreen(null)}
+          onLoginSuccess={() => setAuthScreen(null)}
+        />
+      ) : authScreen === 'register' ? (
+        <RegisterScreen
+          onNavigateLogin={() => setAuthScreen('login')}
+          onBack={() => setAuthScreen(null)}
+          onRegisterSuccess={() => setAuthScreen(null)}
+        />
+      ) : selectedCourt ? (
         <CourtSlotsScreen
           court={selectedCourt}
           venue={selectedVenue}
@@ -30,7 +46,10 @@ function MainAppContent() {
           }}
         />
       ) : (
-        <ComplexesScreen onSelectVenue={(venue) => setSelectedVenue(venue)} />
+        <ComplexesScreen
+          onSelectVenue={(venue) => setSelectedVenue(venue)}
+          onOpenAuth={() => setAuthScreen('login')}
+        />
       )}
     </View>
   );
@@ -62,7 +81,9 @@ export default function App() {
 
   return (
     <ThemeProvider>
-      <MainAppContent />
+      <AuthProvider>
+        <MainAppContent />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

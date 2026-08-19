@@ -18,7 +18,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { BottomNav } from '../components/common/BottomNav';
 
-export function ComplexesScreen({ onSelectVenue }) {
+export function ComplexesScreen({ onSelectVenue, onOpenAuth }) {
   const { colors, isDark } = useTheme();
   const [searchValue, setSearchValue] = useState('');
   const [selectedSport, setSelectedSport] = useState('Todos');
@@ -136,6 +136,7 @@ export function ComplexesScreen({ onSelectVenue }) {
           setSearchValue={setSearchValue}
           selectedCity={selectedCity}
           onSelectCity={setSelectedCity}
+          onOpenAuth={onOpenAuth}
         />
 
         {/* Sport Category Filter Chips */}
