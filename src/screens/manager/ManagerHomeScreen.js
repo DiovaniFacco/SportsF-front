@@ -101,19 +101,19 @@ export function ManagerHomeScreen({ onBackToUserView }) {
     try {
       // Busca complexos administrados pelo gestor
       const venuesData = await getVenues();
-      const venue = venuesData[0] || { id: 1, name: 'Arena Central Esportes' };
+      const venue = venuesData[0] || null;
       setActiveVenue(venue);
 
       // Busca quadras do espaço
-      try {
-        const courtsData = await getCourtsByVenue(venue.id);
-        if (Array.isArray(courtsData) && courtsData.length > 0) {
-          setCourts(courtsData);
-        } else {
+      if (venue) {
+        try {
+          const courtsData = await getCourtsByVenue(venue.id);
+          setCourts(Array.isArray(courtsData) ? courtsData : (venue.courts || []));
+        } catch {
           setCourts(venue.courts || []);
         }
-      } catch {
-        setCourts(venue.courts || []);
+      } else {
+        setCourts([]);
       }
     } catch (err) {
       console.error('Erro ao carregar dados do gerenciador:', err);

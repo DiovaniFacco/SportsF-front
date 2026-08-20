@@ -21,7 +21,7 @@ import { ErrorState } from '../components/common/ErrorState';
 import { BottomNav } from '../components/common/BottomNav';
 import { FilterChip } from '../components/common/FilterChip';
 
-export function VenueCourtsScreen({ venueId, onBack, onSelectCourt }) {
+export function VenueCourtsScreen({ venueId, onBack, onSelectCourt, onTabChange }) {
   const { colors } = useTheme();
   const [venue, setVenue] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -177,8 +177,13 @@ export function VenueCourtsScreen({ venueId, onBack, onSelectCourt }) {
       <BottomNav
         activeTab={activeTab}
         onTabChange={(tab) => {
-          if (tab === 'explorar') onBack();
-          else setActiveTab(tab);
+          if (tab === 'explorar') {
+            onBack();
+          } else if (onTabChange) {
+            onTabChange(tab);
+          } else {
+            setActiveTab(tab);
+          }
         }}
       />
     </SafeAreaView>

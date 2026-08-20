@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Platform } from 'react-native';
-import { Compass, Calendar, Bookmark, User, Building2 } from 'lucide-react-native';
+import { Compass, Calendar, User, Building2 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { theme } from '../../styles/theme';
@@ -11,8 +11,7 @@ export function BottomNav({ activeTab = 'explorar', onTabChange }) {
 
   const navItems = [
     { id: 'explorar', label: 'Explorar', icon: Compass },
-    { id: 'agendamentos', label: 'Agendamentos', icon: Calendar },
-    { id: 'favoritos', label: 'Favoritos', icon: Bookmark },
+    { id: 'agendamentos', label: 'Meus Agendamentos', icon: Calendar },
   ];
 
   if (isManager) {

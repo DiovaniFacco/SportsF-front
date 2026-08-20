@@ -18,7 +18,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { BottomNav } from '../components/common/BottomNav';
 
-export function ComplexesScreen({ onSelectVenue, onOpenAuth, onOpenManager }) {
+export function ComplexesScreen({ onSelectVenue, onOpenAuth, onOpenManager, activeTab = 'explorar', onTabChange }) {
   const { colors } = useTheme();
   const [searchValue, setSearchValue] = useState('');
   const [selectedSport, setSelectedSport] = useState('Todos');
@@ -28,11 +28,11 @@ export function ComplexesScreen({ onSelectVenue, onOpenAuth, onOpenManager }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('explorar');
 
   const handleTabChange = (tabId) => {
-    setActiveTab(tabId);
-    if (tabId === 'gestao' && onOpenManager) {
+    if (onTabChange) {
+      onTabChange(tabId);
+    } else if (tabId === 'gestao' && onOpenManager) {
       onOpenManager();
     }
   };

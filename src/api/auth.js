@@ -11,25 +11,9 @@ export async function loginApi(email, password) {
     }
     return { success: true, user, token: access_token };
   } catch (error) {
-    console.warn('Erro na API de login (tentando fallback local se indisponível):', error?.response?.data || error.message);
-    
-    // Graceful fallback for dev mode if backend is not reachable or returns validation error
-    if (error?.response?.data?.message || error?.response?.data?.errors) {
-      const msg = error.response.data.message || Object.values(error.response.data.errors)[0]?.[0] || 'Falha ao realizar login.';
-      throw new Error(msg);
-    }
-    
-    // Offline / Mock fallback for instant demo
-    const mockUser = {
-      id: 1,
-      name: email.split('@')[0] || 'Usuário SFACCO',
-      email: email,
-      role: 'cliente',
-    };
-    const mockToken = 'mock_token_' + Date.now();
-    await AsyncStorage.setItem('@auth_token', mockToken);
-    await AsyncStorage.setItem('@auth_user', JSON.stringify(mockUser));
-    return { success: true, user: mockUser, token: mockToken };
+    console.error('Erro na API de login:', error?.response?.data || error.message);
+    const msg = error?.response?.data?.message || (error?.response?.data?.errors ? Object.values(error.response.data.errors)[0]?.[0] : null) || 'Não foi possível realizar o login. Verifique suas credenciais ou conexão com o servidor.';
+    throw new Error(msg);
   }
 }
 
@@ -48,24 +32,9 @@ export async function registerApi(name, email, password, phone = null) {
     }
     return { success: true, user, token: access_token };
   } catch (error) {
-    console.warn('Erro na API de registro:', error?.response?.data || error.message);
-    if (error?.response?.data?.message || error?.response?.data?.errors) {
-      const msg = error.response.data.message || Object.values(error.response.data.errors)[0]?.[0] || 'Falha ao registrar conta.';
-      throw new Error(msg);
-    }
-
-    // Fallback for offline dev test
-    const mockUser = {
-      id: Date.now(),
-      name,
-      email,
-      phone,
-      role: 'cliente',
-    };
-    const mockToken = 'mock_token_' + Date.now();
-    await AsyncStorage.setItem('@auth_token', mockToken);
-    await AsyncStorage.setItem('@auth_user', JSON.stringify(mockUser));
-    return { success: true, user: mockUser, token: mockToken };
+    console.error('Erro na API de registro:', error?.response?.data || error.message);
+    const msg = error?.response?.data?.message || (error?.response?.data?.errors ? Object.values(error.response.data.errors)[0]?.[0] : null) || 'Não foi possível criar a conta. Verifique os dados inseridos.';
+    throw new Error(msg);
   }
 }
 
@@ -84,26 +53,18 @@ export async function googleAuthApi(googleUserData) {
     }
     return { success: true, user, token: access_token };
   } catch (error) {
-    console.warn('Erro na API Google Auth (usando fallback se offline):', error?.response?.data || error.message);
-    
-    // Offline / direct social login fallback
-    const mockUser = {
-      id: googleUserData.id || Date.now(),
-      name: googleUserData.name || 'Esportista Google',
-      email: googleUserData.email || 'google.user@sfacco.com',
-      avatar: googleUserData.photo || null,
-      role: 'cliente',
-    };
-    const mockToken = 'google_mock_token_' + Date.now();
-    await AsyncStorage.setItem('@auth_token', mockToken);
-    await AsyncStorage.setItem('@auth_user', JSON.stringify(mockUser));
-    return { success: true, user: mockUser, token: mockToken };
+    console.error('Erro na API Google Auth:', error?.response?.data || error.message);
+    const msg = error?.response?.data?.message || 'Falha ao autenticar com o Google.';
+    throw new Error(msg);
   }
 }
 
 export async function getMeApi() {
   try {
     const response = await apiClient.get('/auth/me');
+    if (response.data?.user) {
+      await AsyncStorage.setItem('@auth_user', JSON.stringify(response.data.user));
+    }
     return response.data.user;
   } catch (error) {
     const storedUser = await AsyncStorage.getItem('@auth_user');
@@ -118,7 +79,7 @@ export async function logoutApi() {
   try {
     await apiClient.post('/auth/logout');
   } catch (error) {
-    console.warn('Logout silencioso no backend:', error.message);
+    console.warn('Logout no backend:', error.message);
   } finally {
     await AsyncStorage.removeItem('@auth_token');
     await AsyncStorage.removeItem('@auth_user');

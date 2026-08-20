@@ -5,6 +5,7 @@ import { JosefinSans_700Bold } from '@expo-google-fonts/josefin-sans';
 import { ComplexesScreen } from './src/screens/ComplexesScreen';
 import { VenueCourtsScreen } from './src/screens/VenueCourtsScreen';
 import { CourtSlotsScreen } from './src/screens/CourtSlotsScreen';
+import { MyBookingsScreen } from './src/screens/MyBookingsScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { RegisterScreen } from './src/screens/RegisterScreen';
 import { ManagerHomeScreen } from './src/screens/manager/ManagerHomeScreen';
@@ -16,35 +17,73 @@ function MainAppContent() {
   const [selectedCourt, setSelectedCourt] = useState(null);
   const [authScreen, setAuthScreen] = useState(null); // null | 'login' | 'register'
   const [isManagerView, setIsManagerView] = useState(false);
+  const [activeTab, setActiveTab] = useState('explorar');
   const { colors } = useTheme();
   const { isManager } = useAuth();
 
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {authScreen === 'login' ? (
+  const handleTabChange = (tabId) => {
+    if (tabId === 'gestao') {
+      setIsManagerView(true);
+    } else if (tabId === 'perfil') {
+      setAuthScreen('login');
+    } else {
+      setActiveTab(tabId);
+    }
+  };
+
+  const renderCurrentScreen = () => {
+    if (authScreen === 'login') {
+      return (
         <LoginScreen
           onNavigateRegister={() => setAuthScreen('register')}
           onBack={() => setAuthScreen(null)}
           onLoginSuccess={() => setAuthScreen(null)}
         />
-      ) : authScreen === 'register' ? (
+      );
+    }
+
+    if (authScreen === 'register') {
+      return (
         <RegisterScreen
           onNavigateLogin={() => setAuthScreen('login')}
           onBack={() => setAuthScreen(null)}
           onRegisterSuccess={() => setAuthScreen(null)}
         />
-      ) : isManagerView ? (
+      );
+    }
+
+    if (isManagerView) {
+      return (
         <ManagerHomeScreen
           onBackToUserView={() => setIsManagerView(false)}
         />
-      ) : selectedCourt ? (
+      );
+    }
+
+    if (activeTab === 'agendamentos') {
+      return (
+        <MyBookingsScreen
+          onTabChange={handleTabChange}
+          onGoToExplore={() => setActiveTab('explorar')}
+          onOpenAuth={() => setAuthScreen('login')}
+        />
+      );
+    }
+
+    if (selectedCourt) {
+      return (
         <CourtSlotsScreen
           court={selectedCourt}
           venue={selectedVenue}
           onBack={() => setSelectedCourt(null)}
           onOpenAuth={() => setAuthScreen('login')}
+          onTabChange={handleTabChange}
         />
-      ) : selectedVenue ? (
+      );
+    }
+
+    if (selectedVenue) {
+      return (
         <VenueCourtsScreen
           venueId={selectedVenue.id}
           onBack={() => setSelectedVenue(null)}
@@ -52,14 +91,25 @@ function MainAppContent() {
             if (venueObj) setSelectedVenue(venueObj);
             setSelectedCourt(court);
           }}
+          onTabChange={handleTabChange}
         />
-      ) : (
-        <ComplexesScreen
-          onSelectVenue={(venue) => setSelectedVenue(venue)}
-          onOpenAuth={() => setAuthScreen('login')}
-          onOpenManager={() => setIsManagerView(true)}
-        />
-      )}
+      );
+    }
+
+    return (
+      <ComplexesScreen
+        onSelectVenue={(venue) => setSelectedVenue(venue)}
+        onOpenAuth={() => setAuthScreen('login')}
+        onOpenManager={() => setIsManagerView(true)}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+      />
+    );
+  };
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {renderCurrentScreen()}
     </View>
   );
 }

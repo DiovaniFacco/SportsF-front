@@ -35,7 +35,7 @@ import { ErrorState } from '../components/common/ErrorState';
 import { EmptyState } from '../components/common/EmptyState';
 import { BottomNav } from '../components/common/BottomNav';
 
-export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth }) {
+export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange }) {
   const { colors } = useTheme();
   const { user, isAuthenticated } = useAuth();
 
@@ -382,8 +382,13 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth }) {
         <BottomNav
           activeTab={activeTab}
           onTabChange={(tab) => {
-            if (tab === 'explorar') onBack();
-            else setActiveTab(tab);
+            if (tab === 'explorar') {
+              onBack();
+            } else if (onTabChange) {
+              onTabChange(tab);
+            } else {
+              setActiveTab(tab);
+            }
           }}
         />
       ) : null}
