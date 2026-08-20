@@ -392,7 +392,10 @@ export function ManagerHomeScreen({ onBackToUserView }) {
         court={editingCourt}
         venueId={activeVenue?.id || 1}
         onClose={() => setIsModalOpen(false)}
-        onSuccess={fetchManagerData}
+        onSuccess={() => {
+          fetchManagerData(true);
+          handleScheduleRefresh();
+        }}
       />
 
       {/* Modal de Agendamento Manual / Balcão */}
@@ -407,7 +410,10 @@ export function ManagerHomeScreen({ onBackToUserView }) {
           setIsManualModalOpen(false);
           setManualModalParams(null);
         }}
-        onSuccess={handleScheduleRefresh}
+        onSuccess={() => {
+          fetchManagerData(true);
+          handleScheduleRefresh();
+        }}
         onOpenBlockModal={(params) => {
           setIsManualModalOpen(false);
           setManualModalParams(null);
@@ -427,7 +433,10 @@ export function ManagerHomeScreen({ onBackToUserView }) {
           setIsBlockModalOpen(false);
           setBlockModalParams(null);
         }}
-        onSuccess={handleScheduleRefresh}
+        onSuccess={() => {
+          fetchManagerData(true);
+          handleScheduleRefresh();
+        }}
       />
 
       {/* Modal de Horários de Funcionamento por Quadra */}
@@ -438,7 +447,10 @@ export function ManagerHomeScreen({ onBackToUserView }) {
           setIsHoursModalOpen(false);
           setHoursCourt(null);
         }}
-        onSuccess={handleScheduleRefresh}
+        onSuccess={() => {
+          fetchManagerData(true);
+          handleScheduleRefresh();
+        }}
       />
 
       {/* Modal de Precificação Flexível (Horários Nobres & Feriados) */}
@@ -449,7 +461,10 @@ export function ManagerHomeScreen({ onBackToUserView }) {
           setIsPricingModalOpen(false);
           setPricingCourt(null);
         }}
-        onSuccess={handleScheduleRefresh}
+        onSuccess={() => {
+          fetchManagerData(true);
+          handleScheduleRefresh();
+        }}
       />
     </SafeAreaView>
   );

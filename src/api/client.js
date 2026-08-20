@@ -1,5 +1,5 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import secureStorage from '../services/secureStorage';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -16,12 +16,14 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   async (config) => {
     try {
-      const token = await AsyncStorage.getItem('@auth_token');
+      const token = await secureStorage.getItem('@auth_token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (error) {
-      console.error('Error fetching token from storage:', error);
+      if (__DEV__) {
+        console.warn('Erro ao obter token do storage:', error?.message);
+      }
     }
     return config;
   },
@@ -34,8 +36,8 @@ apiClient.interceptors.response.use(
   async (error) => {
     if (error.response && error.response.status === 401) {
       // Token expired or invalid, clear token
-      await AsyncStorage.removeItem('@auth_token');
-      await AsyncStorage.removeItem('@auth_user');
+      await secureStorage.removeItem('@auth_token');
+      await secureStorage.removeItem('@auth_user');
     }
     return Promise.reject(error);
   }

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import secureStorage from '../services/secureStorage';
 import { loginApi, registerApi, googleAuthApi, logoutApi } from '../api/auth';
 
 const AuthContext = createContext({
@@ -22,14 +22,16 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     async function loadStoredAuth() {
       try {
-        const storedToken = await AsyncStorage.getItem('@auth_token');
-        const storedUser = await AsyncStorage.getItem('@auth_user');
+        const storedToken = await secureStorage.getItem('@auth_token');
+        const storedUser = await secureStorage.getItem('@auth_user');
         if (storedToken && storedUser) {
           setToken(storedToken);
           setUser(JSON.parse(storedUser));
         }
       } catch (error) {
-        console.warn('Erro ao carregar credenciais preservadas:', error);
+        if (__DEV__) {
+          console.warn('Erro ao carregar credenciais preservadas:', error);
+        }
       } finally {
         setIsLoading(false);
       }

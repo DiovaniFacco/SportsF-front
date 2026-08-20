@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -16,10 +16,12 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { GoogleIcon } from '../components/common/GoogleIcon';
 import { theme } from '../styles/theme';
+import { useGoogleAuth } from '../services/googleAuth';
 
 export function LoginScreen({ onNavigateRegister, onBack, onLoginSuccess }) {
   const { colors } = useTheme();
   const { login, loginWithGoogle } = useAuth();
+  const { request, response, promptAsync, isConfigured } = useGoogleAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,6 +29,31 @@ export function LoginScreen({ onNavigateRegister, onBack, onLoginSuccess }) {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const id_token = response.params?.id_token || response.authentication?.idToken;
+      const access_token = response.params?.access_token || response.authentication?.accessToken;
+      handleBackendGoogleLogin({ id_token, access_token });
+    } else if (response?.type === 'error') {
+      setErrorMessage('Erro ao autenticar com o Google: ' + (response.error?.message || 'Falha na autorização'));
+      setGoogleLoading(false);
+    }
+  }, [response]);
+
+  const handleBackendGoogleLogin = async (tokens) => {
+    setGoogleLoading(true);
+    try {
+      await loginWithGoogle(tokens);
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      }
+    } catch (err) {
+      setErrorMessage(err.message || 'Erro ao realizar login com o Google.');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const handleEmailLogin = async () => {
     setErrorMessage('');
@@ -56,21 +83,35 @@ export function LoginScreen({ onNavigateRegister, onBack, onLoginSuccess }) {
     setErrorMessage('');
     setGoogleLoading(true);
     try {
-      // Simulate/Trigger Google OAuth data structure
-      const googleUser = {
-        id: 'google_' + Date.now(),
-        name: 'Usuário Google',
-        email: email.trim() ? email.trim() : 'usuario.google@sfacco.com',
-        photo: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-      };
+      if (isConfigured && request) {
+        const result = await promptAsync();
+        if (result?.type === 'success') {
+          const id_token = result.params?.id_token || result.authentication?.idToken;
+          const access_token = result.params?.access_token || result.authentication?.accessToken;
+          await handleBackendGoogleLogin({ id_token, access_token });
+          return;
+        } else if (result?.type === 'cancel' || result?.type === 'dismiss') {
+          setGoogleLoading(false);
+          return;
+        }
+      }
 
-      await loginWithGoogle(googleUser);
-      if (onLoginSuccess) {
-        onLoginSuccess();
+      if (!isConfigured) {
+        if (email.trim() && email.includes('@')) {
+          await handleBackendGoogleLogin({
+            email: email.trim(),
+            name: email.split('@')[0],
+            google_id: 'google_dev_' + Date.now(),
+          });
+        } else {
+          setErrorMessage(
+            'Para autenticação real com Google em produção, defina EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID no arquivo .env. Em desenvolvimento, informe um e-mail no campo acima para testar.'
+          );
+          setGoogleLoading(false);
+        }
       }
     } catch (err) {
-      setErrorMessage('Erro ao autenticar com o Google: ' + err.message);
-    } finally {
+      setErrorMessage('Erro ao acionar o Google: ' + err.message);
       setGoogleLoading(false);
     }
   };
