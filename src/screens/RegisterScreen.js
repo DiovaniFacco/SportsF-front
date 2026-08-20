@@ -10,14 +10,14 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { User, Mail, Phone, Lock, Eye, EyeOff, Sun, Moon, ArrowLeft } from 'lucide-react-native';
+import { User, Mail, Phone, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { GoogleIcon } from '../components/common/GoogleIcon';
 import { theme } from '../styles/theme';
 
 export function RegisterScreen({ onNavigateLogin, onBack, onRegisterSuccess }) {
-  const { colors, isDark, toggleTheme } = useTheme();
+  const { colors } = useTheme();
   const { register, loginWithGoogle } = useAuth();
 
   const [name, setName] = useState('');
@@ -112,15 +112,6 @@ export function RegisterScreen({ onNavigateLogin, onBack, onRegisterSuccess }) {
           ) : (
             <View style={styles.placeholderBtn} />
           )}
-
-          <TouchableOpacity
-            activeOpacity={0.75}
-            onPress={toggleTheme}
-            style={[styles.iconBtn, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-            accessibilityLabel={isDark ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
-          >
-            {isDark ? <Sun size={18} color="#F59E0B" /> : <Moon size={18} color={colors.textPrimary} />}
-          </TouchableOpacity>
         </View>
 
         {/* Brand Hero */}

@@ -36,7 +36,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { BottomNav } from '../components/common/BottomNav';
 
 export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth }) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { user, isAuthenticated } = useAuth();
 
   const getTodayStr = () => {
@@ -324,7 +324,7 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth }) {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.surface} />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.surface} />
 
       {/* Top Header Bar */}
       <View style={[styles.topHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>

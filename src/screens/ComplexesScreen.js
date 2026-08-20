@@ -19,7 +19,7 @@ import { ErrorState } from '../components/common/ErrorState';
 import { BottomNav } from '../components/common/BottomNav';
 
 export function ComplexesScreen({ onSelectVenue, onOpenAuth, onOpenManager }) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const [searchValue, setSearchValue] = useState('');
   const [selectedSport, setSelectedSport] = useState('Todos');
   const [selectedCity, setSelectedCity] = useState('São Paulo, SP');
@@ -134,7 +134,7 @@ export function ComplexesScreen({ onSelectVenue, onOpenAuth, onOpenManager }) {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.surface} />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.surface} />
 
       <View style={styles.mainWrapper}>
         {/* Top Header */}

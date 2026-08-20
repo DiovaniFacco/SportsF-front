@@ -27,14 +27,18 @@ import {
   Grid,
   List,
   PlusCircle,
+  ShieldAlert,
 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { getUserBookings, cancelBooking } from '../../api/bookings';
+import { getCourtBlocks, deleteCourtBlock } from '../../api/courtBlocks';
+import { getAvailableSlots } from '../../api/slots';
 import { EmptyState } from '../common/EmptyState';
+import { ManagerMetricsCards } from './ManagerMetricsCards';
 
-export function ManagerScheduleView({ courts = [], onOpenManualModal }) {
-  const { colors, isDark } = useTheme();
+export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBlockModal, refreshKey }) {
+  const { colors } = useTheme();
 
   const getTodayStr = () => new Date().toISOString().split('T')[0];
 
@@ -43,15 +47,16 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal }) {
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
 
   const [bookings, setBookings] = useState([]);
+  const [courtBlocks, setCourtBlocks] = useState([]);
+  const [courtSlotsMap, setCourtSlotsMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  // Horários operacionais padrão para a grade visual (07:00 às 22:00)
-  const timeSlots = [
-    '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
-    '13:00', '14:00', '15:00', '16:00', '17:00', '18:00',
-    '19:00', '20:00', '21:00', '22:00'
+  // Lista de quadras ativas
+  const activeCourtsList = courts.length > 0 ? courts : [
+    { id: 1, name: 'Quadra Society 1 - Grama FIFA 50mm', hourly_rate: 150 },
+    { id: 2, name: 'Quadra Society 2 - Coberta VIP', hourly_rate: 180 },
   ];
 
   // Gera lista de datas para atalhos rápidos (Próximos 7 dias)
@@ -77,25 +82,76 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal }) {
     setError(null);
 
     try {
-      const response = await getUserBookings({ date: selectedDate });
-      const list = response?.data || (Array.isArray(response) ? response : []);
+      const [bookingsRes, blocksRes] = await Promise.all([
+        getUserBookings({ date: selectedDate }),
+        getCourtBlocks({ date: selectedDate }),
+      ]);
+      const list = bookingsRes?.data || (Array.isArray(bookingsRes) ? bookingsRes : []);
+      const blocksList = blocksRes?.data || (Array.isArray(blocksRes) ? blocksRes : []);
       setBookings(list);
+      setCourtBlocks(blocksList);
+
+      // Busca a grade real de slots e turnos de cada quadra ativada para o gestor
+      if (activeCourtsList.length > 0) {
+        const slotsResults = await Promise.all(
+          activeCourtsList.map(async (court) => {
+            try {
+              const res = await getAvailableSlots(court.id, selectedDate, { includePast: true });
+              return { courtId: court.id, slotsData: res };
+            } catch (err) {
+              console.warn(`Erro ao carregar slots da quadra ${court.id}:`, err);
+              return { courtId: court.id, slotsData: { slots: [], operating: false } };
+            }
+          })
+        );
+
+        const newSlotsMap = {};
+        slotsResults.forEach((item) => {
+          newSlotsMap[item.courtId] = item.slotsData;
+        });
+        setCourtSlotsMap(newSlotsMap);
+      }
     } catch (err) {
-      console.error('Erro ao carregar agenda do gestor:', err);
+      console.error('Erro ao carregar agenda e bloqueios do gestor:', err);
       setError('Não foi possível carregar os agendamentos da data selecionada.');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [selectedDate]);
+  }, [selectedDate, activeCourtsList]);
 
   useEffect(() => {
     fetchScheduleData();
-  }, [fetchScheduleData]);
+  }, [fetchScheduleData, refreshKey]);
 
   const handleRefresh = () => {
     setRefreshing(true);
     fetchScheduleData(true);
+  };
+
+  const handleRemoveBlock = (block) => {
+    const doUnblock = async () => {
+      try {
+        await deleteCourtBlock(block.id);
+        setCourtBlocks((prev) => prev.filter((b) => b.id !== block.id));
+        fetchScheduleData(true);
+      } catch (err) {
+        console.error('Erro ao remover bloqueio:', err);
+      }
+    };
+
+    const confirmMsg = `Remover o bloqueio "${block.reason || 'Manutenção'}" na quadra? O horário voltará a ficar disponível.`;
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(confirmMsg)) {
+        doUnblock();
+      }
+    } else {
+      Alert.alert('Desbloquear Quadra', confirmMsg, [
+        { text: 'Manter Bloqueado', style: 'cancel' },
+        { text: 'Liberar Quadra', style: 'destructive', onPress: doUnblock },
+      ]);
+    }
   };
 
   const handleCancelBooking = (booking) => {
@@ -105,6 +161,7 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal }) {
         setBookings((prev) =>
           prev.map((b) => (b.id === booking.id ? { ...b, status: 'cancelled' } : b))
         );
+        fetchScheduleData(true);
       } catch (err) {
         console.error('Erro ao cancelar reserva:', err);
       }
@@ -128,12 +185,6 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal }) {
     }
   };
 
-  // Filtragem local por quadra
-  const activeCourtsList = courts.length > 0 ? courts : [
-    { id: 1, name: 'Quadra Society 1 - Coberta', hourly_rate: 140 },
-    { id: 2, name: 'Quadra de Saibro A - Coberta', hourly_rate: 180 },
-  ];
-
   const visibleCourts = selectedCourtId === 'ALL'
     ? activeCourtsList
     : activeCourtsList.filter((c) => String(c.id) === String(selectedCourtId));
@@ -143,15 +194,15 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal }) {
     return String(b.court_id) === String(selectedCourtId);
   });
 
-  // Métricas do Dia
-  const confirmedCount = filteredBookings.filter((b) => b.status !== 'cancelled').length;
-  const manualCount = filteredBookings.filter((b) => b.is_manual && b.status !== 'cancelled').length;
-
   return (
     <View style={styles.container}>
-      {/* Seletor de Datas (Grade FlexWrap para Desktop e Mobile) */}
+      {/* Seletor de Datas (Chips Horizontais) */}
       <View style={[styles.datesContainer, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <View style={styles.datesWrapContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.datesScrollContent}
+        >
           {dateChips.map((chip) => {
             const isSelected = selectedDate === chip.dateStr;
             return (
@@ -176,17 +227,21 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal }) {
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
 
-        {/* Filtro por Quadra (FlexWrap) */}
+        {/* Filtro por Quadra */}
         {activeCourtsList.length > 0 ? (
-          <View style={styles.courtFilterWrapContainer}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.courtFilterScrollContainer}
+          >
             <TouchableOpacity
               onPress={() => setSelectedCourtId('ALL')}
               style={[
                 styles.courtFilterChip,
                 {
-                  backgroundColor: selectedCourtId === 'ALL' ? colors.primary + '20' : 'transparent',
+                  backgroundColor: selectedCourtId === 'ALL' ? colors.primary : colors.background,
                   borderColor: selectedCourtId === 'ALL' ? colors.primary : colors.border,
                 },
               ]}
@@ -194,7 +249,7 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal }) {
               <Text
                 style={[
                   styles.courtFilterText,
-                  { color: selectedCourtId === 'ALL' ? colors.primary : colors.textMuted },
+                  { color: selectedCourtId === 'ALL' ? '#FFFFFF' : colors.text },
                 ]}
               >
                 Todas as Quadras
@@ -210,7 +265,7 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal }) {
                   style={[
                     styles.courtFilterChip,
                     {
-                      backgroundColor: isSelected ? colors.primary + '20' : 'transparent',
+                      backgroundColor: isSelected ? colors.primary : colors.background,
                       borderColor: isSelected ? colors.primary : colors.border,
                     },
                   ]}
@@ -218,7 +273,7 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal }) {
                   <Text
                     style={[
                       styles.courtFilterText,
-                      { color: isSelected ? colors.primary : colors.textMuted },
+                      { color: isSelected ? '#FFFFFF' : colors.text },
                     ]}
                   >
                     {court.name}
@@ -226,16 +281,21 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal }) {
                 </TouchableOpacity>
               );
             })}
-          </View>
+          </ScrollView>
         ) : null}
       </View>
 
-      {/* Faixa de Métricas + Alternador de Modo (Grid Matrix vs Lista) */}
+      {/* Faixa de Ações + Alternador de Modo (Grid Matrix vs Lista) */}
       <View style={styles.metricsBar}>
         <View style={styles.metricsLeft}>
-          <Text style={[styles.metricsText, { color: colors.text }]}>
-            <Text style={{ fontWeight: '800' }}>{confirmedCount}</Text> reservas no dia ({manualCount} balcão)
-          </Text>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={onOpenBlockModal}
+            style={[styles.blockBtnHeader, { backgroundColor: colors.error + '18', borderColor: colors.error + '40' }]}
+          >
+            <ShieldAlert size={14} color={colors.error} style={{ marginRight: 4 }} />
+            <Text style={[styles.blockBtnHeaderText, { color: colors.error }]}>Bloquear Horários</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.viewToggleContainer}>
@@ -295,7 +355,7 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal }) {
 
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: colors.error }]} />
-            <Text style={[styles.legendText, { color: colors.textMuted }]}>Cancelado</Text>
+            <Text style={[styles.legendText, { color: colors.textMuted }]}>Bloqueado (Manutenção)</Text>
           </View>
         </View>
       ) : null}
@@ -313,7 +373,7 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal }) {
             <Text style={[styles.errorText, { color: colors.text }]}>{error}</Text>
           </View>
         ) : viewMode === 'grid' ? (
-          /* Visão em GRADE MATRIX / TIMELINE */
+          /* Visão em GRADE MATRIX / TIMELINE DINÂMICA */
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.gridScrollContent}
@@ -330,12 +390,14 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal }) {
               <CourtMatrixRow
                 key={court.id}
                 court={court}
-                timeSlots={timeSlots}
+                courtSlotsData={courtSlotsMap[court.id]}
                 selectedDate={selectedDate}
                 bookings={bookings.filter((b) => String(b.court_id) === String(court.id))}
+                courtBlocks={courtBlocks.filter((cb) => String(cb.court_id) === String(court.id))}
                 onSlotClick={(slotInfo) => {
-                  if (slotInfo.booking) {
-                    // Clicou em agendamento existente -> Exibe detalhes ou opção de cancelar
+                  if (slotInfo.block) {
+                    handleRemoveBlock(slotInfo.block);
+                  } else if (slotInfo.booking) {
                     const b = slotInfo.booking;
                     const client = b.customer_name || b.user?.name || 'Cliente';
                     const origin = b.is_manual ? 'Balcão / Presencial' : 'Aplicativo';
@@ -356,7 +418,7 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal }) {
                       );
                     }
                   } else {
-                    // Clicou em slot LIVRE -> Abre modal com quadra e horário pré-selecionados!
+                    // Clicou em slot LIVRE -> Abre modal de agendamento presencial/balcão
                     onOpenManualModal?.({
                       courtId: court.id,
                       startTime: slotInfo.startTime,
@@ -401,18 +463,26 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal }) {
 }
 
 /**
- * Componente que renderiza a matriz de horários em grade (bloco multi-colunas) para uma quadra específica.
+ * Componente que renderiza a matriz de horários verdadeiramente dinâmica para uma quadra.
  */
-function CourtMatrixRow({ court, timeSlots, selectedDate, bookings, onSlotClick }) {
+function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBlocks = [], onSlotClick }) {
   const { colors } = useTheme();
 
-  // Contadores para o header da quadra
+  const slots = courtSlotsData?.slots || [];
+  const isOperating = courtSlotsData?.operating !== false;
+
   let freeCount = 0;
   let bookedCount = 0;
+  let blockedCount = 0;
 
-  timeSlots.forEach((time) => {
-    const b = bookings.find((bk) => bk.start_time?.substring(11, 16) === time);
-    if (b && b.status !== 'cancelled') {
+  slots.forEach((slot) => {
+    const slotStartStr = slot.start_time?.substring(11, 16);
+    const isBlocked = slot.blocked || courtBlocks.some((cb) => cb.start_time?.substring(11, 16) === slotStartStr);
+    const b = bookings.find((bk) => bk.start_time?.substring(11, 16) === slotStartStr);
+
+    if (isBlocked) {
+      blockedCount++;
+    } else if (b && b.status !== 'cancelled') {
       bookedCount++;
     } else {
       freeCount++;
@@ -422,86 +492,156 @@ function CourtMatrixRow({ court, timeSlots, selectedDate, bookings, onSlotClick 
   return (
     <View style={[styles.matrixCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       <View style={[styles.matrixCardHeader, { borderBottomColor: colors.border }]}>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={[styles.matrixCourtName, { color: colors.text }]}>{court.name}</Text>
-          <Text style={[styles.matrixCourtStats, { color: colors.textMuted }]}>
-            {freeCount} disponíveis • {bookedCount} ocupados
+          {isOperating && slots.length > 0 ? (
+            <Text style={[styles.matrixCourtStats, { color: colors.textMuted }]}>
+              {freeCount} livres • {bookedCount} ocupados {blockedCount > 0 ? `• ${blockedCount} bloqueados` : ''}
+            </Text>
+          ) : (
+            <Text style={[styles.matrixCourtStats, { color: colors.error }]}>
+              Sem turnos de funcionamento para este dia (Quadra Fechada)
+            </Text>
+          )}
+        </View>
+      </View>
+
+      {!isOperating || slots.length === 0 ? (
+        <View style={styles.closedCourtContainer}>
+          <Clock size={20} color={colors.textMuted} style={{ marginBottom: 6 }} />
+          <Text style={[styles.closedCourtText, { color: colors.textMuted }]}>
+            Nenhum turno de funcionamento configurado para este dia da semana.
           </Text>
         </View>
-        <Text style={[styles.matrixCourtPrice, { color: colors.primary }]}>
-          R$ {court.hourly_rate ? parseFloat(court.hourly_rate).toFixed(0) : '140'}/h
-        </Text>
-      </View>
+      ) : (
+        <View style={styles.gridWrapContainer}>
+          {slots.map((slot) => {
+            const slotStartStr = slot.start_time?.substring(11, 16);
+            const slotEndStr = slot.end_time?.substring(11, 16);
+            const displayTime = slot.formatted_time || `${slotStartStr} - ${slotEndStr}`;
 
-      <View style={styles.gridWrapContainer}>
-        {timeSlots.map((time) => {
-          const hour = parseInt(time.split(':')[0], 10);
-          const nextHourStr = `${String(hour + 1).padStart(2, '0')}:00`;
+            const matchingBlock = courtBlocks.find((cb) => cb.start_time?.substring(11, 16) === slotStartStr);
+            const matchingBooking = bookings.find((b) => b.start_time?.substring(11, 16) === slotStartStr);
 
-          // Busca booking correspondente a este slot de 1 hora
-          const matchingBooking = bookings.find((b) => {
-            const bStart = b.start_time?.substring(11, 16);
-            return bStart === time;
-          });
-
-          let status = 'free'; // 'free' | 'booked_manual' | 'booked_app' | 'cancelled'
-          if (matchingBooking) {
-            if (matchingBooking.status === 'cancelled') {
-              status = 'cancelled';
-            } else if (matchingBooking.is_manual) {
-              status = 'booked_manual';
-            } else {
-              status = 'booked_app';
+            let status = 'free';
+            if (matchingBlock || slot.blocked) {
+              status = 'blocked';
+            } else if (matchingBooking) {
+              if (matchingBooking.status === 'cancelled') {
+                status = 'cancelled';
+              } else if (matchingBooking.is_manual) {
+                status = 'booked_manual';
+              } else {
+                status = 'booked_app';
+              }
             }
-          }
 
-          return (
-            <TouchableOpacity
-              key={time}
-              activeOpacity={0.7}
-              onPress={() => onSlotClick({ startTime: time, endTime: nextHourStr, booking: matchingBooking })}
-              style={[
-                styles.matrixSlotTile,
-                status === 'free' && { backgroundColor: '#10B98112', borderColor: '#10B98150' },
-                status === 'booked_manual' && { backgroundColor: '#8B5CF620', borderColor: '#8B5CF6' },
-                status === 'booked_app' && { backgroundColor: '#3B82F620', borderColor: '#3B82F6' },
-                status === 'cancelled' && { backgroundColor: colors.error + '15', borderColor: colors.error + '40' },
-              ]}
-            >
-              <View style={styles.tileHeaderRow}>
-                <Clock size={11} color={colors.textMuted} style={{ marginRight: 3 }} />
-                <Text style={[styles.slotTimeText, { color: colors.text }]}>{time}</Text>
-              </View>
+            // Determina o preço específico deste horário (slot)
+            const slotPrice = slot.price !== undefined && slot.price !== null
+              ? slot.price
+              : court.hourly_rate
+              ? parseFloat(court.hourly_rate)
+              : 150;
+            const formattedPrice = `R$ ${Math.round(slotPrice)}`;
 
-              {status === 'free' ? (
-                <View style={styles.slotFreeContent}>
-                  <PlusCircle size={13} color="#10B981" />
-                  <Text style={styles.slotFreeText}>Livre</Text>
+            return (
+              <TouchableOpacity
+                key={slot.start_time || displayTime}
+                activeOpacity={0.7}
+                onPress={() =>
+                  onSlotClick({
+                    startTime: slotStartStr,
+                    endTime: slotEndStr,
+                    booking: matchingBooking,
+                    block: matchingBlock,
+                    slot: slot,
+                  })
+                }
+                style={[
+                  styles.matrixSlotTile,
+                  status === 'free' && { backgroundColor: '#10B98112', borderColor: '#10B98150' },
+                  status === 'booked_manual' && { backgroundColor: '#8B5CF620', borderColor: '#8B5CF6' },
+                  status === 'booked_app' && { backgroundColor: '#3B82F620', borderColor: '#3B82F6' },
+                  status === 'cancelled' && { backgroundColor: colors.error + '15', borderColor: colors.error + '40' },
+                  status === 'blocked' && { backgroundColor: colors.error + '25', borderColor: colors.error },
+                ]}
+              >
+                {/* Linha Superior: Horário + Preço Dinâmico do Slot */}
+                <View style={styles.tileHeaderRow}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Clock size={11} color={colors.textMuted} style={{ marginRight: 3 }} />
+                    <Text style={[styles.slotTimeText, { color: colors.text }]}>{displayTime}</Text>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.slotPricePill,
+                      {
+                        backgroundColor:
+                          status === 'free'
+                            ? '#10B98120'
+                            : status === 'blocked'
+                            ? colors.error + '20'
+                            : colors.primary + '20',
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.slotPricePillText,
+                        {
+                          color:
+                            status === 'free'
+                              ? '#059669'
+                              : status === 'blocked'
+                              ? colors.error
+                              : colors.primary,
+                        },
+                      ]}
+                    >
+                      {formattedPrice}
+                    </Text>
+                  </View>
                 </View>
-              ) : status === 'booked_manual' ? (
-                <View style={styles.slotBookedContent}>
-                  <Store size={13} color="#8B5CF6" />
-                  <Text numberOfLines={1} style={[styles.slotClientText, { color: '#8B5CF6' }]}>
-                    {matchingBooking.customer_name?.split(' ')[0] || 'Balcão'}
-                  </Text>
-                </View>
-              ) : status === 'booked_app' ? (
-                <View style={styles.slotBookedContent}>
-                  <Smartphone size={13} color="#3B82F6" />
-                  <Text numberOfLines={1} style={[styles.slotClientText, { color: '#3B82F6' }]}>
-                    {(matchingBooking.customer_name || matchingBooking.user?.name)?.split(' ')[0] || 'App'}
-                  </Text>
-                </View>
-              ) : (
-                <View style={styles.slotBookedContent}>
-                  <XCircle size={13} color={colors.error} />
-                  <Text style={[styles.slotClientText, { color: colors.error }]}>Canc.</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+
+                {/* Conteúdo / Status do Horário */}
+                {status === 'blocked' ? (
+                  <View style={styles.slotBookedContent}>
+                    <ShieldAlert size={13} color={colors.error} />
+                    <Text numberOfLines={1} style={[styles.slotClientText, { color: colors.error }]}>
+                      {slot.block_reason || matchingBlock?.reason || 'Bloqueado'}
+                    </Text>
+                  </View>
+                ) : status === 'free' ? (
+                  <View style={styles.slotFreeContent}>
+                    <PlusCircle size={13} color="#10B981" />
+                    <Text style={styles.slotFreeText}>Livre</Text>
+                  </View>
+                ) : status === 'booked_manual' ? (
+                  <View style={styles.slotBookedContent}>
+                    <Store size={13} color="#8B5CF6" />
+                    <Text numberOfLines={1} style={[styles.slotClientText, { color: '#8B5CF6' }]}>
+                      {matchingBooking.customer_name?.split(' ')[0] || 'Balcão'}
+                    </Text>
+                  </View>
+                ) : status === 'booked_app' ? (
+                  <View style={styles.slotBookedContent}>
+                    <Smartphone size={13} color="#3B82F6" />
+                    <Text numberOfLines={1} style={[styles.slotClientText, { color: '#3B82F6' }]}>
+                      {(matchingBooking.customer_name || matchingBooking.user?.name)?.split(' ')[0] || 'App'}
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.slotBookedContent}>
+                    <XCircle size={13} color={colors.error} />
+                    <Text style={[styles.slotClientText, { color: colors.error }]}>Canc.</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
     </View>
   );
 }
@@ -530,7 +670,6 @@ function BookingScheduleCard({ booking, onCancel }) {
       ]}
     >
       <View style={styles.cardHeader}>
-        {/* Slot Time Badge */}
         <View style={[styles.timeBadge, { backgroundColor: colors.primary + '18' }]}>
           <Clock size={16} color={colors.primary} style={{ marginRight: 6 }} />
           <Text style={[styles.timeBadgeText, { color: colors.primary }]}>
@@ -538,7 +677,6 @@ function BookingScheduleCard({ booking, onCancel }) {
           </Text>
         </View>
 
-        {/* Origin Badge (App vs Balcão) */}
         <View
           style={[
             styles.originBadge,
@@ -560,7 +698,6 @@ function BookingScheduleCard({ booking, onCancel }) {
           </Text>
         </View>
 
-        {/* Status Badge */}
         {isCancelled ? (
           <View style={[styles.statusBadge, { backgroundColor: colors.error + '18' }]}>
             <XCircle size={14} color={colors.error} style={{ marginRight: 4 }} />
@@ -627,9 +764,8 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
     borderBottomWidth: 1,
   },
-  datesWrapContainer: {
+  datesScrollContent: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     paddingHorizontal: theme.spacing.md,
     gap: 8,
     paddingBottom: theme.spacing.xs,
@@ -652,16 +788,16 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginTop: 2,
   },
-  courtFilterWrapContainer: {
+  courtFilterScrollContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     paddingHorizontal: theme.spacing.md,
-    gap: 6,
+    gap: 8,
     paddingTop: theme.spacing.xs,
+    paddingBottom: 4,
   },
   courtFilterChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     borderRadius: theme.radius.full,
     borderWidth: 1,
   },
@@ -673,14 +809,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 8,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
   },
   metricsLeft: {
     flex: 1,
   },
-  metricsText: {
-    fontSize: theme.typography.sizes.body2,
+  blockBtnHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+  },
+  blockBtnHeaderText: {
+    fontSize: 12,
+    fontWeight: '800',
   },
   viewToggleContainer: {
     flexDirection: 'row',
@@ -720,26 +868,36 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   legendText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
   },
   listContainer: {
     flex: 1,
   },
+  centerContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.xl,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: theme.typography.sizes.body2,
+  },
+  errorText: {
+    marginTop: 12,
+    fontSize: theme.typography.sizes.body2,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
   gridScrollContent: {
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.md,
+    padding: theme.spacing.md,
     gap: theme.spacing.md,
   },
   matrixCard: {
     borderRadius: theme.radius.lg,
     borderWidth: 1,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
   },
   matrixCardHeader: {
     flexDirection: 'row',
@@ -754,34 +912,55 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   matrixCourtStats: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '600',
     marginTop: 2,
   },
   matrixCourtPrice: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body1,
     fontWeight: '800',
+  },
+  closedCourtContainer: {
+    padding: theme.spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closedCourtText: {
+    fontSize: theme.typography.sizes.caption,
+    fontStyle: 'italic',
+    textAlign: 'center',
   },
   gridWrapContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    padding: theme.spacing.sm,
     gap: 8,
+    padding: theme.spacing.md,
   },
   matrixSlotTile: {
-    width: '23%', // 4 colunas em cada linha da quadra
-    minWidth: 74,
-    height: 60,
+    width: '48%',
+    minWidth: 140,
+    flexGrow: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
     borderRadius: theme.radius.md,
-    borderWidth: 1.5,
-    padding: 6,
-    justifyContent: 'space-between',
+    borderWidth: 1,
   },
   tileHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
   },
   slotTimeText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  slotPricePill: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: theme.radius.xs || 4,
+  },
+  slotPricePillText: {
     fontSize: 11,
     fontWeight: '800',
   },
@@ -801,58 +980,35 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   slotClientText: {
-    fontSize: 10,
-    fontWeight: '800',
+    fontSize: 11,
+    fontWeight: '700',
     flex: 1,
   },
   listPadding: {
-    paddingHorizontal: theme.spacing.md,
-    paddingBottom: theme.spacing.xl,
-    paddingTop: theme.spacing.xs,
-  },
-  centerContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: theme.spacing.xl,
-  },
-  loadingText: {
-    marginTop: theme.spacing.md,
-    fontSize: theme.typography.sizes.body2,
-  },
-  errorText: {
-    marginTop: theme.spacing.md,
-    fontSize: theme.typography.sizes.body2,
-    textAlign: 'center',
+    padding: theme.spacing.md,
+    gap: theme.spacing.md,
   },
   cardContainer: {
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
-    marginBottom: theme.spacing.md,
     padding: theme.spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: 6,
     marginBottom: theme.spacing.sm,
+    gap: 6,
   },
   timeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: theme.radius.md,
+    paddingVertical: 4,
+    borderRadius: theme.radius.sm,
   },
   timeBadgeText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
   },
   originBadge: {
@@ -860,28 +1016,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: theme.radius.full,
+    borderRadius: theme.radius.sm,
   },
   originBadgeText: {
     fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 0.5,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: theme.radius.full,
+    borderRadius: theme.radius.sm,
   },
   statusBadgeText: {
     fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 0.5,
   },
   cardBody: {
-    gap: 4,
-    marginBottom: theme.spacing.sm,
+    gap: 6,
   },
   courtNameText: {
     fontSize: theme.typography.sizes.body1,
@@ -894,15 +1047,14 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: theme.typography.sizes.body2,
-    fontWeight: '500',
   },
   cardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: theme.spacing.sm,
     paddingTop: theme.spacing.sm,
     borderTopWidth: 1,
-    marginTop: 4,
   },
   priceText: {
     fontSize: theme.typography.sizes.body1,

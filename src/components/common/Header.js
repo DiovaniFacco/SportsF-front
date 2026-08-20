@@ -1,40 +1,26 @@
 import React from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Platform } from 'react-native';
-import { Search, X, SlidersHorizontal, Sun, Moon, LogIn, LogOut, User, Building2 } from 'lucide-react-native';
+import { Search, X, SlidersHorizontal, LogIn, LogOut, User, Building2 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { theme } from '../../styles/theme';
 
 export function Header({ searchValue, setSearchValue, onOpenFilter, onOpenAuth, onOpenManager }) {
-  const { colors, isDark, toggleTheme } = useTheme();
+  const { colors } = useTheme();
   const { user, isAuthenticated, logout } = useAuth();
 
   const userName = user?.name ? user.name.split(' ')[0] : 'Esportista';
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
-      {/* Top Bar: Brand Logo & Controls (Theme Toggle + Auth Status) */}
+      {/* Top Bar: Brand Logo & Controls (Auth Status) */}
       <View style={styles.topBar}>
         <View style={styles.logoContainer}>
-          <Text style={[styles.letraS, { color: colors.letraS, textShadowColor: isDark ? 'rgba(251, 113, 133, 0.4)' : 'rgba(136, 19, 55, 0.4)' }]}>S</Text>
+          <Text style={[styles.letraS, { color: colors.letraS, textShadowColor: 'rgba(136, 19, 55, 0.4)' }]}>S</Text>
           <Text style={[styles.brandName, { color: colors.brandName }]}>facco</Text>
         </View>
 
         <View style={styles.rightActions}>
-          {/* Theme Toggle Button */}
-          <TouchableOpacity
-            activeOpacity={0.75}
-            onPress={toggleTheme}
-            style={[styles.themeBtn, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-            accessibilityLabel={isDark ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
-          >
-            {isDark ? (
-              <Sun size={18} color="#F59E0B" />
-            ) : (
-              <Moon size={18} color={colors.textPrimary} />
-            )}
-          </TouchableOpacity>
-
           {/* Botão de Painel de Gestão para Gestores */}
           {user && (user.role === 'GESTOR_ESPACO' || user.role === 'ADMIN') ? (
             <TouchableOpacity

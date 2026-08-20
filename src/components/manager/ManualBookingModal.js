@@ -11,7 +11,7 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import { X, Calendar, Clock, User, Phone, FileText, CheckCircle2 } from 'lucide-react-native';
+import { X, Calendar, Clock, User, Phone, FileText, CheckCircle2, ShieldAlert } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { createBooking } from '../../api/bookings';
@@ -25,8 +25,9 @@ export function ManualBookingModal({
   initialStartTime = '18:00',
   initialEndTime = '19:00',
   initialDate = null,
+  onOpenBlockModal,
 }) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   const getTodayStr = () => new Date().toISOString().split('T')[0];
 
@@ -296,6 +297,29 @@ export function ManualBookingModal({
               <Text style={[styles.cancelBtnText, { color: colors.text }]}>Cancelar</Text>
             </TouchableOpacity>
 
+            {onOpenBlockModal ? (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => {
+                  onClose();
+                  onOpenBlockModal({
+                    courtId: selectedCourtId,
+                    startTime,
+                    endTime,
+                    date,
+                  });
+                }}
+                style={[
+                  styles.blockBtn,
+                  { backgroundColor: colors.error + '18', borderColor: colors.error + '40' },
+                ]}
+                disabled={submitting}
+              >
+                <ShieldAlert size={16} color={colors.error} style={{ marginRight: 6 }} />
+                <Text style={[styles.blockBtnText, { color: colors.error }]}>Bloquear Horário</Text>
+              </TouchableOpacity>
+            ) : null}
+
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={handleSubmit}
@@ -440,7 +464,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    gap: theme.spacing.md,
+    flexWrap: 'wrap',
+    gap: theme.spacing.sm,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
     borderTopWidth: 1,
@@ -454,6 +479,18 @@ const styles = StyleSheet.create({
   cancelBtnText: {
     fontSize: theme.typography.sizes.body2,
     fontWeight: '600',
+  },
+  blockBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 12,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+  },
+  blockBtnText: {
+    fontSize: theme.typography.sizes.body2,
+    fontWeight: '700',
   },
   submitBtn: {
     flexDirection: 'row',

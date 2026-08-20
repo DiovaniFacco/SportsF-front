@@ -1,33 +1,42 @@
-import axios from 'axios';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+import apiClient from './client';
+import { mockCourtBlocks } from './courtBlocks';
 
 /**
- * Busca a grade de horários disponíveis para uma quadra em uma data específica (YYYY-MM-DD).
+ * Busca a grade de horários e turnos de funcionamento disponíveis para uma quadra em uma data específica (YYYY-MM-DD).
+ * @param {number|string} courtId
+ * @param {string} dateStr
+ * @param {Object} options { includePast?: boolean }
  */
-export async function getAvailableSlots(courtId, dateStr) {
+export async function getAvailableSlots(courtId, dateStr, options = {}) {
+  const includePast = Boolean(options.includePast);
   try {
-    const response = await axios.get(`${API_URL}/courts/${courtId}/available-slots`, {
-      timeout: 3000,
-      params: { date: dateStr },
+    const response = await apiClient.get(`/courts/${courtId}/available-slots`, {
+      params: {
+        date: dateStr,
+        include_past: includePast ? 1 : 0,
+      },
     });
 
     if (response.data && Array.isArray(response.data.slots)) {
-      const now = new Date();
-      response.data.slots = response.data.slots.filter(s => new Date(s.start_time.replace(' ', 'T')) > now);
+      if (!includePast) {
+        const now = new Date();
+        response.data.slots = response.data.slots.filter(
+          (s) => new Date(s.start_time.replace(' ', 'T')) > now
+        );
+      }
       return response.data;
     }
-    return generateMockSlots(courtId, dateStr);
+    return generateMockSlots(courtId, dateStr, includePast);
   } catch (error) {
-    console.warn(`Erro ao buscar horários da quadra ${courtId} para ${dateStr}, utilizando dados mockados:`, error.message);
-    return generateMockSlots(courtId, dateStr);
+    console.warn(`Erro ao buscar horários da quadra ${courtId} para ${dateStr}:`, error.message);
+    return generateMockSlots(courtId, dateStr, includePast);
   }
 }
 
 /**
  * Gerador de dados mockados realistas para horários de quadra.
  */
-function generateMockSlots(courtId, dateStr) {
+function generateMockSlots(courtId, dateStr, includePast = false) {
   const baseDate = dateStr || new Date().toISOString().split('T')[0];
   const dateObj = new Date(baseDate + 'T12:00:00');
   const dayOfWeek = dateObj.getDay();
@@ -46,8 +55,8 @@ function generateMockSlots(courtId, dateStr) {
     const fullEnd = `${baseDate} ${endStr}:00`;
 
     const slotStartDate = new Date(`${baseDate}T${startStr}:00`);
-    if (slotStartDate <= now) {
-      continue; // Ignora horários que já passaram
+    if (!includePast && slotStartDate <= now) {
+      continue; // Ignora horários que já passaram se não solicitado
     }
 
     // Horários de pico (18h às 22h) têm acréscimo no valor
@@ -55,14 +64,21 @@ function generateMockSlots(courtId, dateStr) {
     const basePrice = 140;
     const price = isPeakHour ? basePrice + 30 : basePrice;
 
-    // Simulação de ocupação realista
     const seed = (Number(courtId) * 17 + hour * 7 + dayOfWeek * 13) % 10;
     
     let available = true;
     let blocked = false;
     let block_reason = null;
 
-    if (seed === 0 || seed === 3) {
+    const activeMockBlock = (mockCourtBlocks || []).find(
+      (b) => String(b.court_id) === String(courtId) && b.start_time && b.start_time.startsWith(`${baseDate} ${startStr}`)
+    );
+
+    if (activeMockBlock) {
+      available = false;
+      blocked = true;
+      block_reason = activeMockBlock.reason || 'Quadra bloqueada';
+    } else if (seed === 0 || seed === 3) {
       available = false;
       blocked = false;
     } else if (seed === 7 && hour === 12) {

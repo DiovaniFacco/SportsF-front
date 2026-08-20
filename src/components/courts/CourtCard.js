@@ -76,17 +76,8 @@ export function CourtCard({ court, onSelectCourt }) {
           ) : null}
         </View>
 
-        {/* Footer Info (Price + CTA) */}
+        {/* Footer Info (CTA) */}
         <View style={[styles.cardFooter, { borderTopColor: colors.borderSubtle }]}>
-          <View style={styles.priceContainer}>
-            <Text style={[styles.priceLabel, { color: colors.textMuted }]}>valor por hora</Text>
-            <View style={styles.priceRow}>
-              <Text style={[styles.currency, { color: colors.primary }]}>R$</Text>
-              <Text style={[styles.priceValue, { color: colors.textPrimary }]}>{Math.round(court.hourly_rate)}</Text>
-              <Text style={[styles.perHour, { color: colors.textSecondary }]}>/hora</Text>
-            </View>
-          </View>
-
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={() => onSelectCourt && onSelectCourt(court)}
@@ -180,35 +171,10 @@ const styles = StyleSheet.create({
   },
   cardFooter: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     paddingTop: theme.spacing.sm,
     borderTopWidth: 1,
-  },
-  priceContainer: {
-    justifyContent: 'center',
-  },
-  priceLabel: {
-    fontSize: 11,
-    marginBottom: 1,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  currency: {
-    fontSize: 12,
-    fontWeight: '700',
-    marginRight: 2,
-  },
-  priceValue: {
-    fontSize: 22,
-    fontWeight: '800',
-    fontVariant: ['tabular-nums'],
-  },
-  perHour: {
-    fontSize: 12,
-    marginLeft: 2,
   },
   ctaButton: {
     flexDirection: 'row',

@@ -11,13 +11,12 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  ScrollView,
 } from 'react-native';
 import {
   Building2,
   Plus,
   RefreshCw,
-  Sun,
-  Moon,
   LogOut,
   Calendar,
   Layers,
@@ -25,6 +24,7 @@ import {
   ShieldCheck,
   ArrowLeft,
   DollarSign,
+  BarChart3,
 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -34,12 +34,16 @@ import { getCourtsByVenue, deleteCourt } from '../../api/courts';
 import { ManagerCourtCard } from '../../components/manager/ManagerCourtCard';
 import { CourtFormModal } from '../../components/manager/CourtFormModal';
 import { ManagerScheduleView } from '../../components/manager/ManagerScheduleView';
+import { ManagerMetricsView } from '../../components/manager/ManagerMetricsView';
 import { ManualBookingModal } from '../../components/manager/ManualBookingModal';
+import { CourtBlockModal } from '../../components/manager/CourtBlockModal';
+import { CourtOperatingHoursModal } from '../../components/manager/CourtOperatingHoursModal';
+import { CourtPricingModal } from '../../components/manager/CourtPricingModal';
 import { EmptyState } from '../../components/common/EmptyState';
 import { ErrorState } from '../../components/common/ErrorState';
 
 export function ManagerHomeScreen({ onBackToUserView }) {
-  const { colors, isDark, toggleTheme } = useTheme();
+  const { colors } = useTheme();
   const { user, logout } = useAuth();
 
   const [activeVenue, setActiveVenue] = useState(null);
@@ -55,11 +59,39 @@ export function ManagerHomeScreen({ onBackToUserView }) {
   const [editingCourt, setEditingCourt] = useState(null);
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const [manualModalParams, setManualModalParams] = useState(null);
+  const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
+  const [blockModalParams, setBlockModalParams] = useState(null);
+
+  const [hoursCourt, setHoursCourt] = useState(null);
+  const [isHoursModalOpen, setIsHoursModalOpen] = useState(false);
+  const [pricingCourt, setPricingCourt] = useState(null);
+  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
+
+  const [scheduleRefreshKey, setScheduleRefreshKey] = useState(0);
 
   const handleOpenManualModal = (params = null) => {
     setManualModalParams(params);
     setIsManualModalOpen(true);
   };
+
+  const handleOpenBlockModal = (params = null) => {
+    setBlockModalParams(params);
+    setIsBlockModalOpen(true);
+  };
+
+  const handleOpenHoursModal = (court) => {
+    setHoursCourt(court);
+    setIsHoursModalOpen(true);
+  };
+
+  const handleOpenPricingModal = (court) => {
+    setPricingCourt(court);
+    setIsPricingModalOpen(true);
+  };
+
+  const handleScheduleRefresh = useCallback(() => {
+    setScheduleRefreshKey((prev) => prev + 1);
+  }, []);
 
 
   const fetchManagerData = useCallback(async (isRefresh = false) => {
@@ -146,7 +178,7 @@ export function ManagerHomeScreen({ onBackToUserView }) {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.surface} />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.surface} />
 
       <View style={styles.mainWrapper}>
         {/* Header Superior do Gestor */}
@@ -166,12 +198,6 @@ export function ManagerHomeScreen({ onBackToUserView }) {
             </View>
 
             <View style={styles.headerActions}>
-              <TouchableOpacity
-                onPress={toggleTheme}
-                style={[styles.iconBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
-              >
-                {isDark ? <Sun size={18} color="#EAB308" /> : <Moon size={18} color={colors.text} />}
-              </TouchableOpacity>
 
               {onBackToUserView ? (
                 <TouchableOpacity
@@ -191,35 +217,13 @@ export function ManagerHomeScreen({ onBackToUserView }) {
             </View>
           </View>
 
-          {/* Cards de Métricas e Resumo */}
-          <View style={styles.statsContainer}>
-            <View style={[styles.statCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <Layers size={18} color={colors.primary} />
-              <View style={styles.statContent}>
-                <Text style={[styles.statValue, { color: colors.text }]}>{totalCourts}</Text>
-                <Text style={[styles.statLabel, { color: colors.textMuted }]}>Quadras</Text>
-              </View>
-            </View>
-
-            <View style={[styles.statCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <DollarSign size={18} color="#10B981" />
-              <View style={styles.statContent}>
-                <Text style={[styles.statValue, { color: colors.text }]}>R$ {avgPrice}</Text>
-                <Text style={[styles.statLabel, { color: colors.textMuted }]}>Média / Hora</Text>
-              </View>
-            </View>
-
-            <View style={[styles.statCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <Calendar size={18} color="#6366F1" />
-              <View style={styles.statContent}>
-                <Text style={[styles.statValue, { color: colors.text }]}>Ativas</Text>
-                <Text style={[styles.statLabel, { color: colors.textMuted }]}>Status OK</Text>
-              </View>
-            </View>
-          </View>
-
           {/* Navegação Interna de Abas do Gestor */}
-          <View style={styles.tabsContainer}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.tabsScrollContent}
+            style={styles.tabsContainer}
+          >
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => setActiveTab('quadras')}
@@ -265,13 +269,40 @@ export function ManagerHomeScreen({ onBackToUserView }) {
                 Agenda do Dia
               </Text>
             </TouchableOpacity>
-          </View>
+
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setActiveTab('metricas')}
+              style={[
+                styles.tabBtn,
+                activeTab === 'metricas' && [styles.activeTabBtn, { backgroundColor: colors.primary }],
+              ]}
+            >
+              <BarChart3
+                size={16}
+                color={activeTab === 'metricas' ? '#FFFFFF' : colors.textMuted}
+                style={{ marginRight: 6 }}
+              />
+              <Text
+                style={[
+                  styles.tabText,
+                  { color: activeTab === 'metricas' ? '#FFFFFF' : colors.textMuted },
+                ]}
+              >
+                Faturamento & Métricas
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
         </View>
 
         {/* Botão de Ação Rápida Principal */}
         <View style={styles.actionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            {activeTab === 'quadras' ? 'Gerenciamento de Quadras' : 'Horários e Agendamentos'}
+            {activeTab === 'quadras'
+              ? 'Gerenciamento de Quadras'
+              : activeTab === 'agenda'
+              ? 'Horários e Agendamentos'
+              : 'Relatório Financeiro & Métricas'}
           </Text>
 
           {activeTab === 'quadras' ? (
@@ -283,7 +314,7 @@ export function ManagerHomeScreen({ onBackToUserView }) {
               <Plus size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
               <Text style={styles.btnAddCourtText}>Nova Quadra</Text>
             </TouchableOpacity>
-          ) : (
+          ) : activeTab === 'agenda' ? (
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => handleOpenManualModal()}
@@ -292,15 +323,28 @@ export function ManagerHomeScreen({ onBackToUserView }) {
               <Plus size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
               <Text style={styles.btnAddCourtText}>Novo Agendamento Balcão</Text>
             </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleRefresh}
+              style={[styles.btnAddCourt, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]}
+            >
+              <RefreshCw size={16} color={colors.text} style={{ marginRight: 6 }} />
+              <Text style={[styles.btnAddCourtText, { color: colors.text }]}>Atualizar Dados</Text>
+            </TouchableOpacity>
           )}
         </View>
 
         {/* Conteúdo Principal da Aba */}
         <View style={styles.body}>
-          {activeTab === 'agenda' ? (
+          {activeTab === 'metricas' ? (
+            <ManagerMetricsView courts={courts} />
+          ) : activeTab === 'agenda' ? (
             <ManagerScheduleView
               courts={courts}
               onOpenManualModal={handleOpenManualModal}
+              onOpenBlockModal={handleOpenBlockModal}
+              refreshKey={scheduleRefreshKey}
             />
           ) : loading && !refreshing ? (
             <View style={styles.loadingContainer}>
@@ -323,6 +367,8 @@ export function ManagerHomeScreen({ onBackToUserView }) {
                   court={item}
                   onEdit={handleOpenEditModal}
                   onDelete={handleDeleteCourt}
+                  onOpenHours={handleOpenHoursModal}
+                  onOpenPricing={handleOpenPricingModal}
                 />
               )}
               contentContainerStyle={styles.listPadding}
@@ -361,7 +407,49 @@ export function ManagerHomeScreen({ onBackToUserView }) {
           setIsManualModalOpen(false);
           setManualModalParams(null);
         }}
-        onSuccess={fetchManagerData}
+        onSuccess={handleScheduleRefresh}
+        onOpenBlockModal={(params) => {
+          setIsManualModalOpen(false);
+          setManualModalParams(null);
+          handleOpenBlockModal(params);
+        }}
+      />
+
+      {/* Modal de Bloqueio de Quadra / Manutenção */}
+      <CourtBlockModal
+        visible={isBlockModalOpen}
+        courts={courts}
+        initialCourtId={blockModalParams?.courtId}
+        initialStartTime={blockModalParams?.startTime}
+        initialEndTime={blockModalParams?.endTime}
+        initialDate={blockModalParams?.date}
+        onClose={() => {
+          setIsBlockModalOpen(false);
+          setBlockModalParams(null);
+        }}
+        onSuccess={handleScheduleRefresh}
+      />
+
+      {/* Modal de Horários de Funcionamento por Quadra */}
+      <CourtOperatingHoursModal
+        visible={isHoursModalOpen}
+        court={hoursCourt}
+        onClose={() => {
+          setIsHoursModalOpen(false);
+          setHoursCourt(null);
+        }}
+        onSuccess={handleScheduleRefresh}
+      />
+
+      {/* Modal de Precificação Flexível (Horários Nobres & Feriados) */}
+      <CourtPricingModal
+        visible={isPricingModalOpen}
+        court={pricingCourt}
+        onClose={() => {
+          setIsPricingModalOpen(false);
+          setPricingCourt(null);
+        }}
+        onSuccess={handleScheduleRefresh}
       />
     </SafeAreaView>
   );
@@ -455,7 +543,12 @@ const styles = StyleSheet.create({
   },
   tabsContainer: {
     flexDirection: 'row',
+  },
+  tabsScrollContent: {
+    flexDirection: 'row',
     gap: theme.spacing.xs,
+    alignItems: 'center',
+    paddingRight: theme.spacing.md,
   },
   tabBtn: {
     flexDirection: 'row',
@@ -475,12 +568,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 10,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.md,
   },
   sectionTitle: {
     fontSize: theme.typography.sizes.h4,
     fontWeight: '700',
+    flexShrink: 1,
   },
   btnAddCourt: {
     flexDirection: 'row',

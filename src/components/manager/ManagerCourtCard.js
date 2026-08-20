@@ -1,11 +1,11 @@
 import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
-import { Edit3, Trash2, ShieldCheck, Sun, Umbrella, Users, DollarSign } from 'lucide-react-native';
+import { Edit3, Trash2, ShieldCheck, Sun, Umbrella, Users, DollarSign, Clock } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 
-export function ManagerCourtCard({ court, onEdit, onDelete }) {
-  const { colors, isDark } = useTheme();
+export function ManagerCourtCard({ court, onEdit, onDelete, onOpenHours, onOpenPricing }) {
+  const { colors } = useTheme();
 
   const sportsList = Array.isArray(court.sports)
     ? court.sports.map((s) => (typeof s === 'object' ? s.name : s))
@@ -45,7 +45,7 @@ export function ManagerCourtCard({ court, onEdit, onDelete }) {
         </View>
 
         {/* Price Badge Overlay */}
-        <View style={[styles.priceTag, { backgroundColor: isDark ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.95)' }]}>
+        <View style={[styles.priceTag, { backgroundColor: 'rgba(255, 255, 255, 0.95)' }]}>
           <Text style={[styles.priceLabel, { color: colors.primary }]}>R$ {formattedPrice}</Text>
           <Text style={[styles.priceUnit, { color: colors.textMuted }]}>/h</Text>
         </View>
@@ -96,8 +96,26 @@ export function ManagerCourtCard({ court, onEdit, onDelete }) {
             onPress={() => onEdit && onEdit(court)}
             style={[styles.btnAction, { backgroundColor: colors.primary + '15' }]}
           >
-            <Edit3 size={16} color={colors.primary} />
-            <Text style={[styles.btnActionText, { color: colors.primary }]}>Editar Quadra</Text>
+            <Edit3 size={15} color={colors.primary} />
+            <Text style={[styles.btnActionText, { color: colors.primary }]}>Editar</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={() => onOpenHours && onOpenHours(court)}
+            style={[styles.btnAction, { backgroundColor: colors.primary + '15' }]}
+          >
+            <Clock size={15} color={colors.primary} />
+            <Text style={[styles.btnActionText, { color: colors.primary }]}>Horários</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={() => onOpenPricing && onOpenPricing(court)}
+            style={[styles.btnAction, { backgroundColor: colors.primary + '15' }]}
+          >
+            <DollarSign size={15} color={colors.primary} />
+            <Text style={[styles.btnActionText, { color: colors.primary }]}>Preços</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -105,7 +123,7 @@ export function ManagerCourtCard({ court, onEdit, onDelete }) {
             onPress={() => onDelete && onDelete(court)}
             style={[styles.btnDelete, { backgroundColor: colors.error + '15' }]}
           >
-            <Trash2 size={16} color={colors.error} />
+            <Trash2 size={15} color={colors.error} />
           </TouchableOpacity>
         </View>
       </View>

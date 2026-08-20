@@ -22,7 +22,7 @@ import { BottomNav } from '../components/common/BottomNav';
 import { FilterChip } from '../components/common/FilterChip';
 
 export function VenueCourtsScreen({ venueId, onBack, onSelectCourt }) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const [venue, setVenue] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -168,7 +168,7 @@ export function VenueCourtsScreen({ venueId, onBack, onSelectCourt }) {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.surface} />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.surface} />
 
       {/* Main Body */}
       <View style={styles.body}>{renderContent()}</View>
