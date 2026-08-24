@@ -39,7 +39,7 @@ export function CourtCard({ court, onSelectCourt }) {
             <SunMedium size={12} color={colors.warning} />
           )}
           <Text style={styles.statusText}>
-            {court.is_covered ? 'Coberta Climatizada' : 'Ao Ar Livre'}
+            {court.is_covered ? 'Coberta' : 'Ao Ar Livre'}
           </Text>
         </View>
 

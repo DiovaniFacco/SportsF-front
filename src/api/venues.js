@@ -1,6 +1,7 @@
 import axios from 'axios';
 import apiClient from './client';
 import { optimizeImageUrl } from '../utils/imageUtils';
+import { slugify } from '../utils/linking';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -215,8 +216,11 @@ export function normalizeVenue(venue, idx = 0) {
     ? Math.min(...validRates)
     : 0;
 
+  const venueSlug = venue.slug || (venue.name ? slugify(venue.name) : String(venue.id || ''));
+
   return {
     ...venue,
+    slug: venueSlug,
     address: fullAddress,
     rating: venue.rating !== undefined && venue.rating !== null ? parseFloat(venue.rating) : 0,
     review_count: venue.review_count !== undefined && venue.review_count !== null ? parseInt(venue.review_count, 10) : 0,

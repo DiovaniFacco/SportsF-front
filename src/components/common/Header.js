@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Platform } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, Platform, Alert } from 'react-native';
 import { Search, X, LogIn, LogOut, Building2 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -15,6 +15,35 @@ export function Header({
   const { user, isAuthenticated, isManager, logout } = useAuth();
 
   const userName = user?.name ? user.name.split(' ')[0] : 'Esportista';
+
+  const handleLogout = async () => {
+    const doLogout = async () => {
+      try {
+        await logout();
+      } catch (e) {
+        console.warn('Erro ao efetuar logout:', e);
+      } finally {
+        if (onOpenAuth) {
+          onOpenAuth();
+        }
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Tem certeza de que deseja sair da conta?')) {
+        doLogout();
+      }
+    } else {
+      Alert.alert('Sair da Conta', 'Tem certeza de que deseja sair?', [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sair',
+          style: 'destructive',
+          onPress: doLogout,
+        },
+      ]);
+    }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
@@ -42,7 +71,7 @@ export function Header({
           {isAuthenticated ? (
             <TouchableOpacity
               activeOpacity={0.75}
-              onPress={logout}
+              onPress={handleLogout}
               style={[styles.authBadge, { backgroundColor: colors.primaryLight, borderColor: colors.primary }]}
               accessibilityLabel="Sair da conta"
             >

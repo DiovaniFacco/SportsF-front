@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Platform } from 'react-native';
+import * as Linking from 'expo-linking';
 import { useFonts, GreatVibes_400Regular } from '@expo-google-fonts/great-vibes';
 import { JosefinSans_700Bold } from '@expo-google-fonts/josefin-sans';
 import { ComplexesScreen } from './src/screens/ComplexesScreen';
@@ -12,6 +13,8 @@ import { RegisterScreen } from './src/screens/RegisterScreen';
 import { ManagerHomeScreen } from './src/screens/manager/ManagerHomeScreen';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { getVenueIdFromUrl, syncVenueUrlInBrowser } from './src/utils/linking';
+import { getVenueDetails } from './src/api/venues';
 
 function MainAppContent() {
   const [selectedVenue, setSelectedVenue] = useState(null);
@@ -21,6 +24,75 @@ function MainAppContent() {
   const [activeTab, setActiveTab] = useState('explorar');
   const { colors } = useTheme();
   const { isManager } = useAuth();
+
+  const handleSelectVenue = (venue) => {
+    setSelectedVenue(venue);
+    syncVenueUrlInBrowser(venue);
+  };
+
+  const handleBackFromVenue = () => {
+    setSelectedVenue(null);
+    syncVenueUrlInBrowser(null);
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const handleUrl = async (url) => {
+      const venueId = getVenueIdFromUrl(url);
+      if (venueId) {
+        try {
+          const venue = await getVenueDetails(venueId);
+          if (isMounted && venue) {
+            setSelectedVenue(venue);
+            setSelectedCourt(null);
+            setIsManagerView(false);
+            setAuthScreen(null);
+            setActiveTab('explorar');
+            syncVenueUrlInBrowser(venue);
+          }
+        } catch (err) {
+          console.error('Erro ao carregar complexo do link:', err);
+        }
+      }
+    };
+
+    // Check initial URL on launch
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      handleUrl(window.location.href);
+    } else {
+      Linking.getInitialURL().then((url) => {
+        if (url) handleUrl(url);
+      });
+    }
+
+    // Listen to deep link events
+    const subscription = Linking.addEventListener('url', (event) => {
+      if (event.url) handleUrl(event.url);
+    });
+
+    // Listen to browser back/forward buttons on Web
+    let handlePopState;
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      handlePopState = () => {
+        const vId = getVenueIdFromUrl(window.location.href);
+        if (vId) {
+          handleUrl(window.location.href);
+        } else {
+          setSelectedVenue(null);
+        }
+      };
+      window.addEventListener('popstate', handlePopState);
+    }
+
+    return () => {
+      isMounted = false;
+      subscription.remove();
+      if (handlePopState) {
+        window.removeEventListener('popstate', handlePopState);
+      }
+    };
+  }, []);
 
   const handleTabChange = (tabId) => {
     if (tabId === 'gestao') {
@@ -97,9 +169,9 @@ function MainAppContent() {
       return (
         <VenueCourtsScreen
           venueId={selectedVenue.id}
-          onBack={() => setSelectedVenue(null)}
+          onBack={handleBackFromVenue}
           onSelectCourt={(court, venueObj) => {
-            if (venueObj) setSelectedVenue(venueObj);
+            if (venueObj) handleSelectVenue(venueObj);
             setSelectedCourt(court);
           }}
           onTabChange={handleTabChange}
@@ -109,7 +181,7 @@ function MainAppContent() {
 
     return (
       <ComplexesScreen
-        onSelectVenue={(venue) => setSelectedVenue(venue)}
+        onSelectVenue={handleSelectVenue}
         onOpenAuth={() => setAuthScreen('login')}
         onOpenManager={() => setIsManagerView(true)}
         activeTab={activeTab}

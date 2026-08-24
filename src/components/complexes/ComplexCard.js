@@ -1,19 +1,32 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View, Text, Image, TouchableOpacity } from 'react-native';
-import { MapPin, ChevronRight } from 'lucide-react-native';
+import { MapPin, ChevronRight, Share2, Check } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { AmenityChip } from '../common/AmenityChip';
 import { SportsBadgeGroup } from '../common/SportsBadgeGroup';
 import { optimizeImageUrl } from '../../utils/imageUtils';
+import { shareVenueLink } from '../../utils/linking';
 
 export function ComplexCard({ venue, onPress }) {
   const { colors } = useTheme();
+  const [copiedToast, setCopiedToast] = useState(false);
 
   if (!venue) return null;
 
   const courtsCount = venue.courts_count || (venue.courts ? venue.courts.length : 0);
   const sportsList = venue.sports && venue.sports.length > 0 ? venue.sports : [];
+
+  const handleShare = async (e) => {
+    e?.stopPropagation && e.stopPropagation();
+    const res = await shareVenueLink(venue);
+    if (res.success) {
+      setCopiedToast(true);
+      setTimeout(() => {
+        setCopiedToast(false);
+      }, 3000);
+    }
+  };
 
   return (
     <TouchableOpacity
@@ -21,6 +34,14 @@ export function ComplexCard({ venue, onPress }) {
       onPress={() => onPress && onPress(venue)}
       style={[styles.cardContainer, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}
     >
+      {/* Toast Feedback */}
+      {copiedToast ? (
+        <View style={styles.toastBanner}>
+          <Check size={14} color="#FFFFFF" />
+          <Text style={styles.toastText}>Link do complexo copiado!</Text>
+        </View>
+      ) : null}
+
       {/* Cover Image */}
       <View style={[styles.imageWrapper, { backgroundColor: colors.backgroundSecondary }]}>
         <Image
@@ -52,6 +73,14 @@ export function ComplexCard({ venue, onPress }) {
           <Text style={[styles.venueName, { color: colors.textPrimary }]} numberOfLines={1}>
             {venue.name}
           </Text>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handleShare}
+            style={[styles.shareCardBtn, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+            accessibilityLabel="Compartilhar link do complexo"
+          >
+            <Share2 size={15} color={colors.primary} />
+          </TouchableOpacity>
         </View>
 
         {/* Location Info */}
@@ -158,6 +187,22 @@ const styles = StyleSheet.create({
     left: 12,
     zIndex: 10,
   },
+  toastBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#10B981',
+    paddingVertical: 6,
+    paddingHorizontal: theme.spacing.md,
+    borderTopLeftRadius: theme.radius.lg,
+    borderTopRightRadius: theme.radius.lg,
+  },
+  toastText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   contentBody: {
     padding: theme.spacing.lg,
   },
@@ -173,6 +218,14 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.3,
     marginRight: 8,
+  },
+  shareCardBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   locationRow: {
     flexDirection: 'row',

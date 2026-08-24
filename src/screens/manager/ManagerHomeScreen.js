@@ -262,6 +262,35 @@ export function ManagerHomeScreen({ onBackToUserView }) {
     }
   };
 
+  const handleLogout = async () => {
+    const doLogout = async () => {
+      try {
+        await logout();
+      } catch (e) {
+        console.warn('Erro ao efetuar logout:', e);
+      } finally {
+        if (onBackToUserView) {
+          onBackToUserView();
+        }
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Tem certeza de que deseja sair da conta?')) {
+        doLogout();
+      }
+    } else {
+      Alert.alert('Sair da Conta', 'Tem certeza de que deseja sair?', [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sair',
+          style: 'destructive',
+          onPress: doLogout,
+        },
+      ]);
+    }
+  };
+
   // Cálculo de Métricas do Gestor
   const totalCourts = courts.length;
   const avgPrice = totalCourts > 0
@@ -338,7 +367,7 @@ export function ManagerHomeScreen({ onBackToUserView }) {
               ) : null}
 
               <TouchableOpacity
-                onPress={logout}
+                onPress={handleLogout}
                 style={[styles.iconBtn, { backgroundColor: colors.error + '12', borderColor: colors.error + '30' }]}
               >
                 <LogOut size={18} color={colors.error} />

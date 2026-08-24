@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -7,22 +7,42 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
-import { ArrowLeft, MapPin, Phone } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Phone, Share2, Check } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { AmenityChip } from '../common/AmenityChip';
 import { SportsBadgeGroup } from '../common/SportsBadgeGroup';
 import { optimizeImageUrl } from '../../utils/imageUtils';
+import { shareVenueLink } from '../../utils/linking';
 
 export function VenueHeroHeader({ venue, onBack }) {
   const { colors } = useTheme();
+  const [copiedToast, setCopiedToast] = useState(false);
 
   if (!venue) return null;
 
   const sportsList = venue.sports && venue.sports.length > 0 ? venue.sports : [];
 
+  const handleShare = async () => {
+    const res = await shareVenueLink(venue);
+    if (res.success) {
+      setCopiedToast(true);
+      setTimeout(() => {
+        setCopiedToast(false);
+      }, 3000);
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.surface, borderBottomColor: colors.borderSubtle }]}>
+      {/* Toast Feedback de Confirmação */}
+      {copiedToast ? (
+        <View style={styles.toastBanner}>
+          <Check size={16} color="#FFFFFF" />
+          <Text style={styles.toastText}>Link direto do complexo copiado!</Text>
+        </View>
+      ) : null}
+
       {/* Top Navigation Header with SFACCO Brand Identity */}
       <View style={[styles.topNavRow, { backgroundColor: colors.surface }]}>
         <TouchableOpacity
@@ -34,9 +54,11 @@ export function VenueHeroHeader({ venue, onBack }) {
           <Text style={[styles.backText, { color: colors.textPrimary }]}>Voltar</Text>
         </TouchableOpacity>
 
-        <View style={styles.logoContainer}>
-          <Text style={[styles.letraS, { color: colors.letraS }]}>S</Text>
-          <Text style={[styles.brandName, { color: colors.brandName }]}>facco</Text>
+        <View style={styles.navRightRow}>
+          <View style={styles.logoContainer}>
+            <Text style={[styles.letraS, { color: colors.letraS }]}>S</Text>
+            <Text style={[styles.brandName, { color: colors.brandName }]}>facco</Text>
+          </View>
         </View>
       </View>
 
@@ -66,11 +88,20 @@ export function VenueHeroHeader({ venue, onBack }) {
 
       {/* Main Complex Info Content */}
       <View style={styles.infoBody}>
-        {/* Title */}
+        {/* Title & Share Icon Button */}
         <View style={styles.titleRow}>
           <Text style={[styles.venueName, { color: colors.textPrimary }]} numberOfLines={2}>
             {venue.name}
           </Text>
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleShare}
+            style={[styles.iconShareBtn, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+            accessibilityLabel="Compartilhar link do complexo"
+          >
+            <Share2 size={16} color={colors.primary} />
+          </TouchableOpacity>
         </View>
 
         {/* Location & Contact Meta */}
@@ -108,6 +139,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     marginBottom: theme.spacing.md,
   },
+  toastBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#10B981',
+    paddingVertical: 8,
+    paddingHorizontal: theme.spacing.md,
+  },
+  toastText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
   topNavRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -127,6 +172,23 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: theme.typography.sizes.bodySmall,
+    fontWeight: '700',
+  },
+  navRightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  shareButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: theme.radius.full,
+  },
+  shareText: {
+    fontSize: 12,
     fontWeight: '700',
   },
   logoContainer: {
@@ -196,7 +258,7 @@ const styles = StyleSheet.create({
   },
   titleRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: 10,
     marginBottom: theme.spacing.sm,
@@ -206,6 +268,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '800',
     letterSpacing: -0.4,
+  },
+  iconShareBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   metaContainer: {
     gap: 6,

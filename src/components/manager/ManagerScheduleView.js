@@ -25,7 +25,6 @@ import {
   AlertCircle,
   FileText,
   Grid,
-  List,
   PlusCircle,
   ShieldAlert,
 } from 'lucide-react-native';
@@ -44,7 +43,6 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
 
   const [selectedDate, setSelectedDate] = useState(getTodayStr());
   const [selectedCourtId, setSelectedCourtId] = useState('ALL'); // 'ALL' or courtId
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
 
   const [bookings, setBookings] = useState([]);
   const [courtBlocks, setCourtBlocks] = useState([]);
@@ -189,11 +187,6 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
     ? activeCourtsList
     : activeCourtsList.filter((c) => String(c.id) === String(selectedCourtId));
 
-  const filteredBookings = bookings.filter((b) => {
-    if (selectedCourtId === 'ALL') return true;
-    return String(b.court_id) === String(selectedCourtId);
-  });
-
   return (
     <View style={styles.container}>
       {/* Seletor de Datas (Chips Horizontais) */}
@@ -299,66 +292,46 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
         </View>
 
         <View style={styles.viewToggleContainer}>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => setViewMode('grid')}
+          <View
             style={[
               styles.toggleBtn,
               {
-                backgroundColor: viewMode === 'grid' ? colors.primary : colors.background,
-                borderColor: viewMode === 'grid' ? colors.primary : colors.border,
+                backgroundColor: colors.primary,
+                borderColor: colors.primary,
               },
             ]}
           >
-            <Grid size={15} color={viewMode === 'grid' ? '#FFFFFF' : colors.textMuted} />
-            <Text style={[styles.toggleBtnText, { color: viewMode === 'grid' ? '#FFFFFF' : colors.textMuted }]}>
+            <Grid size={15} color="#FFFFFF" />
+            <Text style={[styles.toggleBtnText, { color: '#FFFFFF' }]}>
               Grade Matrix
             </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => setViewMode('list')}
-            style={[
-              styles.toggleBtn,
-              {
-                backgroundColor: viewMode === 'list' ? colors.primary : colors.background,
-                borderColor: viewMode === 'list' ? colors.primary : colors.border,
-              },
-            ]}
-          >
-            <List size={15} color={viewMode === 'list' ? '#FFFFFF' : colors.textMuted} />
-            <Text style={[styles.toggleBtnText, { color: viewMode === 'list' ? '#FFFFFF' : colors.textMuted }]}>
-              Lista
-            </Text>
-          </TouchableOpacity>
+          </View>
         </View>
       </View>
 
       {/* Legenda de Cores (Apenas no Modo Grade Matrix) */}
-      {viewMode === 'grid' ? (
-        <View style={[styles.legendBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#10B981' }]} />
-            <Text style={[styles.legendText, { color: colors.textMuted }]}>Livre (Clique p/ agendar)</Text>
-          </View>
-
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#8B5CF6' }]} />
-            <Text style={[styles.legendText, { color: colors.textMuted }]}>Balcão / Presencial</Text>
-          </View>
-
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#3B82F6' }]} />
-            <Text style={[styles.legendText, { color: colors.textMuted }]}>Via App</Text>
-          </View>
-
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: colors.error }]} />
-            <Text style={[styles.legendText, { color: colors.textMuted }]}>Bloqueado (Manutenção)</Text>
-          </View>
+      {/* Legenda de Cores */}
+      <View style={[styles.legendBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: '#10B981' }]} />
+          <Text style={[styles.legendText, { color: colors.textMuted }]}>Livre (Clique p/ agendar)</Text>
         </View>
-      ) : null}
+
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: '#8B5CF6' }]} />
+          <Text style={[styles.legendText, { color: colors.textMuted }]}>Balcão / Presencial</Text>
+        </View>
+
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: '#3B82F6' }]} />
+          <Text style={[styles.legendText, { color: colors.textMuted }]}>Via App</Text>
+        </View>
+
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: colors.error }]} />
+          <Text style={[styles.legendText, { color: colors.textMuted }]}>Bloqueado (Manutenção)</Text>
+        </View>
+      </View>
 
       {/* Conteúdo Principal da Agenda */}
       <View style={styles.listContainer}>
@@ -372,8 +345,8 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
             <AlertCircle size={36} color={colors.error} />
             <Text style={[styles.errorText, { color: colors.text }]}>{error}</Text>
           </View>
-        ) : viewMode === 'grid' ? (
-          /* Visão em GRADE MATRIX / TIMELINE DINÂMICA */
+        ) : (
+          /* Visão em GRADE MATRIX / TIMELINE DINÂMICA */
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.gridScrollContent}
@@ -430,32 +403,6 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
               />
             ))}
           </ScrollView>
-        ) : (
-          /* Visão em LISTA DETALHADA */
-          filteredBookings.length === 0 ? (
-            <EmptyState
-              title="Nenhum agendamento para este dia"
-              message="Não há reservas registradas para esta data/quadra. Clique no botão de agendamento para realizar uma reserva."
-            />
-          ) : (
-            <FlatList
-              data={filteredBookings}
-              keyExtractor={(item) => String(item.id)}
-              renderItem={({ item }) => (
-                <BookingScheduleCard booking={item} onCancel={handleCancelBooking} />
-              )}
-              contentContainerStyle={styles.listPadding}
-              showsVerticalScrollIndicator={false}
-              refreshControl={
-                <RefreshControl
-                  refreshing={refreshing}
-                  onRefresh={handleRefresh}
-                  colors={[colors.primary]}
-                  tintColor={colors.primary}
-                />
-              }
-            />
-          )
         )}
       </View>
     </View>

@@ -11,6 +11,7 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import {
   User,
@@ -99,14 +100,32 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
   };
 
   const handleLogoutConfirm = () => {
-    Alert.alert('Sair da Conta', 'Tem certeza de que deseja sair?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Sair',
-        style: 'destructive',
-        onPress: () => logout(),
-      },
-    ]);
+    const doLogout = async () => {
+      try {
+        await logout();
+      } catch (e) {
+        console.warn('Erro ao efetuar logout:', e);
+      } finally {
+        if (onOpenAuth) {
+          onOpenAuth();
+        }
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Tem certeza de que deseja sair da conta?')) {
+        doLogout();
+      }
+    } else {
+      Alert.alert('Sair da Conta', 'Tem certeza de que deseja sair?', [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sair',
+          style: 'destructive',
+          onPress: doLogout,
+        },
+      ]);
+    }
   };
 
   // Calculations for stats
