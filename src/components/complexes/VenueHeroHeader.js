@@ -10,7 +10,6 @@ import {
 import { ArrowLeft, MapPin, Phone } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
-import { RatingBadge } from '../common/RatingBadge';
 import { AmenityChip } from '../common/AmenityChip';
 import { SportsBadgeGroup } from '../common/SportsBadgeGroup';
 import { optimizeImageUrl } from '../../utils/imageUtils';
@@ -67,12 +66,11 @@ export function VenueHeroHeader({ venue, onBack }) {
 
       {/* Main Complex Info Content */}
       <View style={styles.infoBody}>
-        {/* Title & Rating */}
+        {/* Title */}
         <View style={styles.titleRow}>
           <Text style={[styles.venueName, { color: colors.textPrimary }]} numberOfLines={2}>
             {venue.name}
           </Text>
-          <RatingBadge rating={venue.rating} reviewCount={venue.review_count} />
         </View>
 
         {/* Location & Contact Meta */}

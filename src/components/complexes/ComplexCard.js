@@ -3,7 +3,6 @@ import { StyleSheet, View, Text, Image, TouchableOpacity } from 'react-native';
 import { MapPin, ChevronRight } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
-import { RatingBadge } from '../common/RatingBadge';
 import { AmenityChip } from '../common/AmenityChip';
 import { SportsBadgeGroup } from '../common/SportsBadgeGroup';
 import { optimizeImageUrl } from '../../utils/imageUtils';
@@ -53,7 +52,6 @@ export function ComplexCard({ venue, onPress }) {
           <Text style={[styles.venueName, { color: colors.textPrimary }]} numberOfLines={1}>
             {venue.name}
           </Text>
-          <RatingBadge rating={venue.rating} reviewCount={venue.review_count} />
         </View>
 
         {/* Location Info */}

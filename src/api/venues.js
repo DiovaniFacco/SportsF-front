@@ -224,7 +224,7 @@ export function normalizeVenue(venue, idx = 0) {
     amenities: amenitiesList,
     starting_price: startingPrice,
     courts_count: courts.length,
-    is_open_today: true,
+    is_open_today: venue.is_open_today !== undefined ? Boolean(venue.is_open_today) : true,
     image_url: optimizeImageUrl(venue.cover_image_url || venue.image_url || DEFAULT_VENUE_IMAGE, { width: 1600, quality: 90 }),
     courts,
   };
