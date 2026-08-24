@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import secureStorage from '../services/secureStorage';
-import { loginApi, registerApi, googleAuthApi, logoutApi, getMeApi } from '../api/auth';
+import { loginApi, registerApi, googleAuthApi, logoutApi, getMeApi, updateProfileApi } from '../api/auth';
 
 const AuthContext = createContext({
   user: null,
@@ -11,6 +11,7 @@ const AuthContext = createContext({
   register: async () => {},
   loginWithGoogle: async () => {},
   logout: async () => {},
+  updateProfile: async () => {},
 });
 
 export function AuthProvider({ children }) {
@@ -96,6 +97,19 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const updateProfile = async (data) => {
+    setIsLoading(true);
+    try {
+      const updatedUser = await updateProfileApi(data);
+      if (updatedUser) {
+        setUser(updatedUser);
+      }
+      return updatedUser;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const isManager = useMemo(() => {
     if (!user) return false;
     const role = user.role?.toUpperCase();
@@ -113,6 +127,7 @@ export function AuthProvider({ children }) {
       register,
       loginWithGoogle,
       logout,
+      updateProfile,
     }),
     [user, token, isLoading, isManager]
   );

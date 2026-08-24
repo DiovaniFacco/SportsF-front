@@ -68,6 +68,23 @@ export async function googleAuthApi(googleUserData) {
   }
 }
 
+export async function updateProfileApi(data) {
+  try {
+    const response = await apiClient.put('/auth/me', data);
+    const updatedUser = response.data?.user;
+    if (updatedUser) {
+      await secureStorage.setItem('@auth_user', JSON.stringify(updatedUser));
+    }
+    return updatedUser;
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('Erro ao atualizar perfil:', error?.message);
+    }
+    const msg = error?.response?.data?.message || 'Não foi possível atualizar seus dados.';
+    throw new Error(msg);
+  }
+}
+
 export async function getMeApi() {
   try {
     const response = await apiClient.get('/auth/me');

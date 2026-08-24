@@ -6,6 +6,7 @@ import { ComplexesScreen } from './src/screens/ComplexesScreen';
 import { VenueCourtsScreen } from './src/screens/VenueCourtsScreen';
 import { CourtSlotsScreen } from './src/screens/CourtSlotsScreen';
 import { MyBookingsScreen } from './src/screens/MyBookingsScreen';
+import { ProfileScreen } from './src/screens/ProfileScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { RegisterScreen } from './src/screens/RegisterScreen';
 import { ManagerHomeScreen } from './src/screens/manager/ManagerHomeScreen';
@@ -24,9 +25,8 @@ function MainAppContent() {
   const handleTabChange = (tabId) => {
     if (tabId === 'gestao') {
       setIsManagerView(true);
-    } else if (tabId === 'perfil') {
-      setAuthScreen('login');
     } else {
+      setIsManagerView(false);
       setActiveTab(tabId);
     }
   };
@@ -56,6 +56,17 @@ function MainAppContent() {
       return (
         <ManagerHomeScreen
           onBackToUserView={() => setIsManagerView(false)}
+        />
+      );
+    }
+
+    if (activeTab === 'perfil') {
+      return (
+        <ProfileScreen
+          onTabChange={handleTabChange}
+          onGoToExplore={() => setActiveTab('explorar')}
+          onOpenAuth={() => setAuthScreen('login')}
+          onOpenManager={() => setIsManagerView(true)}
         />
       );
     }
