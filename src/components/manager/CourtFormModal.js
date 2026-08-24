@@ -10,6 +10,7 @@ import {
   Switch,
   ActivityIndicator,
   Image,
+  Platform,
 } from 'react-native';
 import {
   X,
@@ -25,12 +26,14 @@ import {
   Calendar,
   Layers,
   Image as ImageIcon,
+  Upload,
 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { getSports } from '../../api/sports';
 import { createCourt, updateCourt } from '../../api/courts';
 import { saveCourtOperatingHour, getCourtOperatingHours, deleteCourtOperatingHour } from '../../api/operatingHours';
+import { compressAndResizeImage, PRESET_COURT_IMAGES, optimizeImageUrl } from '../../utils/imageUtils';
 
 const DAYS_OF_WEEK = [
   { id: 1, label: 'Segunda-feira', short: 'Seg' },
@@ -78,7 +81,29 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
 
   const [loadingSports, setLoadingSports] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  const handlePickLocalImage = async (event) => {
+    const file = event.target?.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    setErrorMsg('');
+    try {
+      const compressedDataUrl = await compressAndResizeImage(file, {
+        maxWidth: 1600,
+        maxHeight: 1200,
+        quality: 0.85,
+      });
+      setImageUrl(compressedDataUrl);
+    } catch (err) {
+      console.error('Erro ao processar imagem:', err);
+      setErrorMsg('Não foi possível processar a imagem selecionada.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   useEffect(() => {
     async function loadSports() {
@@ -388,11 +413,68 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
                   />
                 </View>
 
-                {/* Link da Imagem da Quadra */}
+                {/* Imagem da Quadra (Upload, Presets HD & URL) */}
                 <View style={styles.fieldGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>Link da Imagem da Quadra (URL)</Text>
+                  <Text style={[styles.label, { color: colors.text }]}>Imagem da Quadra (HD & Otimizada)</Text>
+
+                  {/* Seletor de Arquivo Local com Compressão */}
+                  {Platform.OS === 'web' ? (
+                    <View style={styles.uploadRow}>
+                      <label style={{ cursor: 'pointer', display: 'inline-flex', width: '100%' }}>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handlePickLocalImage}
+                          style={{ display: 'none' }}
+                        />
+                        <View style={[styles.uploadBtn, { backgroundColor: colors.background, borderColor: colors.primary }]}>
+                          {uploadingImage ? (
+                            <ActivityIndicator size="small" color={colors.primary} />
+                          ) : (
+                            <>
+                              <Upload size={16} color={colors.primary} style={{ marginRight: 6 }} />
+                              <Text style={[styles.uploadBtnText, { color: colors.primary }]}>
+                                Upload Foto Local (Otimizar & Limitar Tamanho)
+                              </Text>
+                            </>
+                          )}
+                        </View>
+                      </label>
+                    </View>
+                  ) : null}
+
+                  {/* Galeria de Presets HD */}
+                  <Text style={[styles.subLabel, { color: colors.textMuted, marginTop: 8 }]}>Ou escolha uma imagem HD pronta:</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 6 }}>
+                    <View style={styles.presetGrid}>
+                      {PRESET_COURT_IMAGES.map((preset) => {
+                        const isSelected = imageUrl === preset.url;
+                        return (
+                          <TouchableOpacity
+                            key={preset.id}
+                            activeOpacity={0.8}
+                            onPress={() => setImageUrl(preset.url)}
+                            style={[
+                              styles.presetChip,
+                              {
+                                backgroundColor: isSelected ? colors.primary + '20' : colors.background,
+                                borderColor: isSelected ? colors.primary : colors.border,
+                              },
+                            ]}
+                          >
+                            <ImageIcon size={13} color={isSelected ? colors.primary : colors.textMuted} />
+                            <Text style={[styles.presetChipText, { color: isSelected ? colors.primary : colors.text }]}>
+                              {preset.name}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </ScrollView>
+
+                  {/* Campo de URL Direto */}
                   <TextInput
-                    style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                    style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border, marginTop: 4 }]}
                     placeholder="https://exemplo.com/imagem-da-quadra.jpg"
                     placeholderTextColor={colors.textMuted}
                     value={imageUrl}
@@ -400,13 +482,18 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
                     autoCapitalize="none"
                     autoCorrect={false}
                   />
+
+                  {/* Pré-visualização da Imagem */}
                   {imageUrl.trim() ? (
                     <View style={[styles.imagePreviewContainer, { borderColor: colors.border }]}>
                       <Image
-                        source={{ uri: imageUrl.trim() }}
+                        source={{ uri: optimizeImageUrl(imageUrl.trim(), { width: 1400, quality: 90 }) }}
                         style={styles.imagePreview}
                         resizeMode="cover"
                       />
+                      <View style={[styles.hdBadge, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
+                        <Text style={styles.hdBadgeText}>HD Otimizado</Text>
+                      </View>
                     </View>
                   ) : null}
                 </View>
@@ -481,6 +568,8 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
                     onValueChange={setIsCovered}
                     trackColor={{ false: colors.border, true: colors.primary }}
                     thumbColor="#FFFFFF"
+                    activeThumbColor="#FFFFFF"
+                    activeTrackColor={colors.primary}
                   />
                 </View>
               </View>
@@ -1072,15 +1161,69 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   imagePreviewContainer: {
-    height: 120,
+    height: 140,
     borderRadius: theme.radius.md,
     overflow: 'hidden',
     marginTop: 8,
     borderWidth: 1,
+    position: 'relative',
   },
   imagePreview: {
     width: '100%',
     height: '100%',
+  },
+  uploadRow: {
+    marginBottom: 4,
+  },
+  uploadBtn: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: theme.radius.md,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+  },
+  uploadBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  subLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  presetGrid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  presetChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: theme.radius.full,
+    borderWidth: 1,
+    gap: 4,
+  },
+  presetChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  hdBadge: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: theme.radius.sm,
+  },
+  hdBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '700',
   },
   btnSave: {
     flex: 1.4,

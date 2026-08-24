@@ -4,6 +4,7 @@ import { ShieldCheck, Users, ChevronRight, SunMedium, Layers } from 'lucide-reac
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { SportsBadgeGroup } from '../common/SportsBadgeGroup';
+import { optimizeImageUrl } from '../../utils/imageUtils';
 
 export function CourtCard({ court, onSelectCourt }) {
   const { colors } = useTheme();
@@ -24,9 +25,7 @@ export function CourtCard({ court, onSelectCourt }) {
       <View style={[styles.imageWrapper, { backgroundColor: colors.backgroundSecondary }]}>
         <Image
           source={{
-            uri:
-              court.image_url ||
-              'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80',
+            uri: optimizeImageUrl(court.image_url, { width: 1400, quality: 90 }),
           }}
           style={styles.coverImage}
           resizeMode="cover"
@@ -35,7 +34,7 @@ export function CourtCard({ court, onSelectCourt }) {
         {/* Structure Status Badge (Covered vs Outdoor) */}
         <View style={[styles.statusBadge, { backgroundColor: colors.statusBadgeBg }]}>
           {court.is_covered ? (
-            <ShieldCheck size={12} color={colors.success} />
+            <ShieldCheck size={12} color={colors.primaryLight || '#FFF1F2'} />
           ) : (
             <SunMedium size={12} color={colors.warning} />
           )}

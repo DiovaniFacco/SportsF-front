@@ -6,6 +6,7 @@ import { theme } from '../../styles/theme';
 import { RatingBadge } from '../common/RatingBadge';
 import { AmenityChip } from '../common/AmenityChip';
 import { SportsBadgeGroup } from '../common/SportsBadgeGroup';
+import { optimizeImageUrl } from '../../utils/imageUtils';
 
 export function ComplexCard({ venue, onPress }) {
   const { colors } = useTheme();
@@ -24,7 +25,7 @@ export function ComplexCard({ venue, onPress }) {
       {/* Cover Image */}
       <View style={[styles.imageWrapper, { backgroundColor: colors.backgroundSecondary }]}>
         <Image
-          source={{ uri: venue.image_url }}
+          source={{ uri: optimizeImageUrl(venue.image_url, { width: 1400, quality: 90 }) }}
           style={styles.coverImage}
           resizeMode="cover"
         />

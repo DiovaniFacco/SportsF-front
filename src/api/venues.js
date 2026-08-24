@@ -1,15 +1,16 @@
 import axios from 'axios';
 import apiClient from './client';
+import { optimizeImageUrl } from '../utils/imageUtils';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
-const DEFAULT_VENUE_IMAGE = 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80';
+const DEFAULT_VENUE_IMAGE = 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1600&q=90';
 const DEFAULT_COURT_IMAGES = [
-  'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1518091043644-c1d4457512c6?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1593786416058-251d7c31d1ef?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1400&q=90',
+  'https://images.unsplash.com/photo-1518091043644-c1d4457512c6?auto=format&fit=crop&w=1400&q=90',
+  'https://images.unsplash.com/photo-1593786416058-251d7c31d1ef?auto=format&fit=crop&w=1400&q=90',
+  'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1400&q=90',
+  'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?auto=format&fit=crop&w=1400&q=90',
 ];
 
 /**
@@ -195,7 +196,7 @@ export function normalizeVenue(venue, idx = 0) {
         is_covered: court.is_covered !== undefined ? Boolean(court.is_covered) : true,
         hourly_rate: parseFloat(court.hourly_rate || 0),
         rating: court.rating !== undefined && court.rating !== null ? parseFloat(court.rating) : 0,
-        image_url: court.image_url || DEFAULT_COURT_IMAGES[cIdx % DEFAULT_COURT_IMAGES.length],
+        image_url: optimizeImageUrl(court.image_url || DEFAULT_COURT_IMAGES[cIdx % DEFAULT_COURT_IMAGES.length], { width: 1400, quality: 90 }),
       };
     });
   }
@@ -224,7 +225,7 @@ export function normalizeVenue(venue, idx = 0) {
     starting_price: startingPrice,
     courts_count: courts.length,
     is_open_today: true,
-    image_url: venue.cover_image_url || venue.image_url || DEFAULT_VENUE_IMAGE,
+    image_url: optimizeImageUrl(venue.cover_image_url || venue.image_url || DEFAULT_VENUE_IMAGE, { width: 1600, quality: 90 }),
     courts,
   };
 }

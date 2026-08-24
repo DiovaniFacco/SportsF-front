@@ -34,6 +34,7 @@ import { SkeletonCard } from '../components/common/SkeletonCard';
 import { ErrorState } from '../components/common/ErrorState';
 import { EmptyState } from '../components/common/EmptyState';
 import { BottomNav } from '../components/common/BottomNav';
+import { optimizeImageUrl } from '../utils/imageUtils';
 
 export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange }) {
   const { colors } = useTheme();
@@ -272,7 +273,7 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
         <View style={[styles.courtInfoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.courtInfoRow}>
             {court.image_url ? (
-              <Image source={{ uri: court.image_url }} style={styles.courtThumb} />
+              <Image source={{ uri: optimizeImageUrl(court.image_url, { width: 1400, quality: 90 }) }} style={styles.courtThumb} />
             ) : null}
 
             <View style={styles.courtDetailsCol}>

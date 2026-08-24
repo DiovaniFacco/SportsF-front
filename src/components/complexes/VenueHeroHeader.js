@@ -13,6 +13,7 @@ import { theme } from '../../styles/theme';
 import { RatingBadge } from '../common/RatingBadge';
 import { AmenityChip } from '../common/AmenityChip';
 import { SportsBadgeGroup } from '../common/SportsBadgeGroup';
+import { optimizeImageUrl } from '../../utils/imageUtils';
 
 export function VenueHeroHeader({ venue, onBack }) {
   const { colors } = useTheme();
@@ -43,7 +44,7 @@ export function VenueHeroHeader({ venue, onBack }) {
       {/* Hero Cover Image Banner */}
       <View style={[styles.heroWrapper, { backgroundColor: colors.backgroundSecondary }]}>
         <Image
-          source={{ uri: venue.image_url }}
+          source={{ uri: optimizeImageUrl(venue.image_url, { width: 1600, quality: 90 }) }}
           style={styles.coverImage}
           resizeMode="cover"
         />

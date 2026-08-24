@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Image,
+  Platform,
 } from 'react-native';
 import {
   X,
@@ -20,12 +22,15 @@ import {
   Users,
   UserCheck,
   UserPlus,
+  Upload,
+  Image as ImageIcon,
 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { theme } from '../../styles/theme';
 import { createVenue, updateVenue, getAmenities, createAmenity, deleteAmenity } from '../../api/venues';
 import { getUsersApi } from '../../api/auth';
+import { compressAndResizeImage, PRESET_VENUE_IMAGES, optimizeImageUrl } from '../../utils/imageUtils';
 
 export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
   const { colors } = useTheme();
@@ -68,7 +73,29 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
 
   const [loadingAmenities, setLoadingAmenities] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  const handlePickLocalImage = async (event) => {
+    const file = event.target?.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    setErrorMsg('');
+    try {
+      const compressedDataUrl = await compressAndResizeImage(file, {
+        maxWidth: 1600,
+        maxHeight: 1200,
+        quality: 0.85,
+      });
+      setCoverImageUrl(compressedDataUrl);
+    } catch (err) {
+      console.error('Erro ao processar imagem de capa:', err);
+      setErrorMsg('Não foi possível processar a imagem selecionada.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   useEffect(() => {
     async function loadAmenities() {
@@ -573,16 +600,89 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
               />
             </View>
 
-            {/* URL da Imagem de Capa */}
+            {/* Imagem de Capa do Complexo (Upload, Presets HD & URL) */}
             <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>URL da Imagem de Capa</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Imagem de Capa do Complexo (HD & Otimizada)</Text>
+
+              {/* Seletor de Arquivo Local com Compressão */}
+              {Platform.OS === 'web' ? (
+                <View style={styles.uploadRow}>
+                  <label style={{ cursor: 'pointer', display: 'inline-flex', width: '100%' }}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePickLocalImage}
+                      style={{ display: 'none' }}
+                    />
+                    <View style={[styles.uploadBtn, { backgroundColor: colors.background, borderColor: colors.primary }]}>
+                      {uploadingImage ? (
+                        <ActivityIndicator size="small" color={colors.primary} />
+                      ) : (
+                        <>
+                          <Upload size={16} color={colors.primary} style={{ marginRight: 6 }} />
+                          <Text style={[styles.uploadBtnText, { color: colors.primary }]}>
+                            Upload Foto de Capa (Otimizar & Limitar Tamanho)
+                          </Text>
+                        </>
+                      )}
+                    </View>
+                  </label>
+                </View>
+              ) : null}
+
+              {/* Galeria de Presets HD */}
+              <Text style={[styles.subLabel, { color: colors.textMuted, marginTop: 8 }]}>Ou escolha uma capa HD pronta:</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 6 }}>
+                <View style={styles.presetGrid}>
+                  {PRESET_VENUE_IMAGES.map((preset) => {
+                    const isSelected = coverImageUrl === preset.url;
+                    return (
+                      <TouchableOpacity
+                        key={preset.id}
+                        activeOpacity={0.8}
+                        onPress={() => setCoverImageUrl(preset.url)}
+                        style={[
+                          styles.presetChip,
+                          {
+                            backgroundColor: isSelected ? colors.primary + '20' : colors.background,
+                            borderColor: isSelected ? colors.primary : colors.border,
+                          },
+                        ]}
+                      >
+                        <ImageIcon size={13} color={isSelected ? colors.primary : colors.textMuted} />
+                        <Text style={[styles.presetChipText, { color: isSelected ? colors.primary : colors.text }]}>
+                          {preset.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+
+              {/* Campo de URL Direto */}
               <TextInput
-                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border, marginTop: 4 }]}
                 placeholder="https://images.unsplash.com/photo-..."
                 placeholderTextColor={colors.textMuted}
                 value={coverImageUrl}
                 onChangeText={setCoverImageUrl}
+                autoCapitalize="none"
+                autoCorrect={false}
               />
+
+              {/* Pré-visualização da Capa */}
+              {coverImageUrl.trim() ? (
+                <View style={[styles.imagePreviewContainer, { borderColor: colors.border }]}>
+                  <Image
+                    source={{ uri: optimizeImageUrl(coverImageUrl.trim(), { width: 1600, quality: 90 }) }}
+                    style={styles.imagePreview}
+                    resizeMode="cover"
+                  />
+                  <View style={[styles.hdBadge, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
+                    <Text style={styles.hdBadgeText}>HD Capa Otimizada</Text>
+                  </View>
+                </View>
+              ) : null}
             </View>
 
             {/* Comodidades (Amenities) */}
@@ -901,6 +1001,71 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.full,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  uploadRow: {
+    marginBottom: 4,
+  },
+  uploadBtn: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: theme.radius.md,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+  },
+  uploadBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  subLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  presetGrid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  presetChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: theme.radius.full,
+    borderWidth: 1,
+    gap: 4,
+  },
+  presetChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  imagePreviewContainer: {
+    height: 140,
+    borderRadius: theme.radius.md,
+    overflow: 'hidden',
+    marginTop: 8,
+    borderWidth: 1,
+    position: 'relative',
+  },
+  imagePreview: {
+    width: '100%',
+    height: '100%',
+  },
+  hdBadge: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: theme.radius.sm,
+  },
+  hdBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '700',
   },
   modalFooter: {
     flexDirection: 'row',

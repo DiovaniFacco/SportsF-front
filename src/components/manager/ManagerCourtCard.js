@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
 import { Edit3, Trash2, ShieldCheck, Sun, Umbrella, Users, DollarSign, Clock, Zap } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
+import { optimizeImageUrl } from '../../utils/imageUtils';
 
 export function ManagerCourtCard({ court, onEdit, onDelete, onOpenHours, onOpenPricing }) {
   const { colors } = useTheme();
@@ -30,9 +31,7 @@ export function ManagerCourtCard({ court, onEdit, onDelete, onOpenHours, onOpenP
       <View style={styles.imageContainer}>
         <Image
           source={{
-            uri:
-              court.image_url ||
-              'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80',
+            uri: optimizeImageUrl(court.image_url, { width: 1400, quality: 90 }),
           }}
           style={styles.courtImage}
           resizeMode="cover"
