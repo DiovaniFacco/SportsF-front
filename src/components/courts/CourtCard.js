@@ -23,7 +23,11 @@ export function CourtCard({ court, onSelectCourt }) {
       {/* Court Cover Image Header */}
       <View style={[styles.imageWrapper, { backgroundColor: colors.backgroundSecondary }]}>
         <Image
-          source={{ uri: court.image_url }}
+          source={{
+            uri:
+              court.image_url ||
+              'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80',
+          }}
           style={styles.coverImage}
           resizeMode="cover"
         />

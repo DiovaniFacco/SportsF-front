@@ -96,3 +96,15 @@ export async function logoutApi() {
     await secureStorage.removeItem('@auth_user');
   }
 }
+
+export async function getUsersApi() {
+  try {
+    const response = await apiClient.get('/users');
+    return response.data?.users || [];
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('Erro ao buscar lista de usuários:', error.message);
+    }
+    return [];
+  }
+}

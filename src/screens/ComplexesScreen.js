@@ -22,7 +22,6 @@ export function ComplexesScreen({ onSelectVenue, onOpenAuth, onOpenManager, acti
   const { colors } = useTheme();
   const [searchValue, setSearchValue] = useState('');
   const [selectedSport, setSelectedSport] = useState('Todos');
-  const [selectedCity, setSelectedCity] = useState('São Paulo, SP');
 
   const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,7 +43,6 @@ export function ComplexesScreen({ onSelectVenue, onOpenAuth, onOpenManager, acti
 
       try {
         const data = await getVenues({
-          city: selectedCity.split(',')[0].trim(),
           sport: selectedSport,
           search: searchValue,
         });
@@ -57,7 +55,7 @@ export function ComplexesScreen({ onSelectVenue, onOpenAuth, onOpenManager, acti
         setRefreshing(false);
       }
     },
-    [selectedCity, selectedSport, searchValue]
+    [selectedSport, searchValue]
   );
 
   useEffect(() => {
@@ -141,8 +139,6 @@ export function ComplexesScreen({ onSelectVenue, onOpenAuth, onOpenManager, acti
         <Header
           searchValue={searchValue}
           setSearchValue={setSearchValue}
-          selectedCity={selectedCity}
-          onSelectCity={setSelectedCity}
           onOpenAuth={onOpenAuth}
           onOpenManager={onOpenManager}
         />

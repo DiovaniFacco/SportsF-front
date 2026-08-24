@@ -66,19 +66,18 @@ function VolleyballIcon({ color }) {
   );
 }
 
-function BasketballIcon({ color }) {
+function FutevoleiIcon({ color }) {
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
       <Circle cx={12} cy={12} r={9.5} stroke={color} strokeWidth={1.5} />
-      <Line x1={2.5} y1={12} x2={21.5} y2={12} stroke={color} strokeWidth={1.3} />
-      <Line x1={12} y1={2.5} x2={12} y2={21.5} stroke={color} strokeWidth={1.3} />
+      <Line x1={2.5} y1={14} x2={21.5} y2={14} stroke={color} strokeWidth={1.3} strokeDasharray="2 2" />
       <Path
-        d="M5 5C8.5 8.5 8.5 15.5 5 19"
+        d="M12 2.5C12 9 8 13.5 2.5 14"
         stroke={color}
         strokeWidth={1.3}
       />
       <Path
-        d="M19 5C15.5 8.5 15.5 15.5 19 19"
+        d="M12 2.5C14.5 8 20 10.5 21.5 11"
         stroke={color}
         strokeWidth={1.3}
       />
@@ -89,10 +88,26 @@ function BasketballIcon({ color }) {
 function BeachTennisIcon({ color }) {
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-      <Circle cx={12} cy={12} r={9.5} stroke={color} strokeWidth={1.5} />
-      <Line x1={12} y1={2.5} x2={12} y2={21.5} stroke={color} strokeWidth={1.3} />
-      <Circle cx={12} cy={12} r={3} stroke={color} strokeWidth={1.3} />
-      <Line x1={2.5} y1={12} x2={21.5} y2={12} stroke={color} strokeWidth={1.3} />
+      <Circle cx={11} cy={10} r={7.5} stroke={color} strokeWidth={1.5} />
+      <Circle cx={9.5} cy={8.5} r={1} fill={color} />
+      <Circle cx={12.5} cy={8.5} r={1} fill={color} />
+      <Circle cx={11} cy={11.5} r={1} fill={color} />
+      <Line x1={16} y1={15} x2={21} y2={20} stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Circle cx={19} cy={6} r={2} stroke={color} strokeWidth={1.3} fill={color} />
+    </Svg>
+  );
+}
+
+function PadelIcon({ color }) {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Circle cx={11} cy={10} r={7.5} stroke={color} strokeWidth={1.5} />
+      <Circle cx={9} cy={8} r={0.8} fill={color} />
+      <Circle cx={13} cy={8} r={0.8} fill={color} />
+      <Circle cx={11} cy={10} r={0.8} fill={color} />
+      <Circle cx={9} cy={12} r={0.8} fill={color} />
+      <Circle cx={13} cy={12} r={0.8} fill={color} />
+      <Line x1={16} y1={15} x2={21} y2={20} stroke={color} strokeWidth={2.2} strokeLinecap="round" />
     </Svg>
   );
 }
@@ -106,13 +121,16 @@ function DefaultSportIcon({ color }) {
 }
 
 const ICON_MAP = {
-  FootballIcon,
-  FutsalIcon,
   VolleyballIcon,
-  BasketballIcon,
+  FutevoleiIcon,
   BeachTennisIcon,
-  TennisIcon: BeachTennisIcon,
-  PadelIcon: BeachTennisIcon,
+  PadelIcon,
+  'Vôlei': VolleyballIcon,
+  'Volei': VolleyballIcon,
+  'Futevôlei': FutevoleiIcon,
+  'Futvolei': FutevoleiIcon,
+  'Beach Tennis': BeachTennisIcon,
+  'Padel': PadelIcon,
   AllSportsIcon,
 };
 
@@ -126,8 +144,8 @@ export function SportChip({ selectedSport, onSelectSport }) {
     async function loadSportsData() {
       const sportsFromApi = await getSports();
       const mapped = sportsFromApi.map((s) => {
-        const iconKey = s.icon || 'DefaultSportIcon';
-        const IconComponent = ICON_MAP[iconKey] || DefaultSportIcon;
+        const iconKey = s.icon || s.name;
+        const IconComponent = ICON_MAP[iconKey] || ICON_MAP[s.name] || DefaultSportIcon;
         return {
           id: s.name,
           label: s.name,

@@ -9,6 +9,7 @@ import {
   ScrollView,
   Switch,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import {
   X,
@@ -23,6 +24,7 @@ import {
   ArrowLeft,
   Calendar,
   Layers,
+  Image as ImageIcon,
 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
@@ -63,6 +65,7 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
   const [surface, setSurface] = useState('Grama Sintética Pro');
   const [capacity, setCapacity] = useState('10 a 12 Jogadores');
   const [isCovered, setIsCovered] = useState(true);
+  const [imageUrl, setImageUrl] = useState('');
   const [selectedSportIds, setSelectedSportIds] = useState([]);
   const [availableSports, setAvailableSports] = useState([]);
 
@@ -102,6 +105,7 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
       setSurface(court.surface || 'Grama Sintética Pro');
       setCapacity(court.capacity || '10 a 12 Jogadores');
       setIsCovered(court.is_covered !== undefined ? Boolean(court.is_covered) : true);
+      setImageUrl(court.image_url || '');
 
       if (Array.isArray(court.sports)) {
         const sportsList = court.sports;
@@ -114,6 +118,17 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
       }
 
       // Carregar horários existentes se for edição
+      const existingHours = court.operating_hours || court.operatingHours;
+      if (Array.isArray(existingHours) && existingHours.length > 0) {
+        setOperatingHours(existingHours.map(h => ({
+          id: h.id,
+          day_of_week: Number(h.day_of_week),
+          start_time: h.start_time.substring(0, 5),
+          end_time: h.end_time.substring(0, 5),
+          slot_duration_minutes: Number(h.slot_duration_minutes) || 60,
+        })));
+      }
+
       getCourtOperatingHours(court.id)
         .then((hours) => {
           if (Array.isArray(hours) && hours.length > 0) {
@@ -124,11 +139,15 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
               end_time: h.end_time.substring(0, 5),
               slot_duration_minutes: Number(h.slot_duration_minutes) || 60,
             })));
-          } else {
+          } else if (!existingHours || existingHours.length === 0) {
             setOperatingHours(DEFAULT_WEEK_SHIFTS);
           }
         })
-        .catch(() => setOperatingHours(DEFAULT_WEEK_SHIFTS));
+        .catch(() => {
+          if (!existingHours || existingHours.length === 0) {
+            setOperatingHours(DEFAULT_WEEK_SHIFTS);
+          }
+        });
 
       setErrorMsg('');
     } else if (visible && !court) {
@@ -139,6 +158,7 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
       setSurface('Grama Sintética Pro');
       setCapacity('10 a 12 Jogadores');
       setIsCovered(true);
+      setImageUrl('');
       setSelectedSportIds([1]);
       setOperatingHours(DEFAULT_WEEK_SHIFTS);
       setErrorMsg('');
@@ -250,16 +270,13 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
         surface: surface.trim(),
         capacity: capacity.trim(),
         is_covered: isCovered,
+        image_url: imageUrl.trim() || null,
         sport_ids: selectedSportIds,
         operating_hours: operatingHours,
       };
 
       if (isEditing) {
         await updateCourt(court.id, payload);
-        // Atualizar turnos individualmente se for edição
-        for (const shift of operatingHours) {
-          await saveCourtOperatingHour(court.id, shift);
-        }
       } else {
         await createCourt(venueId, payload);
       }
@@ -369,6 +386,29 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
                     value={hourlyRate}
                     onChangeText={setHourlyRate}
                   />
+                </View>
+
+                {/* Link da Imagem da Quadra */}
+                <View style={styles.fieldGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>Link da Imagem da Quadra (URL)</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                    placeholder="https://exemplo.com/imagem-da-quadra.jpg"
+                    placeholderTextColor={colors.textMuted}
+                    value={imageUrl}
+                    onChangeText={setImageUrl}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  {imageUrl.trim() ? (
+                    <View style={[styles.imagePreviewContainer, { borderColor: colors.border }]}>
+                      <Image
+                        source={{ uri: imageUrl.trim() }}
+                        style={styles.imagePreview}
+                        resizeMode="cover"
+                      />
+                    </View>
+                  ) : null}
                 </View>
 
                 {/* Modalidades / Esportes */}
@@ -701,12 +741,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.65)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xs || 8,
+    paddingVertical: theme.spacing.sm,
   },
   modalContainer: {
-    width: '100%',
+    width: '96%',
     maxWidth: 580,
-    maxHeight: '90%',
+    maxHeight: '92%',
     borderRadius: theme.radius.xl,
     borderWidth: 1,
     shadowColor: '#000000',
@@ -720,24 +761,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
     borderBottomWidth: 1,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
+    flex: 1,
   },
   iconBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
   },
   modalTitle: {
-    fontSize: theme.typography.sizes.h4,
+    fontSize: theme.typography.sizes.body1,
     fontWeight: '700',
   },
   modalSubtitle: {
@@ -749,35 +791,36 @@ const styles = StyleSheet.create({
   stepperBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: theme.spacing.md,
+    justifyContent: 'space-around',
+    paddingVertical: 8,
+    paddingHorizontal: theme.spacing.sm,
     borderBottomWidth: 1,
-    gap: 12,
+    gap: 4,
   },
   stepTab: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 4,
-    gap: 6,
+    gap: 4,
+    flexShrink: 1,
   },
   stepNumber: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   stepNumberText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
   },
   stepLabel: {
-    fontSize: theme.typography.sizes.caption,
+    fontSize: 12,
     fontWeight: '700',
   },
   modalBody: {
-    padding: theme.spacing.lg,
+    padding: theme.spacing.md,
   },
   errorBox: {
     flexDirection: 'row',
@@ -819,7 +862,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   input: {
-    height: 46,
+    height: 44,
     borderWidth: 1,
     borderRadius: theme.radius.md,
     paddingHorizontal: theme.spacing.md,
@@ -829,7 +872,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderWidth: 1,
     borderRadius: theme.radius.md,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     fontSize: theme.typography.sizes.body2,
   },
   sportsGrid: {
@@ -980,10 +1023,12 @@ const styles = StyleSheet.create({
   },
   rowInputs: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
   },
   inputFlex: {
     flex: 1,
+    minWidth: 80,
   },
   inputLabel: {
     fontSize: 11,
@@ -1006,33 +1051,50 @@ const styles = StyleSheet.create({
   modalFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     padding: theme.spacing.md,
     borderTopWidth: 1,
-    gap: theme.spacing.md,
+    gap: 8,
   },
   btnCancel: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: 12,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 11,
     borderRadius: theme.radius.md,
     borderWidth: 1,
   },
   btnCancelText: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: 13,
     fontWeight: '600',
+    textAlign: 'center',
+  },
+  imagePreviewContainer: {
+    height: 120,
+    borderRadius: theme.radius.md,
+    overflow: 'hidden',
+    marginTop: 8,
+    borderWidth: 1,
+  },
+  imagePreview: {
+    width: '100%',
+    height: '100%',
   },
   btnSave: {
+    flex: 1.4,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.xl,
-    paddingVertical: 12,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 11,
     borderRadius: theme.radius.md,
   },
   btnSaveText: {
     color: '#FFFFFF',
-    fontSize: theme.typography.sizes.body2,
+    fontSize: 13,
     fontWeight: '700',
+    textAlign: 'center',
   },
 });

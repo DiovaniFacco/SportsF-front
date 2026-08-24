@@ -1,19 +1,24 @@
 import React from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Platform } from 'react-native';
-import { Search, X, SlidersHorizontal, LogIn, LogOut, User, Building2 } from 'lucide-react-native';
+import { Search, X, LogIn, LogOut, Building2 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { theme } from '../../styles/theme';
 
-export function Header({ searchValue, setSearchValue, onOpenFilter, onOpenAuth, onOpenManager }) {
+export function Header({
+  searchValue,
+  setSearchValue,
+  onOpenAuth,
+  onOpenManager,
+}) {
   const { colors } = useTheme();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isManager, logout } = useAuth();
 
   const userName = user?.name ? user.name.split(' ')[0] : 'Esportista';
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
-      {/* Top Bar: Brand Logo & Controls (Auth Status) */}
+      {/* Top Bar: Brand Logo & Right Action Buttons */}
       <View style={styles.topBar}>
         <View style={styles.logoContainer}>
           <Text style={[styles.letraS, { color: colors.letraS, textShadowColor: 'rgba(136, 19, 55, 0.4)' }]}>S</Text>
@@ -21,14 +26,14 @@ export function Header({ searchValue, setSearchValue, onOpenFilter, onOpenAuth, 
         </View>
 
         <View style={styles.rightActions}>
-          {/* Botão de Painel de Gestão para Gestores */}
-          {user && (user.role === 'GESTOR_ESPACO' || user.role === 'ADMIN') ? (
+          {/* Botão de Painel de Gestão para Gestores / Admins */}
+          {isAuthenticated && (isManager || user?.role?.toUpperCase() === 'ADMIN' || user?.role?.toUpperCase() === 'GESTOR_ESPACO') ? (
             <TouchableOpacity
               activeOpacity={0.75}
               onPress={onOpenManager}
               style={[styles.authBadge, { backgroundColor: colors.primary + '18', borderColor: colors.primary }]}
             >
-              <Building2 size={15} color={colors.primary} style={{ marginRight: 5 }} />
+              <Building2 size={14} color={colors.primary} style={{ marginRight: 4 }} />
               <Text style={[styles.authBadgeText, { color: colors.primary }]}>Gestão</Text>
             </TouchableOpacity>
           ) : null}
@@ -41,7 +46,7 @@ export function Header({ searchValue, setSearchValue, onOpenFilter, onOpenAuth, 
               style={[styles.authBadge, { backgroundColor: colors.primaryLight, borderColor: colors.primary }]}
               accessibilityLabel="Sair da conta"
             >
-              <LogOut size={15} color={colors.primary} style={{ marginRight: 5 }} />
+              <LogOut size={14} color={colors.primary} style={{ marginRight: 4 }} />
               <Text style={[styles.authBadgeText, { color: colors.primary }]}>Sair</Text>
             </TouchableOpacity>
           ) : (
@@ -51,7 +56,7 @@ export function Header({ searchValue, setSearchValue, onOpenFilter, onOpenAuth, 
               style={[styles.authBadge, { backgroundColor: colors.primary, borderColor: colors.primary }]}
               accessibilityLabel="Entrar ou Cadastrar"
             >
-              <LogIn size={15} color="#FFFFFF" style={{ marginRight: 5 }} />
+              <LogIn size={14} color="#FFFFFF" style={{ marginRight: 4 }} />
               <Text style={[styles.authBadgeText, { color: '#FFFFFF' }]}>Entrar</Text>
             </TouchableOpacity>
           )}
@@ -61,13 +66,15 @@ export function Header({ searchValue, setSearchValue, onOpenFilter, onOpenAuth, 
       {/* Greeting & Hero Title */}
       <View style={styles.heroTextContainer}>
         <Text style={[styles.greetingText, { color: colors.textSecondary }]}>Olá, {userName}</Text>
-        <Text style={[styles.heroTitleMain, { color: colors.textPrimary }]}>Encontre e reserve</Text>
-        <Text style={[styles.heroTitleHighlight, { color: colors.primary }]}>sua quadra</Text>
+        <View style={styles.heroTitleRow}>
+          <Text style={[styles.heroTitleMain, { color: colors.textPrimary }]}>Encontre e reserve </Text>
+          <Text style={[styles.heroTitleHighlight, { color: colors.primary }]}>sua quadra</Text>
+        </View>
       </View>
 
-      {/* Search Input Bar with Filter Button */}
+      {/* Search Input Bar (Busca Geral) */}
       <View style={[styles.searchBarContainer, { backgroundColor: colors.searchBg, borderColor: colors.border }]}>
-        <Search size={20} color={colors.textMuted} style={styles.searchIcon} />
+        <Search size={18} color={colors.textMuted} style={styles.searchIcon} />
         <TextInput
           style={[styles.searchInput, { color: colors.textPrimary }]}
           placeholder="Buscar quadras, esportes ou locais"
@@ -85,14 +92,6 @@ export function Header({ searchValue, setSearchValue, onOpenFilter, onOpenAuth, 
             <X size={18} color={colors.textMuted} />
           </TouchableOpacity>
         ) : null}
-
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={onOpenFilter}
-          style={styles.filterBtn}
-        >
-          <SlidersHorizontal size={18} color={colors.textMuted} />
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -109,17 +108,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: theme.spacing.sm,
+    flexWrap: 'nowrap',
   },
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'baseline',
+    flexShrink: 1,
   },
   letraS: {
     fontFamily:
       Platform.OS === 'web'
         ? "'Great Vibes', cursive, 'GreatVibes_400Regular'"
         : 'GreatVibes_400Regular',
-    fontSize: 46,
+    fontSize: 42,
     marginRight: -4,
     textShadowOffset: { width: 0.5, height: 0.5 },
     textShadowRadius: 1,
@@ -129,53 +130,51 @@ const styles = StyleSheet.create({
       Platform.OS === 'web'
         ? "'Josefin Sans', sans-serif, 'JosefinSans_700Bold'"
         : 'JosefinSans_700Bold',
-    fontSize: 34,
+    fontSize: 30,
     fontWeight: '700',
     letterSpacing: -1,
-  },
-  themeBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: theme.radius.full,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   rightActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+    flexShrink: 0,
   },
   authBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    height: 36,
+    paddingHorizontal: 10,
+    height: 34,
     borderRadius: theme.radius.full,
     borderWidth: 1,
   },
   authBadgeText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
   },
   heroTextContainer: {
     marginBottom: theme.spacing.md,
   },
   greetingText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
-    marginBottom: 4,
+    marginBottom: 2,
+  },
+  heroTitleRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'baseline',
   },
   heroTitleMain: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
-    lineHeight: 34,
+    lineHeight: 30,
     letterSpacing: -0.5,
   },
   heroTitleHighlight: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
-    lineHeight: 34,
+    lineHeight: 30,
     letterSpacing: -0.5,
   },
   searchBarContainer: {
@@ -184,23 +183,18 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.lg,
     borderWidth: 1,
     paddingHorizontal: 14,
-    height: 52,
+    height: 48,
   },
   searchIcon: {
-    marginRight: 10,
+    marginRight: 8,
   },
   searchInput: {
     flex: 1,
     fontSize: 14,
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
   clearBtn: {
     padding: 6,
-    marginRight: 4,
-  },
-  filterBtn: {
-    padding: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });
+

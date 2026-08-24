@@ -203,9 +203,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: theme.spacing.md,
     borderTopWidth: 1,
+    gap: 8,
+    flexWrap: 'wrap',
   },
   priceContainer: {
     justifyContent: 'center',
+    flexShrink: 1,
   },
   priceLabel: {
     fontSize: 11,
@@ -221,28 +224,29 @@ const styles = StyleSheet.create({
     marginRight: 2,
   },
   priceValue: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     fontVariant: ['tabular-nums'],
   },
   perHour: {
-    fontSize: 12,
+    fontSize: 11,
     marginLeft: 2,
   },
   ctaButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
     borderRadius: theme.radius.md,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
     elevation: 3,
+    flexShrink: 0,
   },
   ctaText: {
     color: '#FFFFFF',
-    fontSize: theme.typography.sizes.button,
+    fontSize: 13,
     fontWeight: '700',
   },
 });

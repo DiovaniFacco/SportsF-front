@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import secureStorage from '../services/secureStorage';
-import { loginApi, registerApi, googleAuthApi, logoutApi } from '../api/auth';
+import { loginApi, registerApi, googleAuthApi, logoutApi, getMeApi } from '../api/auth';
 
 const AuthContext = createContext({
   user: null,
@@ -18,7 +18,7 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Restore existing session on mount
+  // Restore existing session on mount and refresh profile from backend
   useEffect(() => {
     async function loadStoredAuth() {
       try {
@@ -27,6 +27,16 @@ export function AuthProvider({ children }) {
         if (storedToken && storedUser) {
           setToken(storedToken);
           setUser(JSON.parse(storedUser));
+
+          // Atualiza dados atualizados do perfil a partir do backend (garante role em tempo real)
+          try {
+            const freshUser = await getMeApi();
+            if (freshUser) {
+              setUser(freshUser);
+            }
+          } catch (e) {
+            // Ignora falha de rede se estiver offline
+          }
         }
       } catch (error) {
         if (__DEV__) {

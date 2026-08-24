@@ -8,7 +8,7 @@ import apiClient from './client';
 export async function getCourtPricingRules(courtId) {
   try {
     const response = await apiClient.get(`/courts/${courtId}/pricing-rules`);
-    return response.data?.pricing_rules || [];
+    return response.data?.data?.pricing_rules || response.data?.pricing_rules || [];
   } catch (error) {
     console.warn(`Erro ao buscar regras de preço da quadra ${courtId}:`, error.message);
     throw error;
@@ -52,7 +52,7 @@ export async function deleteCourtPricingRule(ruleId) {
 export async function getCourtSpecialPrices(courtId) {
   try {
     const response = await apiClient.get(`/courts/${courtId}/special-prices`);
-    return response.data?.special_prices || [];
+    return response.data?.data?.special_prices || response.data?.special_prices || [];
   } catch (error) {
     console.warn(`Erro ao buscar preços especiais da quadra ${courtId}:`, error.message);
     throw error;

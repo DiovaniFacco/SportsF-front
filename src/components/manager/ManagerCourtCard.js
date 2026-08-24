@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
-import { Edit3, Trash2, ShieldCheck, Sun, Umbrella, Users, DollarSign, Clock } from 'lucide-react-native';
+import { Edit3, Trash2, ShieldCheck, Sun, Umbrella, Users, DollarSign, Clock, Zap } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 
@@ -19,6 +19,10 @@ export function ManagerCourtCard({ court, onEdit, onDelete, onOpenHours, onOpenP
         maximumFractionDigits: 2,
       })
     : '150,00';
+
+  const rulesCount = (court.pricing_rules?.length || court.pricingRules?.length || 0);
+  const specialCount = (court.special_prices?.length || court.specialPrices?.length || 0);
+  const hasFlexiblePricing = rulesCount > 0 || specialCount > 0;
 
   return (
     <View style={[styles.cardContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -70,6 +74,20 @@ export function ManagerCourtCard({ court, onEdit, onDelete, onOpenHours, onOpenP
               <Text style={[styles.sportChipText, { color: colors.primary }]}>{sportName}</Text>
             </View>
           ))}
+
+          {hasFlexiblePricing ? (
+            <View
+              style={[
+                styles.sportChip,
+                { backgroundColor: '#EAB30818', borderColor: '#EAB30850', flexDirection: 'row', alignItems: 'center', gap: 3 },
+              ]}
+            >
+              <Zap size={11} color="#EAB308" />
+              <Text style={[styles.sportChipText, { color: colors.text }]}>
+                Tarifa Flexível ({rulesCount + specialCount})
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         {/* Detalhes de Superfície e Capacidade */}

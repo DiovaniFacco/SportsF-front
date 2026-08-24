@@ -36,6 +36,8 @@ export function BottomNav({ activeTab = 'explorar', onTabChange }) {
           >
             <IconComponent size={20} color={iconColor} strokeWidth={isActive ? 2.5 : 1.75} />
             <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
               style={[
                 styles.label,
                 { color: isActive ? colors.primary : colors.textMuted, fontWeight: isActive ? '700' : '500' },
@@ -67,14 +69,16 @@ const styles = StyleSheet.create({
     zIndex: theme.zIndex.bottomNav,
   },
   navButton: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 64,
+    paddingHorizontal: 2,
     minHeight: 44,
     gap: 3,
   },
   label: {
-    fontSize: theme.typography.sizes.caption,
+    fontSize: 11,
+    textAlign: 'center',
   },
   activeDot: {
     width: 4,

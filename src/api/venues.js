@@ -1,4 +1,5 @@
 import axios from 'axios';
+import apiClient from './client';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -10,6 +11,98 @@ const DEFAULT_COURT_IMAGES = [
   'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=800&q=80',
   'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?auto=format&fit=crop&w=800&q=80',
 ];
+
+/**
+ * Cadastra um novo complexo esportivo (exclusivo para ADMIN).
+ */
+export async function createVenue(venueData) {
+  try {
+    const response = await apiClient.post('/venues', venueData);
+    return response.data?.venue || response.data;
+  } catch (error) {
+    console.error('Erro ao criar complexo:', error.response?.data || error.message);
+    throw error;
+  }
+}
+
+/**
+ * Atualiza um complexo esportivo existente.
+ */
+export async function updateVenue(venueId, venueData) {
+  try {
+    const response = await apiClient.put(`/venues/${venueId}`, venueData);
+    return response.data?.venue || response.data;
+  } catch (error) {
+    console.error(`Erro ao atualizar complexo ${venueId}:`, error.response?.data || error.message);
+    throw error;
+  }
+}
+
+/**
+ * Remove/exclui um complexo esportivo (exclusivo para ADMIN).
+ */
+export async function deleteVenue(venueId) {
+  try {
+    const response = await apiClient.delete(`/venues/${venueId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Erro ao excluir complexo ${venueId}:`, error.response?.data || error.message);
+    throw error;
+  }
+}
+
+/**
+ * Busca a lista de cidades com complexos esportivos cadastrados.
+ */
+export async function getCities() {
+  try {
+    const response = await axios.get(`${API_URL}/cities`, { timeout: 5000 });
+    return response.data?.cities || [];
+  } catch (error) {
+    console.error('Erro ao buscar cidades:', error.message);
+    return [];
+  }
+}
+
+/**
+ * Busca a lista de comodidades (amenities) cadastradas.
+ */
+export async function getAmenities() {
+  try {
+    const response = await apiClient.get('/amenities');
+    return response.data?.amenities || response.data || [];
+  } catch (error) {
+    console.error('Erro ao buscar comodidades:', error.message);
+    return [];
+  }
+}
+
+/**
+ * Cadastra uma nova comodidade (amenity).
+ */
+export async function createAmenity(name) {
+  try {
+    const response = await apiClient.post('/amenities', { name });
+    return response.data?.amenity || response.data;
+  } catch (error) {
+    console.error('Erro ao criar comodidade:', error.response?.data || error.message);
+    const msg = error.response?.data?.message || (error.response?.data?.errors?.name ? error.response.data.errors.name[0] : null) || 'Erro ao cadastrar comodidade.';
+    throw new Error(msg);
+  }
+}
+
+/**
+ * Remove uma comodidade (amenity).
+ */
+export async function deleteAmenity(amenityId) {
+  try {
+    const response = await apiClient.delete(`/amenities/${amenityId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Erro ao excluir comodidade ${amenityId}:`, error.response?.data || error.message);
+    throw error;
+  }
+}
 
 /**
  * Busca a lista de complexos esportivos consumindo a API Laravel.

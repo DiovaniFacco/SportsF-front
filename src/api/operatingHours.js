@@ -6,7 +6,7 @@ import apiClient from './client';
 export async function getCourtOperatingHours(courtId) {
   try {
     const response = await apiClient.get(`/courts/${courtId}/operating-hours`);
-    return response.data?.operating_hours || [];
+    return response.data?.data?.operating_hours || response.data?.operating_hours || [];
   } catch (error) {
     console.warn(`Erro ao buscar horários de funcionamento da quadra ${courtId}:`, error.message);
     throw error;

@@ -57,8 +57,43 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
   const [ruleLabel, setRuleLabel] = useState('Horário de Pico');
   const [pricingRules, setPricingRules] = useState([]);
 
+  // Helper para formatar ISO YYYY-MM-DD para o padrão brasileiro DD/MM/AAAA
+  const formatBrDate = (isoDate) => {
+    if (!isoDate) return '';
+    const clean = isoDate.split('T')[0];
+    const parts = clean.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return isoDate;
+  };
+
+  // Helper para converter DD/MM/AAAA ou YYYY-MM-DD em YYYY-MM-DD
+  const parseInputDateToIso = (dateStr) => {
+    if (!dateStr) return '';
+    const trimmed = dateStr.trim();
+    if (trimmed.includes('/')) {
+      const parts = trimmed.split('/');
+      if (parts.length === 3) {
+        let day = parts[0].padStart(2, '0');
+        let month = parts[1].padStart(2, '0');
+        let year = parts[2];
+        if (year.length === 2) year = `20${year}`;
+        return `${year}-${month}-${day}`;
+      }
+    }
+    return trimmed;
+  };
+
+  const getTodayBrDate = () => {
+    const now = new Date();
+    const d = String(now.getDate()).padStart(2, '0');
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    return `${d}/${m}/${now.getFullYear()}`;
+  };
+
   // Special Price States (Feriados / Datas)
-  const [specialDate, setSpecialDate] = useState(new Date().toISOString().split('T')[0]);
+  const [specialDate, setSpecialDate] = useState(getTodayBrDate());
   const [specialRate, setSpecialRate] = useState('');
   const [specialLabel, setSpecialLabel] = useState('Feriado / Data Especial');
   const [specialPrices, setSpecialPrices] = useState([]);
@@ -91,11 +126,24 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
     if (visible && court) {
       setRuleRate(court.hourly_rate ? String(court.hourly_rate * 1.2) : '180');
       setSpecialRate(court.hourly_rate ? String(court.hourly_rate * 1.3) : '200');
+      setSpecialDate(getTodayBrDate());
       setErrorMsg('');
       setSuccessMsg('');
       fetchPricingData();
     }
   }, [visible, court, fetchPricingData]);
+
+  // Helper para formatar horários no formato HH:mm (ex: 9:00 -> 09:00)
+  const formatTime = (t) => {
+    if (!t) return '';
+    const parts = t.trim().split(':');
+    if (parts.length >= 2) {
+      const h = parts[0].padStart(2, '0');
+      const m = parts[1].padStart(2, '0');
+      return `${h}:${m}`;
+    }
+    return t.trim();
+  };
 
   // Handler para salvar Regra de Horário Nobre
   const handleCreateRule = async () => {
@@ -112,6 +160,27 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
       return;
     }
 
+    const startFormatted = formatTime(ruleStartTime);
+    const endFormatted = formatTime(ruleEndTime);
+
+    if (startFormatted >= endFormatted) {
+      setErrorMsg('O horário inicial deve ser anterior ao horário final.');
+      return;
+    }
+
+    // Validação de sobreposição no lado do cliente
+    const hasOverlap = pricingRules.some((rule) => {
+      if (Number(rule.day_of_week) !== Number(ruleDay)) return false;
+      const rStart = rule.start_time.substring(0, 5);
+      const rEnd = rule.end_time.substring(0, 5);
+      return startFormatted < rEnd && endFormatted > rStart;
+    });
+
+    if (hasOverlap) {
+      setErrorMsg('Já existe um horário nobre cadastrado para este dia da semana que se sobrepõe ao horário informado.');
+      return;
+    }
+
     setSubmitting(true);
     setErrorMsg('');
     setSuccessMsg('');
@@ -119,8 +188,8 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
     try {
       await createCourtPricingRule(court.id, {
         day_of_week: ruleDay,
-        start_time: ruleStartTime.trim(),
-        end_time: ruleEndTime.trim(),
+        start_time: startFormatted,
+        end_time: endFormatted,
         hourly_rate: rateNum,
         label: ruleLabel.trim() || 'Horário de Pico',
       });
@@ -129,7 +198,10 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
       await fetchPricingData();
       onSuccess && onSuccess();
     } catch (err) {
-      const msg = err.response?.data?.message || 'Erro ao adicionar regra de preço.';
+      const msg =
+        err.response?.data?.message ||
+        (err.response?.data?.errors ? Object.values(err.response.data.errors).flat().join(' ') : null) ||
+        'Erro ao adicionar regra de preço.';
       setErrorMsg(msg);
     } finally {
       setSubmitting(false);
@@ -170,7 +242,24 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
     }
 
     if (!specialDate.trim()) {
-      setErrorMsg('Informe a data no formato AAAA-MM-DD.');
+      setErrorMsg('Informe a data no formato DD/MM/AAAA.');
+      return;
+    }
+
+    const isoDate = parseInputDateToIso(specialDate);
+    if (!isoDate || isoDate.length !== 10) {
+      setErrorMsg('Informe uma data válida no formato DD/MM/AAAA (ex: 25/12/2026).');
+      return;
+    }
+
+    // Validação de duplicidade de data no lado do cliente
+    const hasDuplicateDate = specialPrices.some((sp) => {
+      const spDate = sp.event_date ? sp.event_date.split('T')[0] : '';
+      return spDate === isoDate;
+    });
+
+    if (hasDuplicateDate) {
+      setErrorMsg('Já existe uma tarifa de feriado cadastrada para esta data.');
       return;
     }
 
@@ -180,7 +269,7 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
 
     try {
       await createCourtSpecialPrice(court.id, {
-        event_date: specialDate.trim(),
+        event_date: isoDate,
         hourly_rate: rateNum,
         label: specialLabel.trim() || 'Data Especial / Feriado',
       });
@@ -189,7 +278,10 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
       await fetchPricingData();
       onSuccess && onSuccess();
     } catch (err) {
-      const msg = err.response?.data?.message || 'Erro ao cadastrar preço especial.';
+      const msg =
+        err.response?.data?.message ||
+        (err.response?.data?.errors ? Object.values(err.response.data.errors).flat().join(' ') : null) ||
+        'Erro ao cadastrar preço especial.';
       setErrorMsg(msg);
     } finally {
       setSubmitting(false);
@@ -470,10 +562,10 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
 
                   <View style={styles.rowInputs}>
                     <View style={styles.inputFlex}>
-                      <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Data (AAAA-MM-DD)</Text>
+                      <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Data do Feriado (DD/MM/AAAA)</Text>
                       <TextInput
                         style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                        placeholder="2026-12-25"
+                        placeholder="25/12/2026"
                         placeholderTextColor={colors.textMuted}
                         value={specialDate}
                         onChangeText={setSpecialDate}
@@ -542,7 +634,7 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
                           <View style={{ flex: 1 }}>
                             <View style={styles.ruleHeader}>
                               <Text style={[styles.ruleDayName, { color: colors.text }]}>
-                                📅 {sp.event_date}
+                                📅 {formatBrDate(sp.event_date)}
                               </Text>
                               <View style={[styles.ruleBadge, { backgroundColor: colors.primary + '18' }]}>
                                 <Text style={[styles.ruleBadgeText, { color: colors.primary }]}>
@@ -591,12 +683,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.65)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xs || 8,
+    paddingVertical: theme.spacing.sm,
   },
   modalContainer: {
-    width: '100%',
+    width: '96%',
     maxWidth: 560,
-    maxHeight: '90%',
+    maxHeight: '92%',
     borderRadius: theme.radius.xl,
     borderWidth: 1,
     shadowColor: '#000000',
