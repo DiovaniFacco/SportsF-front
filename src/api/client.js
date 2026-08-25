@@ -1,10 +1,21 @@
 import axios from 'axios';
 import secureStorage from '../services/secureStorage';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+export const getApiUrl = () => {
+  let url = (process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1').trim();
+  url = url.replace(/\/+$/, '');
+  if (!url.endsWith('/api/v1')) {
+    if (url.endsWith('/api')) {
+      url += '/v1';
+    } else {
+      url += '/api/v1';
+    }
+  }
+  return url;
+};
 
 const apiClient = axios.create({
-  baseURL: API_URL,
+  baseURL: getApiUrl(),
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',

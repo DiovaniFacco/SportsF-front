@@ -1,9 +1,7 @@
 import axios from 'axios';
-import apiClient from './client';
+import apiClient, { getApiUrl } from './client';
 import { optimizeImageUrl } from '../utils/imageUtils';
 import { slugify } from '../utils/linking';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 const DEFAULT_VENUE_IMAGE = 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1600&q=90';
 const DEFAULT_COURT_IMAGES = [
@@ -58,7 +56,7 @@ export async function deleteVenue(venueId) {
  */
 export async function getCities() {
   try {
-    const response = await axios.get(`${API_URL}/cities`, { timeout: 5000 });
+    const response = await axios.get(`${getApiUrl()}/cities`, { timeout: 5000 });
     return response.data?.cities || [];
   } catch (error) {
     console.error('Erro ao buscar cidades:', error.message);
@@ -116,7 +114,7 @@ export async function getVenues({ city, sport, search } = {}) {
     if (sport && sport !== 'Todos') params.sport = sport;
     if (search) params.search = search;
 
-    const response = await axios.get(`${API_URL}/venues`, {
+    const response = await axios.get(`${getApiUrl()}/venues`, {
       timeout: 5000,
       params,
     });
@@ -139,7 +137,7 @@ export async function getVenues({ city, sport, search } = {}) {
  */
 export async function getVenueDetails(venueId) {
   try {
-    const response = await axios.get(`${API_URL}/venues/${venueId}`, { timeout: 5000 });
+    const response = await axios.get(`${getApiUrl()}/venues/${venueId}`, { timeout: 5000 });
     const rawVenue = response.data.venue || response.data;
     if (!rawVenue || !rawVenue.id) return null;
     return normalizeVenue(rawVenue, rawVenue.id);
