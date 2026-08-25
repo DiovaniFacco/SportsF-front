@@ -39,7 +39,13 @@ import { ManagerMetricsCards } from './ManagerMetricsCards';
 export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBlockModal, refreshKey }) {
   const { colors } = useTheme();
 
-  const getTodayStr = () => new Date().toISOString().split('T')[0];
+  const getTodayStr = () => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
 
   const [selectedDate, setSelectedDate] = useState(getTodayStr());
   const [selectedCourtId, setSelectedCourtId] = useState('ALL'); // 'ALL' or courtId
@@ -64,7 +70,10 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
     for (let i = 0; i < 7; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
-      const dateStr = d.toISOString().split('T')[0];
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const dateStr = `${yyyy}-${mm}-${dd}`;
       const dayLabel = i === 0 ? 'Hoje' : i === 1 ? 'Amanhã' : d.toLocaleDateString('pt-BR', { weekday: 'short' });
       const dayNum = d.getDate();
       const monthStr = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
@@ -374,7 +383,9 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
                     const b = slotInfo.booking;
                     const client = b.customer_name || b.user?.name || 'Cliente';
                     const origin = b.is_manual ? 'Balcão / Presencial' : 'Aplicativo';
-                    const confirmMsg = `Reserva: ${client}\nOrigem: ${origin}\nHorário: ${b.start_time.substring(11, 16)} às ${b.end_time.substring(11, 16)}\n\nDeseja cancelar esta reserva?`;
+                    const startStr = extractTimeStr(b.start_time);
+                    const endStr = extractTimeStr(b.end_time);
+                    const confirmMsg = `Reserva: ${client}\nOrigem: ${origin}\nHorário: ${startStr} às ${endStr}\n\nDeseja cancelar esta reserva?`;
 
                     if (Platform.OS === 'web') {
                       if (window.confirm(confirmMsg)) {
@@ -409,6 +420,25 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
   );
 }
 
+function isSameDate(dateTimeStr, targetDateStr) {
+  if (!dateTimeStr || !targetDateStr) return false;
+  const cleanStr = String(dateTimeStr).trim();
+  const datePart = cleanStr.substring(0, 10);
+  return datePart === targetDateStr;
+}
+
+function extractTimeStr(dateTimeStr) {
+  if (!dateTimeStr) return '';
+  const str = String(dateTimeStr).trim();
+  if (str.includes('T')) {
+    return str.split('T')[1]?.substring(0, 5) || '';
+  }
+  if (str.includes(' ')) {
+    return str.split(' ')[1]?.substring(0, 5) || '';
+  }
+  return str.substring(0, 5);
+}
+
 /**
  * Componente que renderiza a matriz de horários verdadeiramente dinâmica para uma quadra.
  */
@@ -423,9 +453,9 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
   let blockedCount = 0;
 
   slots.forEach((slot) => {
-    const slotStartStr = slot.start_time?.substring(11, 16);
-    const isBlocked = slot.blocked || courtBlocks.some((cb) => cb.start_time?.substring(11, 16) === slotStartStr);
-    const b = bookings.find((bk) => bk.start_time?.substring(11, 16) === slotStartStr);
+    const slotStartStr = extractTimeStr(slot.start_time);
+    const isBlocked = slot.blocked || courtBlocks.some((cb) => isSameDate(cb.start_time, selectedDate) && extractTimeStr(cb.start_time) === slotStartStr);
+    const b = bookings.find((bk) => isSameDate(bk.start_time, selectedDate) && extractTimeStr(bk.start_time) === slotStartStr);
 
     if (isBlocked) {
       blockedCount++;
@@ -463,12 +493,12 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
       ) : (
         <View style={styles.gridWrapContainer}>
           {slots.map((slot) => {
-            const slotStartStr = slot.start_time?.substring(11, 16);
-            const slotEndStr = slot.end_time?.substring(11, 16);
+            const slotStartStr = extractTimeStr(slot.start_time);
+            const slotEndStr = extractTimeStr(slot.end_time);
             const displayTime = slot.formatted_time || `${slotStartStr} - ${slotEndStr}`;
 
-            const matchingBlock = courtBlocks.find((cb) => cb.start_time?.substring(11, 16) === slotStartStr);
-            const matchingBooking = bookings.find((b) => b.start_time?.substring(11, 16) === slotStartStr);
+            const matchingBlock = courtBlocks.find((cb) => isSameDate(cb.start_time, selectedDate) && extractTimeStr(cb.start_time) === slotStartStr);
+            const matchingBooking = bookings.find((b) => isSameDate(b.start_time, selectedDate) && extractTimeStr(b.start_time) === slotStartStr);
 
             let status = 'free';
             if (matchingBlock || slot.blocked) {

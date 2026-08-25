@@ -15,6 +15,8 @@ import { X, Calendar, Clock, AlertTriangle, ShieldAlert, CheckCircle2 } from 'lu
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { createCourtBlock } from '../../api/courtBlocks';
+import { DatePickerInput } from '../common/DatePickerInput';
+import { TimePickerInput } from '../common/TimePickerInput';
 
 export function CourtBlockModal({
   visible,
@@ -28,7 +30,13 @@ export function CourtBlockModal({
 }) {
   const { colors } = useTheme();
 
-  const getTodayStr = () => new Date().toISOString().split('T')[0];
+  const getTodayStr = () => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
 
   const [selectedCourtId, setSelectedCourtId] = useState(initialCourtId);
   const [date, setDate] = useState(initialDate || getTodayStr());
@@ -170,47 +178,32 @@ export function CourtBlockModal({
 
             {/* Data */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Data (YYYY-MM-DD) *</Text>
-              <View style={[styles.inputWrapper, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                <Calendar size={18} color={colors.textMuted} style={{ marginRight: 10 }} />
-                <TextInput
-                  style={[styles.input, { color: colors.text }]}
-                  value={date}
-                  onChangeText={setDate}
-                  placeholder="Ex: 2026-08-20"
-                  placeholderTextColor={colors.textMuted}
-                />
-              </View>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>Data *</Text>
+              <DatePickerInput
+                value={date}
+                onChangeDate={setDate}
+                colors={colors}
+              />
             </View>
 
             {/* Horários */}
             <View style={styles.rowInputs}>
               <View style={[styles.inputGroup, { flex: 1 }]}>
                 <Text style={[styles.inputLabel, { color: colors.text }]}>Início do Bloqueio *</Text>
-                <View style={[styles.inputWrapper, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                  <Clock size={18} color={colors.textMuted} style={{ marginRight: 8 }} />
-                  <TextInput
-                    style={[styles.input, { color: colors.text }]}
-                    value={startTime}
-                    onChangeText={setStartTime}
-                    placeholder="12:00"
-                    placeholderTextColor={colors.textMuted}
-                  />
-                </View>
+                <TimePickerInput
+                  value={startTime}
+                  onChangeTime={setStartTime}
+                  colors={colors}
+                />
               </View>
 
               <View style={[styles.inputGroup, { flex: 1 }]}>
                 <Text style={[styles.inputLabel, { color: colors.text }]}>Fim do Bloqueio *</Text>
-                <View style={[styles.inputWrapper, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                  <Clock size={18} color={colors.textMuted} style={{ marginRight: 8 }} />
-                  <TextInput
-                    style={[styles.input, { color: colors.text }]}
-                    value={endTime}
-                    onChangeText={setEndTime}
-                    placeholder="14:00"
-                    placeholderTextColor={colors.textMuted}
-                  />
-                </View>
+                <TimePickerInput
+                  value={endTime}
+                  onChangeTime={setEndTime}
+                  colors={colors}
+                />
               </View>
             </View>
 

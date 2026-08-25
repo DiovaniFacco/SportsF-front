@@ -34,6 +34,7 @@ import { getSports } from '../../api/sports';
 import { createCourt, updateCourt } from '../../api/courts';
 import { saveCourtOperatingHour, getCourtOperatingHours, deleteCourtOperatingHour } from '../../api/operatingHours';
 import { compressAndResizeImage, PRESET_COURT_IMAGES, optimizeImageUrl } from '../../utils/imageUtils';
+import { TimePickerInput } from '../common/TimePickerInput';
 
 const DAYS_OF_WEEK = [
   { id: 1, label: 'Segunda-feira', short: 'Seg' },
@@ -719,24 +720,20 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
 
                     <View style={styles.rowInputs}>
                       <View style={styles.inputFlex}>
-                        <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Início (HH:MM)</Text>
-                        <TextInput
-                          style={[styles.inputSmall, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                          placeholder="08:00"
-                          placeholderTextColor={colors.textMuted}
+                        <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Início</Text>
+                        <TimePickerInput
                           value={newShiftStart}
-                          onChangeText={setNewShiftStart}
+                          onChangeTime={setNewShiftStart}
+                          colors={colors}
                         />
                       </View>
 
                       <View style={styles.inputFlex}>
-                        <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Fim (HH:MM)</Text>
-                        <TextInput
-                          style={[styles.inputSmall, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                          placeholder="22:00"
-                          placeholderTextColor={colors.textMuted}
+                        <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Fim</Text>
+                        <TimePickerInput
                           value={newShiftEnd}
-                          onChangeText={setNewShiftEnd}
+                          onChangeTime={setNewShiftEnd}
+                          colors={colors}
                         />
                       </View>
 

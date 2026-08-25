@@ -15,6 +15,8 @@ import { X, Calendar, Clock, User, Phone, FileText, CheckCircle2, ShieldAlert } 
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { createBooking } from '../../api/bookings';
+import { DatePickerInput } from '../common/DatePickerInput';
+import { TimePickerInput } from '../common/TimePickerInput';
 
 export function ManualBookingModal({
   visible,
@@ -29,7 +31,13 @@ export function ManualBookingModal({
 }) {
   const { colors } = useTheme();
 
-  const getTodayStr = () => new Date().toISOString().split('T')[0];
+  const getTodayStr = () => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
 
   const [selectedCourtId, setSelectedCourtId] = useState(initialCourtId);
   const [date, setDate] = useState(initialDate || getTodayStr());
@@ -178,67 +186,34 @@ export function ManualBookingModal({
 
             {/* Data */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Data (YYYY-MM-DD) *</Text>
-              <View style={[styles.inputWrapper, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                <Calendar size={18} color={colors.textMuted} style={{ marginRight: 10 }} />
-                <TextInput
-                  style={[styles.input, { color: colors.text }]}
-                  value={date}
-                  onChangeText={setDate}
-                  placeholder="Ex: 2026-08-20"
-                  placeholderTextColor={colors.textMuted}
-                />
-              </View>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>Data *</Text>
+              <DatePickerInput
+                value={date}
+                onChangeDate={setDate}
+                colors={colors}
+              />
             </View>
 
             {/* Horário Início e Término */}
             <View style={styles.rowInputs}>
               <View style={[styles.inputGroup, { flex: 1 }]}>
                 <Text style={[styles.inputLabel, { color: colors.text }]}>Início *</Text>
-                <View style={[styles.inputWrapper, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                  <Clock size={18} color={colors.textMuted} style={{ marginRight: 8 }} />
-                  <TextInput
-                    style={[styles.input, { color: colors.text }]}
-                    value={startTime}
-                    onChangeText={setStartTime}
-                    placeholder="18:00"
-                    placeholderTextColor={colors.textMuted}
-                  />
-                </View>
+                <TimePickerInput
+                  value={startTime}
+                  onChangeTime={setStartTime}
+                  colors={colors}
+                />
               </View>
 
               <View style={[styles.inputGroup, { flex: 1 }]}>
                 <Text style={[styles.inputLabel, { color: colors.text }]}>Término *</Text>
-                <View style={[styles.inputWrapper, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                  <Clock size={18} color={colors.textMuted} style={{ marginRight: 8 }} />
-                  <TextInput
-                    style={[styles.input, { color: colors.text }]}
-                    value={endTime}
-                    onChangeText={setEndTime}
-                    placeholder="19:00"
-                    placeholderTextColor={colors.textMuted}
-                  />
-                </View>
+                <TimePickerInput
+                  value={endTime}
+                  onChangeTime={setEndTime}
+                  colors={colors}
+                />
               </View>
             </View>
-
-            {/* Atalhos Rápidos de Horário */}
-            <Text style={[styles.quickLabel, { color: colors.textMuted }]}>Horários Frequentes:</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickTimeScroll}>
-              {['08:00', '09:00', '10:00', '14:00', '18:00', '19:00', '20:00', '21:00'].map((time) => (
-                <TouchableOpacity
-                  key={time}
-                  onPress={() => {
-                    setStartTime(time);
-                    const hour = parseInt(time.split(':')[0], 10) + 1;
-                    setEndTime(`${String(hour).padStart(2, '0')}:00`);
-                  }}
-                  style={[styles.quickTimeBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
-                >
-                  <Text style={[styles.quickTimeText, { color: colors.text }]}>{time}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
 
             {/* Dados do Cliente */}
             <View style={styles.inputGroup}>

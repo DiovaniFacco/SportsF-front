@@ -25,6 +25,8 @@ import {
 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
+import { DatePickerInput } from '../common/DatePickerInput';
+import { TimePickerInput } from '../common/TimePickerInput';
 import {
   getCourtPricingRules,
   createCourtPricingRule,
@@ -442,22 +444,18 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
                   <View style={styles.rowInputs}>
                     <View style={styles.inputFlex}>
                       <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Horário Inicial</Text>
-                      <TextInput
-                        style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                        placeholder="18:00"
-                        placeholderTextColor={colors.textMuted}
+                      <TimePickerInput
                         value={ruleStartTime}
-                        onChangeText={setRuleStartTime}
+                        onChangeTime={setRuleStartTime}
+                        colors={colors}
                       />
                     </View>
                     <View style={styles.inputFlex}>
                       <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Horário Final</Text>
-                      <TextInput
-                        style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                        placeholder="22:00"
-                        placeholderTextColor={colors.textMuted}
+                      <TimePickerInput
                         value={ruleEndTime}
-                        onChangeText={setRuleEndTime}
+                        onChangeTime={setRuleEndTime}
+                        colors={colors}
                       />
                     </View>
                   </View>
@@ -562,13 +560,11 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
 
                   <View style={styles.rowInputs}>
                     <View style={styles.inputFlex}>
-                      <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Data do Feriado (DD/MM/AAAA)</Text>
-                      <TextInput
-                        style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                        placeholder="25/12/2026"
-                        placeholderTextColor={colors.textMuted}
+                      <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Data do Feriado</Text>
+                      <DatePickerInput
                         value={specialDate}
-                        onChangeText={setSpecialDate}
+                        onChangeDate={setSpecialDate}
+                        colors={colors}
                       />
                     </View>
                     <View style={styles.inputFlex}>

@@ -13,6 +13,7 @@ import { X, Clock, Plus, Trash2, ShieldAlert, CheckCircle2, Calendar } from 'luc
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { getCourtOperatingHours, saveCourtOperatingHour, deleteCourtOperatingHour } from '../../api/operatingHours';
+import { TimePickerInput } from '../common/TimePickerInput';
 
 const DAYS_OF_WEEK = [
   { id: 0, label: 'Domingo', short: 'Dom' },
@@ -288,24 +289,20 @@ export function CourtOperatingHoursModal({ visible, court, onClose, onSuccess })
                   {/* Abertura */}
                   <View style={styles.inputFlex}>
                     <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Início do Turno</Text>
-                    <TextInput
-                      style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                      placeholder="08:00"
-                      placeholderTextColor={colors.textMuted}
+                    <TimePickerInput
                       value={startTime}
-                      onChangeText={setStartTime}
+                      onChangeTime={setStartTime}
+                      colors={colors}
                     />
                   </View>
 
                   {/* Fechamento */}
                   <View style={styles.inputFlex}>
                     <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Fim do Turno</Text>
-                    <TextInput
-                      style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                      placeholder="12:00"
-                      placeholderTextColor={colors.textMuted}
+                    <TimePickerInput
                       value={endTime}
-                      onChangeText={setEndTime}
+                      onChangeTime={setEndTime}
+                      colors={colors}
                     />
                   </View>
                 </View>
