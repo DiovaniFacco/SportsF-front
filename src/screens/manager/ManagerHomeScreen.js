@@ -297,11 +297,6 @@ export function ManagerHomeScreen({ onBackToUserView }) {
     ? (courts.reduce((acc, c) => acc + (parseFloat(c.hourly_rate) || 0), 0) / totalCourts).toFixed(0)
     : '0';
 
-  return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.surface} />
-
-      <View style={styles.mainWrapper}>
   // Componente de Cabeçalho do Gestor (Rola junto com o conteúdo em todas as abas)
   const renderManagerHeader = () => (
     <View style={styles.managerHeaderWrapper}>
