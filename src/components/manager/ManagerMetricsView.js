@@ -25,7 +25,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { getUserBookings } from '../../api/bookings';
 
-export function ManagerMetricsView({ courts = [] }) {
+export function ManagerMetricsView({ courts = [], headerComponent }) {
   const { colors } = useTheme();
 
   const [period, setPeriod] = useState('today'); // 'today' | 'week' | 'month'
@@ -122,6 +122,8 @@ export function ManagerMetricsView({ courts = [] }) {
         />
       }
     >
+      {headerComponent}
+
       {/* Seletor de Período */}
       <View style={[styles.periodSelector, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={styles.periodTitleRow}>

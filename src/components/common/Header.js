@@ -128,15 +128,15 @@ export function Header({
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: Platform.OS === 'ios' ? 12 : 16,
+    paddingTop: Platform.OS === 'ios' ? 10 : 12,
     paddingHorizontal: theme.spacing.md,
-    paddingBottom: theme.spacing.md,
+    paddingBottom: theme.spacing.xs,
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: theme.spacing.sm,
+    marginBottom: theme.spacing.xs,
     flexWrap: 'nowrap',
   },
   logoContainer: {
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
       Platform.OS === 'web'
         ? "'Great Vibes', cursive, 'GreatVibes_400Regular'"
         : 'GreatVibes_400Regular',
-    fontSize: 42,
+    fontSize: 38,
     marginRight: -4,
     textShadowOffset: { width: 0.5, height: 0.5 },
     textShadowRadius: 1,
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
       Platform.OS === 'web'
         ? "'Josefin Sans', sans-serif, 'JosefinSans_700Bold'"
         : 'JosefinSans_700Bold',
-    fontSize: 30,
+    fontSize: 27,
     fontWeight: '700',
     letterSpacing: -1,
   },
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 10,
-    height: 34,
+    height: 32,
     borderRadius: theme.radius.full,
     borderWidth: 1,
   },
@@ -182,10 +182,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   heroTextContainer: {
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
   },
   greetingText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     marginBottom: 2,
   },
@@ -195,15 +195,15 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
   },
   heroTitleMain: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '800',
-    lineHeight: 30,
+    lineHeight: 27,
     letterSpacing: -0.5,
   },
   heroTitleHighlight: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '800',
-    lineHeight: 30,
+    lineHeight: 27,
     letterSpacing: -0.5,
   },
   searchBarContainer: {
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.lg,
     borderWidth: 1,
     paddingHorizontal: 14,
-    height: 48,
+    height: 44,
   },
   searchIcon: {
     marginRight: 8,
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 14,
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   clearBtn: {
     padding: 6,

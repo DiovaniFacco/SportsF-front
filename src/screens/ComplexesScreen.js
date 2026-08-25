@@ -109,25 +109,7 @@ export function ComplexesScreen({ onSelectVenue, onOpenAuth, onOpenManager, acti
       );
     }
 
-    return (
-      <FlatList
-        data={venues}
-        keyExtractor={(item) => String(item.id)}
-        renderItem={({ item }) => (
-          <ComplexCard venue={item} onPress={handleCardPress} />
-        )}
-        contentContainerStyle={styles.listPadding}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
-          />
-        }
-      />
-    );
+    return null;
   };
 
   return (
@@ -135,22 +117,40 @@ export function ComplexesScreen({ onSelectVenue, onOpenAuth, onOpenManager, acti
       <StatusBar barStyle="dark-content" backgroundColor={colors.surface} />
 
       <View style={styles.mainWrapper}>
-        {/* Top Header */}
-        <Header
-          searchValue={searchValue}
-          setSearchValue={setSearchValue}
-          onOpenAuth={onOpenAuth}
-          onOpenManager={onOpenManager}
+        <FlatList
+          data={loading || error ? [] : venues}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={({ item }) => (
+            <View style={styles.cardPadding}>
+              <ComplexCard venue={item} onPress={handleCardPress} />
+            </View>
+          )}
+          ListHeaderComponent={
+            <View style={styles.headerWrapper}>
+              <Header
+                searchValue={searchValue}
+                setSearchValue={setSearchValue}
+                onOpenAuth={onOpenAuth}
+                onOpenManager={onOpenManager}
+              />
+              <SportChip
+                selectedSport={selectedSport}
+                onSelectSport={setSelectedSport}
+              />
+            </View>
+          }
+          ListEmptyComponent={renderContent}
+          contentContainerStyle={styles.listContainerStyle}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
+            />
+          }
         />
-
-        {/* Sport Category Filter Chips */}
-        <SportChip
-          selectedSport={selectedSport}
-          onSelectSport={setSelectedSport}
-        />
-
-        {/* Main Body List */}
-        <View style={styles.body}>{renderContent()}</View>
       </View>
 
       {/* Mobile Bottom Navigation */}
@@ -169,12 +169,18 @@ const styles = StyleSheet.create({
     maxWidth: 1024,
     alignSelf: 'center',
   },
-  body: {
-    flex: 1,
+  headerWrapper: {
     width: '100%',
+    marginBottom: theme.spacing.xs,
+  },
+  cardPadding: {
+    paddingHorizontal: theme.spacing.md,
   },
   listPadding: {
     padding: theme.spacing.md,
+    paddingBottom: theme.spacing.xl,
+  },
+  listContainerStyle: {
     paddingBottom: theme.spacing.xl,
   },
 });

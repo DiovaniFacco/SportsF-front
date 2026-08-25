@@ -36,7 +36,7 @@ import { getAvailableSlots } from '../../api/slots';
 import { EmptyState } from '../common/EmptyState';
 import { ManagerMetricsCards } from './ManagerMetricsCards';
 
-export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBlockModal, refreshKey }) {
+export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBlockModal, refreshKey, headerComponent }) {
   const { colors } = useTheme();
 
   const getTodayStr = () => {
@@ -196,8 +196,8 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
     ? activeCourtsList
     : activeCourtsList.filter((c) => String(c.id) === String(selectedCourtId));
 
-  return (
-    <View style={styles.container}>
+  const renderScheduleControls = () => (
+    <>
       {/* Seletor de Datas (Chips Horizontais) */}
       <View style={[styles.datesContainer, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <ScrollView
@@ -318,7 +318,6 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
         </View>
       </View>
 
-      {/* Legenda de Cores (Apenas no Modo Grade Matrix) */}
       {/* Legenda de Cores */}
       <View style={[styles.legendBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={styles.legendItem}>
@@ -341,9 +340,26 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
           <Text style={[styles.legendText, { color: colors.textMuted }]}>Bloqueado (Manutenção)</Text>
         </View>
       </View>
+    </>
+  );
 
-      {/* Conteúdo Principal da Agenda */}
-      <View style={styles.listContainer}>
+  return (
+    <View style={styles.container}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.gridScrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
+      >
+        {headerComponent}
+        {renderScheduleControls()}
+
         {loading && !refreshing ? (
           <View style={styles.centerContainer}>
             <ActivityIndicator size="large" color={colors.primary} />
@@ -355,67 +371,53 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
             <Text style={[styles.errorText, { color: colors.text }]}>{error}</Text>
           </View>
         ) : (
-          /* Visão em GRADE MATRIX / TIMELINE DINÂMICA */
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.gridScrollContent}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                colors={[colors.primary]}
-                tintColor={colors.primary}
-              />
-            }
-          >
-            {visibleCourts.map((court) => (
-              <CourtMatrixRow
-                key={court.id}
-                court={court}
-                courtSlotsData={courtSlotsMap[court.id]}
-                selectedDate={selectedDate}
-                bookings={bookings.filter((b) => String(b.court_id) === String(court.id))}
-                courtBlocks={courtBlocks.filter((cb) => String(cb.court_id) === String(court.id))}
-                onSlotClick={(slotInfo) => {
-                  if (slotInfo.block) {
-                    handleRemoveBlock(slotInfo.block);
-                  } else if (slotInfo.booking) {
-                    const b = slotInfo.booking;
-                    const client = b.customer_name || b.user?.name || 'Cliente';
-                    const origin = b.is_manual ? 'Balcão / Presencial' : 'Aplicativo';
-                    const startStr = extractTimeStr(b.start_time);
-                    const endStr = extractTimeStr(b.end_time);
-                    const confirmMsg = `Reserva: ${client}\nOrigem: ${origin}\nHorário: ${startStr} às ${endStr}\n\nDeseja cancelar esta reserva?`;
+          visibleCourts.map((court) => (
+            <CourtMatrixRow
+              key={court.id}
+              court={court}
+              courtSlotsData={courtSlotsMap[court.id]}
+              selectedDate={selectedDate}
+              bookings={bookings.filter((b) => String(b.court_id) === String(court.id))}
+              courtBlocks={courtBlocks.filter((cb) => String(cb.court_id) === String(court.id))}
+              onSlotClick={(slotInfo) => {
+                if (slotInfo.block) {
+                  handleRemoveBlock(slotInfo.block);
+                } else if (slotInfo.booking) {
+                  const b = slotInfo.booking;
+                  const client = b.customer_name || b.user?.name || 'Cliente';
+                  const origin = b.is_manual ? 'Balcão / Presencial' : 'Aplicativo';
+                  const startStr = extractTimeStr(b.start_time);
+                  const endStr = extractTimeStr(b.end_time);
+                  const confirmMsg = `Reserva: ${client}\nOrigem: ${origin}\nHorário: ${startStr} às ${endStr}\n\nDeseja cancelar esta reserva?`;
 
-                    if (Platform.OS === 'web') {
-                      if (window.confirm(confirmMsg)) {
-                        handleCancelBooking(b);
-                      }
-                    } else {
-                      Alert.alert(
-                        'Detalhes do Agendamento',
-                        confirmMsg,
-                        [
-                          { text: 'Fechar', style: 'cancel' },
-                          { text: 'Cancelar Reserva', style: 'destructive', onPress: () => handleCancelBooking(b) },
-                        ]
-                      );
+                  if (Platform.OS === 'web') {
+                    if (window.confirm(confirmMsg)) {
+                      handleCancelBooking(b);
                     }
                   } else {
-                    // Clicou em slot LIVRE -> Abre modal de agendamento presencial/balcão
-                    onOpenManualModal?.({
-                      courtId: court.id,
-                      startTime: slotInfo.startTime,
-                      endTime: slotInfo.endTime,
-                      date: selectedDate,
-                    });
+                    Alert.alert(
+                      'Detalhes do Agendamento',
+                      confirmMsg,
+                      [
+                        { text: 'Fechar', style: 'cancel' },
+                        { text: 'Cancelar Reserva', style: 'destructive', onPress: () => handleCancelBooking(b) },
+                      ]
+                    );
                   }
-                }}
-              />
-            ))}
-          </ScrollView>
+                } else {
+                  // Clicou em slot LIVRE -> Abre modal de agendamento presencial/balcão
+                  onOpenManualModal?.({
+                    courtId: court.id,
+                    startTime: slotInfo.startTime,
+                    endTime: slotInfo.endTime,
+                    date: selectedDate,
+                  });
+                }
+              }}
+            />
+          ))
         )}
-      </View>
+      </ScrollView>
     </View>
   );
 }
