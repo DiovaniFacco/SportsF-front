@@ -32,6 +32,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { getSports } from '../../api/sports';
 import { createCourt, updateCourt } from '../../api/courts';
+import { uploadImage } from '../../api/venues';
 import { saveCourtOperatingHour, getCourtOperatingHours, deleteCourtOperatingHour } from '../../api/operatingHours';
 import { compressAndResizeImage, PRESET_COURT_IMAGES, optimizeImageUrl } from '../../utils/imageUtils';
 import { TimePickerInput } from '../common/TimePickerInput';
@@ -97,7 +98,8 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
         maxHeight: 1200,
         quality: 0.85,
       });
-      setImageUrl(compressedDataUrl);
+      const uploadedUrl = await uploadImage(compressedDataUrl, 'court');
+      setImageUrl(uploadedUrl);
     } catch (err) {
       console.error('Erro ao processar imagem:', err);
       setErrorMsg('Não foi possível processar a imagem selecionada.');
@@ -416,7 +418,7 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
 
                 {/* Imagem da Quadra (Upload, Presets HD & URL) */}
                 <View style={styles.fieldGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>Imagem da Quadra (HD & Otimizada)</Text>
+                  <Text style={[styles.label, { color: colors.text }]}>Imagem da Quadra</Text>
 
                   {/* Seletor de Arquivo Local com Compressão */}
                   {Platform.OS === 'web' ? (
@@ -435,7 +437,7 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
                             <>
                               <Upload size={16} color={colors.primary} style={{ marginRight: 6 }} />
                               <Text style={[styles.uploadBtnText, { color: colors.primary }]}>
-                                Upload Foto Local (Otimizar & Limitar Tamanho)
+                                Upload Foto Local
                               </Text>
                             </>
                           )}
@@ -492,9 +494,6 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
                         style={styles.imagePreview}
                         resizeMode="cover"
                       />
-                      <View style={[styles.hdBadge, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
-                        <Text style={styles.hdBadgeText}>HD Otimizado</Text>
-                      </View>
                     </View>
                   ) : null}
                 </View>

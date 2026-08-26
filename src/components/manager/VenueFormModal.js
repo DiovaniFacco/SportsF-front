@@ -28,7 +28,7 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { theme } from '../../styles/theme';
-import { createVenue, updateVenue, getAmenities, createAmenity, deleteAmenity } from '../../api/venues';
+import { createVenue, updateVenue, getAmenities, createAmenity, deleteAmenity, uploadImage } from '../../api/venues';
 import { getUsersApi } from '../../api/auth';
 import { compressAndResizeImage, PRESET_VENUE_IMAGES, optimizeImageUrl } from '../../utils/imageUtils';
 
@@ -88,10 +88,11 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
         maxHeight: 1200,
         quality: 0.85,
       });
-      setCoverImageUrl(compressedDataUrl);
+      const uploadedUrl = await uploadImage(compressedDataUrl, 'venue');
+      setCoverImageUrl(uploadedUrl);
     } catch (err) {
       console.error('Erro ao processar imagem de capa:', err);
-      setErrorMsg('Não foi possível processar a imagem selecionada.');
+      setErrorMsg(err.message || 'Não foi possível enviar a imagem selecionada.');
     } finally {
       setUploadingImage(false);
     }
@@ -602,7 +603,7 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
 
             {/* Imagem de Capa do Complexo (Upload, Presets HD & URL) */}
             <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Imagem de Capa do Complexo (HD & Otimizada)</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Imagem de Capa do Complexo</Text>
 
               {/* Seletor de Arquivo Local com Compressão */}
               {Platform.OS === 'web' ? (
@@ -615,13 +616,13 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
                       style={{ display: 'none' }}
                     />
                     <View style={[styles.uploadBtn, { backgroundColor: colors.background, borderColor: colors.primary }]}>
-                      {uploadingImage ? (
-                        <ActivityIndicator size="small" color={colors.primary} />
-                      ) : (
+{uploadingImage ? (
+                          <ActivityIndicator size="small" color={colors.primary} />
+                        ) : (
                         <>
                           <Upload size={16} color={colors.primary} style={{ marginRight: 6 }} />
                           <Text style={[styles.uploadBtnText, { color: colors.primary }]}>
-                            Upload Foto de Capa (Otimizar & Limitar Tamanho)
+                            Upload Foto de Capa
                           </Text>
                         </>
                       )}
@@ -678,9 +679,6 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
                     style={styles.imagePreview}
                     resizeMode="cover"
                   />
-                  <View style={[styles.hdBadge, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
-                    <Text style={styles.hdBadgeText}>HD Capa Otimizada</Text>
-                  </View>
                 </View>
               ) : null}
             </View>

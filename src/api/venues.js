@@ -39,6 +39,53 @@ export async function updateVenue(venueId, venueData) {
 }
 
 /**
+ * Converte uma Data URL (base64) em Blob para envio via multipart/form-data.
+ */
+function dataUrlToBlob(dataUrl) {
+  const [meta, base64] = dataUrl.split(',');
+  const mimeMatch = meta.match(/:(.*?);/);
+  const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new Blob([bytes], { type: mime });
+}
+
+/**
+ * Envia uma imagem (já comprimida em Data URL) para o backend, que armazena
+ * o arquivo e retorna a URL pública definitiva.
+ * @param {string} compressedDataUrl Data URL base64 gerada pela compressão.
+ * @param {'venue'|'court'} type Contexto da imagem (define a pasta no storage).
+ */
+export async function uploadImage(compressedDataUrl, type = 'venue') {
+  try {
+    const blob = dataUrlToBlob(compressedDataUrl);
+    const formData = new FormData();
+    formData.append('image', blob, `${type}-cover-${Date.now()}.jpg`);
+    formData.append('type', type);
+
+    const response = await apiClient.post('/venues/cover-upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000,
+    });
+
+    const url = response.data?.url;
+    if (!url) {
+      throw new Error('Backend não retornou a URL da imagem.');
+    }
+    return url;
+  } catch (error) {
+    console.error('Erro ao enviar imagem:', error.response?.data || error.message);
+    const msg = error.response?.data?.message
+      || (error.response?.data?.errors?.image ? error.response.data.errors.image[0] : null)
+      || 'Erro ao enviar imagem.';
+    throw new Error(msg);
+  }
+}
+
+/**
  * Remove/exclui um complexo esportivo (exclusivo para ADMIN).
  */
 export async function deleteVenue(venueId) {

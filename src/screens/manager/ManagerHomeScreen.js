@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -14,6 +14,7 @@ import {
   ScrollView,
   Modal,
   Pressable,
+  Dimensions,
 } from 'react-native';
 import {
   Building2,
@@ -64,6 +65,19 @@ export function ManagerHomeScreen({ onBackToUserView }) {
 
   const [activeTab, setActiveTab] = useState('metricas'); // 'quadras' | 'agenda' | 'metricas'
   const [managerMenuOpen, setManagerMenuOpen] = useState(false);
+  const menuBtnRef = useRef(null);
+  const [menuAnchor, setMenuAnchor] = useState({ x: 0, y: 0, width: 0, height: 0 });
+
+  const openManagerMenu = () => {
+    if (menuBtnRef.current?.measureInWindow) {
+      menuBtnRef.current.measureInWindow((x, y, width, height) => {
+        setMenuAnchor({ x, y, width, height });
+        setManagerMenuOpen(true);
+      });
+    } else {
+      setManagerMenuOpen(true);
+    }
+  };
 
   // Venue Modal States
   const [isVenueModalOpen, setIsVenueModalOpen] = useState(false);
@@ -341,7 +355,8 @@ export function ManagerHomeScreen({ onBackToUserView }) {
           ) : null}
 
           <TouchableOpacity
-            onPress={() => setManagerMenuOpen(true)}
+            ref={menuBtnRef}
+            onPress={openManagerMenu}
             style={[styles.iconBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
             title="Mais ações"
           >
@@ -513,7 +528,20 @@ export function ManagerHomeScreen({ onBackToUserView }) {
         onRequestClose={() => setManagerMenuOpen(false)}
       >
         <Pressable style={styles.menuBackdrop} onPress={() => setManagerMenuOpen(false)}>
-          <View style={[styles.menuCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View
+            style={[
+              styles.menuCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                top: menuAnchor.y + menuAnchor.height + 6,
+                right: Math.max(
+                  theme.spacing.md,
+                  Dimensions.get('window').width - (menuAnchor.x + menuAnchor.width),
+                ),
+              },
+            ]}
+          >
             {items.map((item) => {
               const Icon = item.icon;
               return (
@@ -806,11 +834,9 @@ const styles = StyleSheet.create({
   menuBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(15, 23, 42, 0.4)',
-    alignItems: 'flex-end',
   },
   menuCard: {
-    marginTop: 100,
-    marginRight: theme.spacing.md,
+    position: 'absolute',
     minWidth: 210,
     borderRadius: theme.radius.md,
     borderWidth: 1,
