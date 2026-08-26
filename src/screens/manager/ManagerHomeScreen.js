@@ -12,21 +12,21 @@ import {
   ActivityIndicator,
   Platform,
   ScrollView,
+  Modal,
+  Pressable,
 } from 'react-native';
 import {
   Building2,
   Plus,
-  RefreshCw,
   LogOut,
   Calendar,
-  Layers,
   Dumbbell,
   ShieldCheck,
   ArrowLeft,
-  DollarSign,
   BarChart3,
   Edit3,
   Trash2,
+  MoreVertical,
 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -62,7 +62,8 @@ export function ManagerHomeScreen({ onBackToUserView }) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  const [activeTab, setActiveTab] = useState('quadras'); // 'quadras' | 'agenda' | 'metricas'
+  const [activeTab, setActiveTab] = useState('metricas'); // 'quadras' | 'agenda' | 'metricas'
+  const [managerMenuOpen, setManagerMenuOpen] = useState(false);
 
   // Venue Modal States
   const [isVenueModalOpen, setIsVenueModalOpen] = useState(false);
@@ -297,234 +298,264 @@ export function ManagerHomeScreen({ onBackToUserView }) {
     ? (courts.reduce((acc, c) => acc + (parseFloat(c.hourly_rate) || 0), 0) / totalCourts).toFixed(0)
     : '0';
 
-  // Componente de Cabeçalho do Gestor (Rola junto com o conteúdo em todas as abas)
-  const renderManagerHeader = () => (
-    <View style={styles.managerHeaderWrapper}>
-      {/* Header Superior do Gestor */}
-      <View style={[styles.headerContainer, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <View style={styles.headerTop}>
-          <View style={styles.userInfo}>
-            <View style={[styles.managerBadge, { backgroundColor: colors.primary + '18' }]}>
-              <ShieldCheck size={14} color={colors.primary} />
-              <Text style={[styles.managerBadgeText, { color: colors.primary }]}>
-                {isAdmin ? 'PAINEL DO ADMINISTRADOR' : 'PAINEL DO GESTOR'}
-              </Text>
-            </View>
-            <Text style={[styles.managerTitle, { color: colors.text }]}>
-              {activeVenue ? activeVenue.name : 'Nenhum Complexo Selecionado'}
-            </Text>
-            <Text style={[styles.managerSubtitle, { color: colors.textMuted }]}>
-              {activeVenue?.address ? `${activeVenue.address} - ${activeVenue.city}, ${activeVenue.state}` : user ? `Gerenciado por ${user.name}` : 'Painel Administrativo'}
-            </Text>
-          </View>
-
-          <View style={styles.headerActions}>
-            {/* Botão Novo Complexo (Apenas para ADMIN) */}
-            {isAdmin ? (
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={handleOpenAddVenue}
-                style={[styles.iconBtnAction, { backgroundColor: colors.primary }]}
-              >
-                <Plus size={15} color="#FFFFFF" />
-                <Text style={styles.iconBtnActionText}>Novo Complexo</Text>
-              </TouchableOpacity>
-            ) : null}
-
-            {/* Botão Editar Complexo (para ADMIN e GESTOR proprietário) */}
-            {activeVenue ? (
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => handleOpenEditVenue(activeVenue)}
-                style={[styles.iconBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
-                title="Editar dados deste complexo"
-              >
-                <Edit3 size={15} color={colors.text} />
-              </TouchableOpacity>
-            ) : null}
-
-            {/* Botão Excluir Complexo (Apenas para ADMIN) */}
-            {isAdmin && activeVenue ? (
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => handleDeleteVenue(activeVenue)}
-                style={[styles.iconBtn, { backgroundColor: colors.error + '12', borderColor: colors.error + '30' }]}
-                title="Excluir este complexo"
-              >
-                <Trash2 size={15} color={colors.error} />
-              </TouchableOpacity>
-            ) : null}
-
-            {onBackToUserView ? (
-              <TouchableOpacity
-                onPress={onBackToUserView}
-                style={[styles.iconBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
-              >
-                <ArrowLeft size={16} color={colors.text} />
-              </TouchableOpacity>
-            ) : null}
-
-            <TouchableOpacity
-              onPress={handleLogout}
-              style={[styles.iconBtn, { backgroundColor: colors.error + '12', borderColor: colors.error + '30' }]}
-            >
-              <LogOut size={16} color={colors.error} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Seletor de Complexos (Exibido para Admin ou se houver múltiplos complexos) */}
-        {allVenues.length > 0 ? (
-          <View style={styles.venueSelectorContainer}>
-            <Text style={[styles.venueSelectorLabel, { color: colors.textMuted }]}>Complexo Selecionado:</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.venuePillScroll}>
-              {allVenues.map((v) => {
-                const isSelected = activeVenue?.id === v.id;
-                return (
-                  <TouchableOpacity
-                    key={v.id}
-                    activeOpacity={0.7}
-                    onPress={() => handleSelectVenue(v)}
-                    style={[
-                      styles.venuePill,
-                      {
-                        backgroundColor: isSelected ? colors.primary : colors.background,
-                        borderColor: isSelected ? colors.primary : colors.border,
-                      },
-                    ]}
-                  >
-                    <Building2 size={13} color={isSelected ? '#FFFFFF' : colors.textMuted} />
-                    <Text style={[styles.venuePillText, { color: isSelected ? '#FFFFFF' : colors.text }]}>
-                      {v.name}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
+  // Barra fixa compacta do Gestor: fica FORA da rolagem para liberar espaço
+  // na agenda em telas pequenas. Ações raras ficam no menu "⋮".
+  const renderFixedBar = () => (
+    <View style={[styles.headerContainer, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <View style={styles.compactRow}>
+        {onBackToUserView ? (
+          <TouchableOpacity
+            onPress={onBackToUserView}
+            style={[styles.iconBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+          >
+            <ArrowLeft size={16} color={colors.text} />
+          </TouchableOpacity>
         ) : null}
 
-        {/* Navegação Interna de Abas do Gestor */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabsScrollContent}
-          style={styles.tabsContainer}
-        >
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => setActiveTab('quadras')}
-            style={[
-              styles.tabBtn,
-              activeTab === 'quadras' && [styles.activeTabBtn, { backgroundColor: colors.primary }],
-            ]}
-          >
-            <Dumbbell
-              size={15}
-              color={activeTab === 'quadras' ? '#FFFFFF' : colors.textMuted}
-              style={{ marginRight: 6 }}
-            />
-            <Text
-              style={[
-                styles.tabText,
-                { color: activeTab === 'quadras' ? '#FFFFFF' : colors.textMuted },
-              ]}
-            >
-              Quadras ({totalCourts})
+        <View style={styles.compactTitleWrap}>
+          <View style={styles.compactTitleRow}>
+            <ShieldCheck size={14} color={colors.primary} />
+            <Text numberOfLines={1} style={[styles.managerTitle, { color: colors.text }]}>
+              {activeVenue ? activeVenue.name : 'Nenhum Complexo Selecionado'}
             </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => setActiveTab('agenda')}
-            style={[
-              styles.tabBtn,
-              activeTab === 'agenda' && [styles.activeTabBtn, { backgroundColor: colors.primary }],
-            ]}
-          >
-            <Calendar
-              size={15}
-              color={activeTab === 'agenda' ? '#FFFFFF' : colors.textMuted}
-              style={{ marginRight: 6 }}
-            />
-            <Text
-              style={[
-                styles.tabText,
-                { color: activeTab === 'agenda' ? '#FFFFFF' : colors.textMuted },
-              ]}
-            >
-              Agenda do Dia
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => setActiveTab('metricas')}
-            style={[
-              styles.tabBtn,
-              activeTab === 'metricas' && [styles.activeTabBtn, { backgroundColor: colors.primary }],
-            ]}
-          >
-            <BarChart3
-              size={15}
-              color={activeTab === 'metricas' ? '#FFFFFF' : colors.textMuted}
-              style={{ marginRight: 6 }}
-            />
-            <Text
-              style={[
-                styles.tabText,
-                { color: activeTab === 'metricas' ? '#FFFFFF' : colors.textMuted },
-              ]}
-            >
-              Faturamento & Métricas
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
-
-      {/* Botão de Ação Rápida Principal */}
-      <View style={styles.actionHeader}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          {activeTab === 'quadras'
-            ? 'Gerenciamento de Quadras'
-            : activeTab === 'agenda'
-            ? 'Horários e Agendamentos'
-            : 'Relatório Financeiro & Métricas'}
-        </Text>
-
-        {activeTab === 'quadras' ? (
-          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            {activeVenue ? (
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={handleOpenAddModal}
-                style={[styles.btnAddCourt, { backgroundColor: colors.primary }]}
-              >
-                <Plus size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
-                <Text style={styles.btnAddCourtText}>Nova Quadra</Text>
-              </TouchableOpacity>
-            ) : null}
           </View>
-        ) : activeTab === 'agenda' ? (
+          <Text numberOfLines={1} style={[styles.managerSubtitle, { color: colors.textMuted }]}>
+            {activeVenue?.address
+              ? `${activeVenue.address} - ${activeVenue.city}, ${activeVenue.state}`
+              : user
+              ? `Gerenciado por ${user.name}`
+              : 'Painel Administrativo'}
+          </Text>
+        </View>
+
+        <View style={styles.compactActions}>
+          {isAdmin ? (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleOpenAddVenue}
+              style={[styles.iconBtn, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+              title="Novo Complexo"
+            >
+              <Plus size={16} color="#FFFFFF" />
+            </TouchableOpacity>
+          ) : null}
+
           <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => handleOpenManualModal()}
-            style={[styles.btnAddCourt, { backgroundColor: colors.primary }]}
+            onPress={() => setManagerMenuOpen(true)}
+            style={[styles.iconBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+            title="Mais ações"
           >
-            <Plus size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
-            <Text style={styles.btnAddCourtText}>Novo Agendamento Balcão</Text>
+            <MoreVertical size={18} color={colors.text} />
           </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={handleRefresh}
-            style={[styles.btnAddCourt, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]}
-          >
-            <RefreshCw size={15} color={colors.text} style={{ marginRight: 6 }} />
-            <Text style={[styles.btnAddCourtText, { color: colors.text }]}>Atualizar Dados</Text>
-          </TouchableOpacity>
-        )}
+        </View>
       </View>
+
+      {/* Seletor de Complexos: só ocupa espaço quando há mais de um */}
+      {allVenues.length > 1 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.venuePillScroll}>
+          {allVenues.map((v) => {
+            const isSelected = activeVenue?.id === v.id;
+            return (
+              <TouchableOpacity
+                key={v.id}
+                activeOpacity={0.7}
+                onPress={() => handleSelectVenue(v)}
+                style={[
+                  styles.venuePill,
+                  {
+                    backgroundColor: isSelected ? colors.primary : colors.background,
+                    borderColor: isSelected ? colors.primary : colors.border,
+                  },
+                ]}
+              >
+                <Building2 size={13} color={isSelected ? '#FFFFFF' : colors.textMuted} />
+                <Text style={[styles.venuePillText, { color: isSelected ? '#FFFFFF' : colors.text }]}>
+                  {v.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      ) : null}
+
+      {/* Navegação Interna de Abas do Gestor (sempre visível) */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.tabsScrollContent}
+        style={styles.tabsContainer}
+      >
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => setActiveTab('metricas')}
+          style={[
+            styles.tabBtn,
+            activeTab === 'metricas' && [styles.activeTabBtn, { backgroundColor: colors.primary }],
+          ]}
+        >
+          <BarChart3
+            size={15}
+            color={activeTab === 'metricas' ? '#FFFFFF' : colors.textMuted}
+            style={{ marginRight: 6 }}
+          />
+          <Text
+            style={[
+              styles.tabText,
+              { color: activeTab === 'metricas' ? '#FFFFFF' : colors.textMuted },
+            ]}
+          >
+            Faturamento & Métricas
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => setActiveTab('agenda')}
+          style={[
+            styles.tabBtn,
+            activeTab === 'agenda' && [styles.activeTabBtn, { backgroundColor: colors.primary }],
+          ]}
+        >
+          <Calendar
+            size={15}
+            color={activeTab === 'agenda' ? '#FFFFFF' : colors.textMuted}
+            style={{ marginRight: 6 }}
+          />
+          <Text
+            style={[
+              styles.tabText,
+              { color: activeTab === 'agenda' ? '#FFFFFF' : colors.textMuted },
+            ]}
+          >
+            Agenda do Dia
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => setActiveTab('quadras')}
+          style={[
+            styles.tabBtn,
+            activeTab === 'quadras' && [styles.activeTabBtn, { backgroundColor: colors.primary }],
+          ]}
+        >
+          <Dumbbell
+            size={15}
+            color={activeTab === 'quadras' ? '#FFFFFF' : colors.textMuted}
+            style={{ marginRight: 6 }}
+          />
+          <Text
+            style={[
+              styles.tabText,
+              { color: activeTab === 'quadras' ? '#FFFFFF' : colors.textMuted },
+            ]}
+          >
+            Quadras ({totalCourts})
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
+  );
+
+  // Menu flutuante com as ações menos frequentes do painel
+  const renderManagerMenu = () => {
+    const items = [];
+    if (isAdmin) {
+      items.push({
+        key: 'add-venue',
+        icon: Plus,
+        label: 'Novo Complexo',
+        onPress: () => {
+          setManagerMenuOpen(false);
+          handleOpenAddVenue();
+        },
+      });
+    }
+    if (activeVenue) {
+      items.push({
+        key: 'edit-venue',
+        icon: Edit3,
+        label: 'Editar Complexo',
+        onPress: () => {
+          setManagerMenuOpen(false);
+          handleOpenEditVenue(activeVenue);
+        },
+      });
+    }
+    if (isAdmin && activeVenue) {
+      items.push({
+        key: 'delete-venue',
+        icon: Trash2,
+        label: 'Excluir Complexo',
+        danger: true,
+        onPress: () => {
+          setManagerMenuOpen(false);
+          handleDeleteVenue(activeVenue);
+        },
+      });
+    }
+    items.push({
+      key: 'logout',
+      icon: LogOut,
+      label: 'Sair da Conta',
+      danger: true,
+      onPress: () => {
+        setManagerMenuOpen(false);
+        handleLogout();
+      },
+    });
+
+    return (
+      <Modal
+        transparent
+        visible={managerMenuOpen}
+        animationType="fade"
+        onRequestClose={() => setManagerMenuOpen(false)}
+      >
+        <Pressable style={styles.menuBackdrop} onPress={() => setManagerMenuOpen(false)}>
+          <View style={[styles.menuCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            {items.map((item) => {
+              const Icon = item.icon;
+              return (
+                <TouchableOpacity
+                  key={item.key}
+                  activeOpacity={0.7}
+                  onPress={item.onPress}
+                  style={styles.menuItem}
+                >
+                  <Icon size={16} color={item.danger ? colors.error : colors.text} />
+                  <Text
+                    style={[
+                      styles.menuItemText,
+                      { color: item.danger ? colors.error : colors.text },
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </Pressable>
+      </Modal>
+    );
+  };
+
+  // Conteúdo leve que rola junto com a lista (apenas a ação contextual da aba;
+  // na aba Agenda as ações ficam na barra de ferramentas do ManagerScheduleView
+  // e na aba Métricas não há ação — basta recarregar/puxar para atualizar)
+  const renderListExtras = () => (
+    <View style={styles.actionHeader}>
+      {activeTab === 'quadras' && activeVenue ? (
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={handleOpenAddModal}
+          style={[styles.btnAddCourt, { backgroundColor: colors.primary }]}
+        >
+          <Plus size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+          <Text style={styles.btnAddCourtText}>Nova Quadra</Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 
@@ -533,12 +564,14 @@ export function ManagerHomeScreen({ onBackToUserView }) {
       <StatusBar barStyle="dark-content" backgroundColor={colors.surface} />
 
       <View style={styles.mainWrapper}>
+        {/* Barra fixa compacta (não rola) */}
+        {renderFixedBar()}
+
         {/* Conteúdo Principal da Aba */}
         <View style={styles.body}>
           {activeTab === 'metricas' ? (
             <ManagerMetricsView
               courts={courts}
-              headerComponent={renderManagerHeader()}
             />
           ) : activeTab === 'agenda' ? (
             <ManagerScheduleView
@@ -546,11 +579,10 @@ export function ManagerHomeScreen({ onBackToUserView }) {
               onOpenManualModal={handleOpenManualModal}
               onOpenBlockModal={handleOpenBlockModal}
               refreshKey={scheduleRefreshKey}
-              headerComponent={renderManagerHeader()}
             />
           ) : loading && !refreshing ? (
             <ScrollView showsVerticalScrollIndicator={false}>
-              {renderManagerHeader()}
+              {renderListExtras()}
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={colors.primary} />
                 <Text style={[styles.loadingText, { color: colors.textMuted }]}>Carregando quadras...</Text>
@@ -558,12 +590,12 @@ export function ManagerHomeScreen({ onBackToUserView }) {
             </ScrollView>
           ) : error ? (
             <ScrollView showsVerticalScrollIndicator={false}>
-              {renderManagerHeader()}
+              {renderListExtras()}
               <ErrorState message={error} onRetry={fetchManagerData} />
             </ScrollView>
           ) : !activeVenue ? (
             <ScrollView showsVerticalScrollIndicator={false}>
-              {renderManagerHeader()}
+              {renderListExtras()}
               <View style={{ padding: theme.spacing.lg, alignItems: 'center' }}>
                 <EmptyState
                   title="Nenhum complexo cadastrado"
@@ -583,7 +615,7 @@ export function ManagerHomeScreen({ onBackToUserView }) {
             </ScrollView>
           ) : courts.length === 0 ? (
             <ScrollView showsVerticalScrollIndicator={false}>
-              {renderManagerHeader()}
+              {renderListExtras()}
               <EmptyState
                 title="Nenhuma quadra cadastrada"
                 message="Seu complexo ainda não possui quadras. Clique em '+ Nova Quadra' para cadastrar sua primeira quadra."
@@ -602,7 +634,7 @@ export function ManagerHomeScreen({ onBackToUserView }) {
                   onOpenPricing={handleOpenPricingModal}
                 />
               )}
-              ListHeaderComponent={renderManagerHeader}
+              ListHeaderComponent={renderListExtras}
               contentContainerStyle={styles.listPadding}
               showsVerticalScrollIndicator={false}
               refreshControl={
@@ -617,6 +649,9 @@ export function ManagerHomeScreen({ onBackToUserView }) {
           )}
         </View>
       </View>
+
+      {/* Menu flutuante do painel (ações menos frequentes) */}
+      {renderManagerMenu()}
 
       {/* Modal de Formulário de Complexo Esportivo (Criação e Edição) */}
       <VenueFormModal
@@ -727,84 +762,83 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     paddingHorizontal: theme.spacing.md,
-    paddingTop: theme.spacing.md,
+    paddingTop: theme.spacing.sm,
     paddingBottom: theme.spacing.sm,
     borderBottomWidth: 1,
   },
-  headerTop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: theme.spacing.md,
-    marginBottom: theme.spacing.md,
-  },
-  userInfo: {
-    flex: 1,
-    minWidth: 260,
-  },
-  managerBadge: {
+  compactRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: theme.radius.full,
-    gap: 6,
-    marginBottom: 6,
+    gap: 8,
+    marginBottom: theme.spacing.sm,
   },
-  managerBadgeText: {
-    fontSize: theme.typography.sizes.caption,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+  compactTitleWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
+  compactTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   managerTitle: {
-    fontSize: theme.typography.sizes.h3,
+    fontSize: theme.typography.sizes.h4,
     fontWeight: '800',
+    flexShrink: 1,
   },
   managerSubtitle: {
     fontSize: theme.typography.sizes.caption,
-    marginTop: 2,
+    marginTop: 1,
   },
-  headerActions: {
+  compactActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
   },
   iconBtn: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
     borderRadius: theme.radius.md,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconBtnAction: {
+  menuBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    alignItems: 'flex-end',
+  },
+  menuCard: {
+    marginTop: 100,
+    marginRight: theme.spacing.md,
+    minWidth: 210,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    overflow: 'hidden',
+    paddingVertical: theme.spacing.xs,
+    elevation: 8,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    height: 40,
-    borderRadius: theme.radius.md,
-    gap: 6,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 10,
+    gap: 10,
   },
-  iconBtnActionText: {
-    color: '#FFFFFF',
-    fontSize: theme.typography.sizes.caption,
-    fontWeight: '700',
-  },
-  venueSelectorContainer: {
-    marginBottom: theme.spacing.sm,
-  },
-  venueSelectorLabel: {
-    fontSize: 11,
+  menuItemText: {
+    fontSize: theme.typography.sizes.body2,
     fontWeight: '600',
-    marginBottom: 4,
   },
   venuePillScroll: {
     flexDirection: 'row',
     gap: 8,
     alignItems: 'center',
+    paddingTop: theme.spacing.sm,
+    paddingBottom: theme.spacing.sm,
   },
   venuePill: {
     flexDirection: 'row',
@@ -818,31 +852,6 @@ const styles = StyleSheet.create({
   venuePillText: {
     fontSize: theme.typography.sizes.caption,
     fontWeight: '700',
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    gap: theme.spacing.xs,
-    marginBottom: theme.spacing.md,
-  },
-  statCard: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: theme.spacing.sm,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    gap: 8,
-  },
-  statContent: {
-    flex: 1,
-  },
-  statValue: {
-    fontSize: theme.typography.sizes.body1,
-    fontWeight: '700',
-  },
-  statLabel: {
-    fontSize: 10,
-    fontWeight: '500',
   },
   tabsContainer: {
     flexDirection: 'row',
@@ -870,16 +879,10 @@ const styles = StyleSheet.create({
   actionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
     gap: 10,
     paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.md,
-  },
-  sectionTitle: {
-    fontSize: theme.typography.sizes.h4,
-    fontWeight: '700',
-    flexShrink: 1,
+    paddingVertical: theme.spacing.sm,
   },
   btnAddCourt: {
     flexDirection: 'row',

@@ -3,7 +3,6 @@ import {
   StyleSheet,
   View,
   Text,
-  FlatList,
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
@@ -196,100 +195,114 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
     ? activeCourtsList
     : activeCourtsList.filter((c) => String(c.id) === String(selectedCourtId));
 
-  const renderScheduleControls = () => (
-    <>
+  // Controles FIXOS: seletor de datas e filtro por quadra ficam sempre visíveis,
+  // fora da rolagem, para manter o contexto da agenda em telas pequenas.
+  const renderFixedControls = () => (
+    <View style={[styles.fixedControls, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
       {/* Seletor de Datas (Chips Horizontais) */}
-      <View style={[styles.datesContainer, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.datesScrollContent}
+      >
+        {dateChips.map((chip) => {
+          const isSelected = selectedDate === chip.dateStr;
+          return (
+            <TouchableOpacity
+              key={chip.dateStr}
+              activeOpacity={0.7}
+              onPress={() => setSelectedDate(chip.dateStr)}
+              style={[
+                styles.dateChip,
+                {
+                  backgroundColor: isSelected ? colors.primary : colors.background,
+                  borderColor: isSelected ? colors.primary : colors.border,
+                },
+              ]}
+            >
+              <Text style={[styles.dateChipDay, { color: isSelected ? '#FFFFFF' : colors.textMuted }]}>
+                {chip.dayLabel}
+              </Text>
+              <Text style={[styles.dateChipNum, { color: isSelected ? '#FFFFFF' : colors.text }]}>
+                {chip.dayNum} {chip.monthStr}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      {/* Filtro por Quadra */}
+      {activeCourtsList.length > 0 ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.datesScrollContent}
+          contentContainerStyle={styles.courtFilterScrollContainer}
         >
-          {dateChips.map((chip) => {
-            const isSelected = selectedDate === chip.dateStr;
+          <TouchableOpacity
+            onPress={() => setSelectedCourtId('ALL')}
+            style={[
+              styles.courtFilterChip,
+              {
+                backgroundColor: selectedCourtId === 'ALL' ? colors.primary : colors.background,
+                borderColor: selectedCourtId === 'ALL' ? colors.primary : colors.border,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.courtFilterText,
+                { color: selectedCourtId === 'ALL' ? '#FFFFFF' : colors.text },
+              ]}
+            >
+              Todas as Quadras
+            </Text>
+          </TouchableOpacity>
+
+          {activeCourtsList.map((court) => {
+            const isSelected = String(selectedCourtId) === String(court.id);
             return (
               <TouchableOpacity
-                key={chip.dateStr}
-                activeOpacity={0.7}
-                onPress={() => setSelectedDate(chip.dateStr)}
+                key={court.id}
+                onPress={() => setSelectedCourtId(court.id)}
                 style={[
-                  styles.dateChip,
+                  styles.courtFilterChip,
                   {
                     backgroundColor: isSelected ? colors.primary : colors.background,
                     borderColor: isSelected ? colors.primary : colors.border,
                   },
                 ]}
               >
-                <Text style={[styles.dateChipDay, { color: isSelected ? '#FFFFFF' : colors.textMuted }]}>
-                  {chip.dayLabel}
-                </Text>
-                <Text style={[styles.dateChipNum, { color: isSelected ? '#FFFFFF' : colors.text }]}>
-                  {chip.dayNum} {chip.monthStr}
+                <Text
+                  style={[
+                    styles.courtFilterText,
+                    { color: isSelected ? '#FFFFFF' : colors.text },
+                  ]}
+                >
+                  {court.name}
                 </Text>
               </TouchableOpacity>
             );
           })}
         </ScrollView>
+      ) : null}
+    </View>
+  );
 
-        {/* Filtro por Quadra */}
-        {activeCourtsList.length > 0 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.courtFilterScrollContainer}
-          >
-            <TouchableOpacity
-              onPress={() => setSelectedCourtId('ALL')}
-              style={[
-                styles.courtFilterChip,
-                {
-                  backgroundColor: selectedCourtId === 'ALL' ? colors.primary : colors.background,
-                  borderColor: selectedCourtId === 'ALL' ? colors.primary : colors.border,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.courtFilterText,
-                  { color: selectedCourtId === 'ALL' ? '#FFFFFF' : colors.text },
-                ]}
-              >
-                Todas as Quadras
-              </Text>
-            </TouchableOpacity>
-
-            {activeCourtsList.map((court) => {
-              const isSelected = String(selectedCourtId) === String(court.id);
-              return (
-                <TouchableOpacity
-                  key={court.id}
-                  onPress={() => setSelectedCourtId(court.id)}
-                  style={[
-                    styles.courtFilterChip,
-                    {
-                      backgroundColor: isSelected ? colors.primary : colors.background,
-                      borderColor: isSelected ? colors.primary : colors.border,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.courtFilterText,
-                      { color: isSelected ? '#FFFFFF' : colors.text },
-                    ]}
-                  >
-                    {court.name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        ) : null}
-      </View>
-
+  // Controles que rolam junto com a grade (ações e legenda)
+  const renderScrollControls = () => (
+    <>
       {/* Faixa de Ações + Alternador de Modo (Grid Matrix vs Lista) */}
       <View style={styles.metricsBar}>
         <View style={styles.metricsLeft}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => onOpenManualModal?.()}
+            style={[styles.primaryActionBtn, { backgroundColor: colors.primary }]}
+          >
+            <Plus size={14} color="#FFFFFF" />
+            <Text style={styles.primaryActionBtnText}>Novo Agendamento</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={onOpenBlockModal}
@@ -318,8 +331,13 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
         </View>
       </View>
 
-      {/* Legenda de Cores */}
-      <View style={[styles.legendBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      {/* Legenda de Cores (linha única com rolagem horizontal para não empilhar) */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={[styles.legendBar, { backgroundColor: colors.surface }]}
+        contentContainerStyle={styles.legendScrollContent}
+      >
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: '#10B981' }]} />
           <Text style={[styles.legendText, { color: colors.textMuted }]}>Livre (Clique p/ agendar)</Text>
@@ -339,12 +357,13 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
           <View style={[styles.legendDot, { backgroundColor: colors.error }]} />
           <Text style={[styles.legendText, { color: colors.textMuted }]}>Bloqueado (Manutenção)</Text>
         </View>
-      </View>
+      </ScrollView>
     </>
   );
 
   return (
     <View style={styles.container}>
+      {renderFixedControls()}
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.gridScrollContent}
@@ -358,7 +377,7 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
         }
       >
         {headerComponent}
-        {renderScheduleControls()}
+        {renderScrollControls()}
 
         {loading && !refreshing ? (
           <View style={styles.centerContainer}>
@@ -739,8 +758,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  datesContainer: {
-    paddingVertical: theme.spacing.sm,
+  fixedControls: {
+    paddingVertical: theme.spacing.xs,
     borderBottomWidth: 1,
   },
   datesScrollContent: {
@@ -794,7 +813,28 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
   },
   metricsLeft: {
-    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  primaryActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: theme.radius.md,
+    gap: 5,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  primaryActionBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
   },
   blockBtnHeader: {
     flexDirection: 'row',
@@ -827,14 +867,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   legendBar: {
+    flexGrow: 0,
+    borderBottomWidth: 1,
+  },
+  legendScrollContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
+    gap: 16,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: 6,
-    borderBottomWidth: 1,
-    flexWrap: 'wrap',
-    gap: 8,
   },
   legendItem: {
     flexDirection: 'row',
