@@ -94,7 +94,8 @@ export function MyBookingsScreen({ onTabChange, onGoToExplore, onOpenAuth }) {
               Alert.alert('Sucesso', 'Seu agendamento foi cancelado.');
               fetchBookings(true);
             } catch (err) {
-              Alert.alert('Erro', 'Não foi possível cancelar o agendamento.');
+              const apiMsg = err.response?.data?.message || err.message || 'Não foi possível cancelar o agendamento.';
+              Alert.alert('Erro', apiMsg);
             } finally {
               setCancellingId(null);
             }

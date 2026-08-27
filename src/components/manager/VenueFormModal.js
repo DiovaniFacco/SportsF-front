@@ -53,6 +53,7 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
   const [state, setState] = useState('');
   const [phone, setPhone] = useState('');
   const [coverImageUrl, setCoverImageUrl] = useState('');
+  const [cancelLimitHours, setCancelLimitHours] = useState('0');
   const [selectedAmenityIds, setSelectedAmenityIds] = useState([]);
   const [availableAmenities, setAvailableAmenities] = useState([]);
 
@@ -142,6 +143,7 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
       setState(venue.state || 'SP');
       setPhone(venue.phone || '');
       setCoverImageUrl(venue.cover_image_url || venue.image_url || '');
+      setCancelLimitHours(venue.cancel_limit_hours != null ? String(venue.cancel_limit_hours) : '0');
 
       if (venue.user_id || venue.owner?.id) {
         setSelectedUserId(venue.user_id || venue.owner?.id);
@@ -171,6 +173,7 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
       setState('SP');
       setPhone('');
       setCoverImageUrl('');
+      setCancelLimitHours('0');
       setSelectedAmenityIds([]);
       setSelectedUserId(currentUser?.id || null);
       setNewManagerName('');
@@ -279,6 +282,7 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
         state: state.trim().toUpperCase(),
         phone: phone.trim() || null,
         cover_image_url: coverImageUrl.trim() || null,
+        cancel_limit_hours: parseInt(cancelLimitHours) || 0,
         amenity_ids: selectedAmenityIds,
       };
 
@@ -681,6 +685,20 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
                   />
                 </View>
               ) : null}
+            </View>
+
+            {/* Limite de Cancelamento */}
+            <View style={styles.fieldGroup}>
+              <Text style={[styles.label, { color: colors.text }]}>Antecedência para Cancelamento (Horas)</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                placeholder="Ex: 2"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="numeric"
+                value={cancelLimitHours}
+                onChangeText={setCancelLimitHours}
+              />
+              <Text style={[{ color: colors.textMuted, marginTop: 4, fontSize: 11 }]}>Tempo mínimo antes da partida para o cliente poder cancelar. Deixe 0 para cancelamento livre.</Text>
             </View>
 
             {/* Comodidades (Amenities) */}
