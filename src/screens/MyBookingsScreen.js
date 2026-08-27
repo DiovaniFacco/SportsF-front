@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
+  Platform,
 } from 'react-native';
 import {
   Calendar,
@@ -79,36 +80,54 @@ export function MyBookingsScreen({ onTabChange, onGoToExplore, onOpenAuth }) {
   };
 
   const handleCancelBooking = (bookingId) => {
-    Alert.alert(
-      'Cancelar Agendamento',
-      'Tem certeza de que deseja cancelar este agendamento?',
-      [
-        { text: 'Voltar', style: 'cancel' },
-        {
-          text: 'Sim, Cancelar',
-          style: 'destructive',
-          onPress: async () => {
-            setCancellingId(bookingId);
-            try {
-              await cancelBooking(bookingId);
-              Alert.alert('Sucesso', 'Seu agendamento foi cancelado.');
-              fetchBookings(true);
-            } catch (err) {
-              let apiMsg = err.response?.data?.message || err.message || 'Não foi possível cancelar o agendamento.';
-              if (err.response?.data?.errors) {
-                const firstError = Object.values(err.response.data.errors)[0];
-                if (firstError && firstError.length > 0) {
-                  apiMsg = firstError[0];
-                }
-              }
-              Alert.alert('Erro', apiMsg);
-            } finally {
-              setCancellingId(null);
-            }
+    const confirmMessage = 'Tem certeza de que deseja cancelar este agendamento?';
+
+    const doCancel = async () => {
+      setCancellingId(bookingId);
+      try {
+        await cancelBooking(bookingId);
+        if (Platform.OS === 'web') {
+          window.alert('Seu agendamento foi cancelado com sucesso.');
+        } else {
+          Alert.alert('Sucesso', 'Seu agendamento foi cancelado.');
+        }
+        fetchBookings(true);
+      } catch (err) {
+        let apiMsg = err.response?.data?.message || err.message || 'Não foi possível cancelar o agendamento.';
+        if (err.response?.data?.errors) {
+          const firstError = Object.values(err.response.data.errors)[0];
+          if (firstError && firstError.length > 0) {
+            apiMsg = firstError[0];
+          }
+        }
+        if (Platform.OS === 'web') {
+          window.alert(apiMsg);
+        } else {
+          Alert.alert('Erro', apiMsg);
+        }
+      } finally {
+        setCancellingId(null);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(confirmMessage)) {
+        doCancel();
+      }
+    } else {
+      Alert.alert(
+        'Cancelar Agendamento',
+        confirmMessage,
+        [
+          { text: 'Voltar', style: 'cancel' },
+          {
+            text: 'Sim, Cancelar',
+            style: 'destructive',
+            onPress: doCancel,
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   // Formatar data: "YYYY-MM-DD HH:mm:ss" ou ISO -> "Qui, 20/08/2026"
