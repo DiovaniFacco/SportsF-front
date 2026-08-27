@@ -170,6 +170,14 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
         fetchScheduleData(true);
       } catch (err) {
         console.error('Erro ao cancelar reserva:', err);
+        let apiMsg = err.response?.data?.message || err.message || 'Erro ao cancelar reserva.';
+        if (err.response?.data?.errors) {
+          const firstError = Object.values(err.response.data.errors)[0];
+          if (firstError && firstError.length > 0) {
+            apiMsg = firstError[0];
+          }
+        }
+        Alert.alert('Erro', apiMsg);
       }
     };
 

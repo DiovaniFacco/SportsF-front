@@ -94,7 +94,13 @@ export function MyBookingsScreen({ onTabChange, onGoToExplore, onOpenAuth }) {
               Alert.alert('Sucesso', 'Seu agendamento foi cancelado.');
               fetchBookings(true);
             } catch (err) {
-              const apiMsg = err.response?.data?.message || err.message || 'Não foi possível cancelar o agendamento.';
+              let apiMsg = err.response?.data?.message || err.message || 'Não foi possível cancelar o agendamento.';
+              if (err.response?.data?.errors) {
+                const firstError = Object.values(err.response.data.errors)[0];
+                if (firstError && firstError.length > 0) {
+                  apiMsg = firstError[0];
+                }
+              }
               Alert.alert('Erro', apiMsg);
             } finally {
               setCancellingId(null);
