@@ -4,7 +4,7 @@ import { CheckCircle, Trash2 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 
-export function SelectionFooter({ selectedSlots, selectedDate, courtName, onClearSelection, onConfirmSelection }) {
+export function SelectionFooter({ selectedSlots, selectedDate, courtName, confirmLabel = 'Agendar', onClearSelection, onConfirmSelection }) {
   const { colors } = useTheme();
 
   const count = selectedSlots.length;
@@ -64,7 +64,7 @@ export function SelectionFooter({ selectedSlots, selectedDate, courtName, onClea
           onPress={handleConfirm}
           style={[styles.confirmButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
         >
-          <Text style={styles.confirmText}>Agendar</Text>
+          <Text style={styles.confirmText}>{confirmLabel}</Text>
           <CheckCircle size={16} color="#FFFFFF" style={{ marginLeft: 4 }} />
         </TouchableOpacity>
       </View>

@@ -263,8 +263,15 @@ export function normalizeVenue(venue, idx = 0) {
 
   const venueSlug = venue.slug || (venue.name ? slugify(venue.name) : String(venue.id || ''));
 
+  const rawMode = String(venue.mode || 'completo').trim().toLowerCase();
+  const mode = rawMode === 'simplificado' ? 'simplificado' : 'completo';
+  const isSimplified = mode === 'simplificado' || venue.is_simplified === true;
+
   return {
     ...venue,
+    mode,
+    is_simplified: isSimplified,
+    whatsapp_number: venue.whatsapp_number || null,
     slug: venueSlug,
     address: fullAddress,
     rating: venue.rating !== undefined && venue.rating !== null ? parseFloat(venue.rating) : 0,

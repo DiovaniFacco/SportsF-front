@@ -21,6 +21,7 @@ import {
   Plus,
   LogOut,
   Calendar,
+  ClipboardList,
   Dumbbell,
   ShieldCheck,
   ArrowLeft,
@@ -39,6 +40,7 @@ import { CourtFormModal } from '../../components/manager/CourtFormModal';
 import { VenueFormModal } from '../../components/manager/VenueFormModal';
 import { ManagerScheduleView } from '../../components/manager/ManagerScheduleView';
 import { ManagerMetricsView } from '../../components/manager/ManagerMetricsView';
+import { ManagerBookingsView } from '../../components/manager/ManagerBookingsView';
 import { ManualBookingModal } from '../../components/manager/ManualBookingModal';
 import { CourtBlockModal } from '../../components/manager/CourtBlockModal';
 import { CourtOperatingHoursModal } from '../../components/manager/CourtOperatingHoursModal';
@@ -63,7 +65,7 @@ export function ManagerHomeScreen({ onBackToUserView }) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  const [activeTab, setActiveTab] = useState('metricas'); // 'quadras' | 'agenda' | 'metricas'
+  const [activeTab, setActiveTab] = useState('metricas'); // 'quadras' | 'agenda' | 'agendamentos' | 'metricas'
   const [managerMenuOpen, setManagerMenuOpen] = useState(false);
   const menuBtnRef = useRef(null);
   const [menuAnchor, setMenuAnchor] = useState({ x: 0, y: 0, width: 0, height: 0 });
@@ -448,6 +450,29 @@ export function ManagerHomeScreen({ onBackToUserView }) {
 
         <TouchableOpacity
           activeOpacity={0.7}
+          onPress={() => setActiveTab('agendamentos')}
+          style={[
+            styles.tabBtn,
+            activeTab === 'agendamentos' && [styles.activeTabBtn, { backgroundColor: colors.primary }],
+          ]}
+        >
+          <ClipboardList
+            size={15}
+            color={activeTab === 'agendamentos' ? '#FFFFFF' : colors.textMuted}
+            style={{ marginRight: 6 }}
+          />
+          <Text
+            style={[
+              styles.tabText,
+              { color: activeTab === 'agendamentos' ? '#FFFFFF' : colors.textMuted },
+            ]}
+          >
+            Agendamentos
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.7}
           onPress={() => setActiveTab('quadras')}
           style={[
             styles.tabBtn,
@@ -607,6 +632,16 @@ export function ManagerHomeScreen({ onBackToUserView }) {
               onOpenManualModal={handleOpenManualModal}
               onOpenBlockModal={handleOpenBlockModal}
               refreshKey={scheduleRefreshKey}
+            />
+          ) : activeTab === 'agendamentos' ? (
+            <ManagerBookingsView
+              courts={courts}
+              activeVenueId={activeVenue?.id}
+              refreshKey={scheduleRefreshKey}
+              onChanged={() => {
+                handleScheduleRefresh();
+                fetchManagerData(true);
+              }}
             />
           ) : loading && !refreshing ? (
             <ScrollView showsVerticalScrollIndicator={false}>

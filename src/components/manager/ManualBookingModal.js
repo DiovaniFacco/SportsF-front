@@ -11,7 +11,7 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import { X, Calendar, Clock, User, Phone, FileText, CheckCircle2, ShieldAlert } from 'lucide-react-native';
+import { X, Calendar, Clock, User, Phone, FileText, CheckCircle2, ShieldAlert, Banknote } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { createBooking } from '../../api/bookings';
@@ -46,6 +46,7 @@ export function ManualBookingModal({
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [notes, setNotes] = useState('');
+  const [isPaid, setIsPaid] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -59,6 +60,7 @@ export function ManualBookingModal({
       setCustomerName('');
       setCustomerPhone('');
       setNotes('');
+      setIsPaid(false);
       setErrorMessage('');
     }
   }, [visible, courts, initialCourtId, initialStartTime, initialEndTime, initialDate]);
@@ -102,6 +104,7 @@ export function ManualBookingModal({
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim(),
         notes: notes.trim() || 'Agendamento presencial / balcão',
+        isPaid,
       });
 
       const msg = 'Agendamento balcão realizado com sucesso!';
@@ -260,6 +263,49 @@ export function ManualBookingModal({
                 />
               </View>
             </View>
+
+            {/* Pagamento */}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>Pagamento *</Text>
+              <View style={styles.paymentRow}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => setIsPaid(true)}
+                  style={[
+                    styles.paymentBtn,
+                    {
+                      backgroundColor: isPaid ? '#10B981' : colors.background,
+                      borderColor: isPaid ? '#10B981' : colors.border,
+                    },
+                  ]}
+                >
+                  <Banknote size={15} color={isPaid ? '#FFFFFF' : colors.textMuted} style={{ marginRight: 6 }} />
+                  <Text style={[styles.paymentBtnText, { color: isPaid ? '#FFFFFF' : colors.textSecondary }]}>
+                    Pago
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => setIsPaid(false)}
+                  style={[
+                    styles.paymentBtn,
+                    {
+                      backgroundColor: !isPaid ? '#F59E0B' : colors.background,
+                      borderColor: !isPaid ? '#F59E0B' : colors.border,
+                    },
+                  ]}
+                >
+                  <Clock size={15} color={!isPaid ? '#FFFFFF' : colors.textMuted} style={{ marginRight: 6 }} />
+                  <Text style={[styles.paymentBtnText, { color: !isPaid ? '#FFFFFF' : colors.textSecondary }]}>
+                    Pendente
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={[styles.paymentHint, { color: colors.textMuted }]}>
+                {isPaid ? 'Valor já recebido pelo complexo.' : 'Pagamento ficará pendente no agendamento.'}
+              </Text>
+            </View>
           </ScrollView>
 
           {/* Footer Buttons */}
@@ -416,6 +462,28 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: theme.typography.sizes.caption,
     fontWeight: '700',
+  },
+  paymentRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  paymentBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 11,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+  },
+  paymentBtnText: {
+    fontSize: theme.typography.sizes.body2,
+    fontWeight: '700',
+  },
+  paymentHint: {
+    fontSize: 11,
+    marginTop: 6,
   },
   quickLabel: {
     fontSize: 11,

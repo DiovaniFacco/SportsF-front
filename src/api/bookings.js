@@ -11,6 +11,7 @@ export async function createBooking({
   isManual = false,
   customerName = null,
   customerPhone = null,
+  isPaid = false,
 }) {
   const payload = {
     court_id: courtId,
@@ -20,6 +21,7 @@ export async function createBooking({
     is_manual: isManual,
     customer_name: customerName,
     customer_phone: customerPhone,
+    is_paid: isPaid,
   };
 
   const response = await apiClient.post('/bookings', payload);
@@ -61,6 +63,19 @@ export async function cancelBooking(bookingId) {
     return response.data;
   } catch (error) {
     console.error(`Erro ao cancelar agendamento ${bookingId} na API:`, error.message);
+    throw error;
+  }
+}
+
+/**
+ * Marca um agendamento como pago ou pendente (gestor do complexo ou admin).
+ */
+export async function updateBookingPayment(bookingId, isPaid) {
+  try {
+    const response = await apiClient.patch(`/bookings/${bookingId}/payment`, { is_paid: isPaid });
+    return response.data;
+  } catch (error) {
+    console.error(`Erro ao atualizar pagamento do agendamento ${bookingId} na API:`, error.message);
     throw error;
   }
 }

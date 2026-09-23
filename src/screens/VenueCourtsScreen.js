@@ -20,22 +20,34 @@ import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { BottomNav } from '../components/common/BottomNav';
 import { FilterChip } from '../components/common/FilterChip';
+import { isSimplifiedVenue } from '../utils/whatsapp';
 
-export function VenueCourtsScreen({ venueId, onBack, onSelectCourt, onTabChange }) {
+export function VenueCourtsScreen({ venueId, venue: venueProp = null, onBack, onSelectCourt, onTabChange, hideBottomNav = false, hideBack = false }) {
   const { colors } = useTheme();
-  const [venue, setVenue] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [venue, setVenue] = useState(venueProp || null);
+  const [loading, setLoading] = useState(!venueProp);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [selectedSportFilter, setSelectedSportFilter] = useState('Todas');
   const [activeTab, setActiveTab] = useState('explorar');
 
+  const effectiveVenueId = venueProp?.id || venueId;
+
+  // Se o venue já veio pronto (link direto simplificado), usa direto sem refetch inicial.
+  useEffect(() => {
+    if (venueProp) {
+      setVenue(venueProp);
+      setLoading(false);
+    }
+  }, [venueProp]);
+
   const fetchVenueDetailsData = useCallback(async (isRefresh = false) => {
+    if (!effectiveVenueId) return;
     if (!isRefresh) setLoading(true);
     setError(null);
 
     try {
-      const data = await getVenueDetails(venueId);
+      const data = await getVenueDetails(effectiveVenueId);
       setVenue(data);
     } catch (err) {
       console.error('Erro ao carregar detalhes do complexo:', err);
@@ -44,11 +56,13 @@ export function VenueCourtsScreen({ venueId, onBack, onSelectCourt, onTabChange 
       setLoading(false);
       setRefreshing(false);
     }
-  }, [venueId]);
+  }, [effectiveVenueId]);
 
   useEffect(() => {
+    // Evita refetch desnecessário quando o venue já foi entregue via prop.
+    if (venueProp) return;
     fetchVenueDetailsData();
-  }, [fetchVenueDetailsData]);
+  }, [fetchVenueDetailsData, venueProp]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -95,7 +109,7 @@ export function VenueCourtsScreen({ venueId, onBack, onSelectCourt, onTabChange 
     if (!venue || filteredCourts.length === 0) {
       return (
         <View style={styles.paddingContainer}>
-          {venue ? <VenueHeroHeader venue={venue} onBack={onBack} /> : null}
+          {venue ? <VenueHeroHeader venue={venue} onBack={hideBack ? null : onBack} hideBack={hideBack} /> : null}
           <EmptyState
             title="Nenhuma quadra encontrada"
             message={`Não encontramos nenhuma quadra cadastrada para a modalidade "${selectedSportFilter}".`}
@@ -125,7 +139,7 @@ export function VenueCourtsScreen({ venueId, onBack, onSelectCourt, onTabChange 
         ListHeaderComponent={
           <View style={styles.headerWrapper}>
             {/* Hero Cover & Details Banner */}
-            <VenueHeroHeader venue={venue} onBack={onBack} />
+            <VenueHeroHeader venue={venue} onBack={hideBack ? null : onBack} hideBack={hideBack} />
 
             {/* Section Title Header for Available Courts */}
             <View style={styles.sectionHeader}>
@@ -138,7 +152,9 @@ export function VenueCourtsScreen({ venueId, onBack, onSelectCourt, onTabChange 
                 </View>
               </View>
               <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
-                Escolha a quadra ideal para ver os horários de agendamento.
+                {isSimplifiedVenue(venue)
+                  ? 'Toque em uma quadra para consultar os horários. A confirmação é feita pelo WhatsApp.'
+                  : 'Escolha a quadra ideal para ver os horários de agendamento.'}
               </Text>
 
               {/* Sports Category Filter Chips */}
@@ -173,19 +189,21 @@ export function VenueCourtsScreen({ venueId, onBack, onSelectCourt, onTabChange 
       {/* Main Body */}
       <View style={styles.body}>{renderContent()}</View>
 
-      {/* Mobile Bottom Navigation */}
-      <BottomNav
-        activeTab={activeTab}
-        onTabChange={(tab) => {
-          if (tab === 'explorar') {
-            onBack();
-          } else if (onTabChange) {
-            onTabChange(tab);
-          } else {
-            setActiveTab(tab);
-          }
-        }}
-      />
+      {/* Mobile Bottom Navigation — oculta no acesso exclusivo do modo Simplificado */}
+      {!hideBottomNav && !isSimplifiedVenue(venue) ? (
+        <BottomNav
+          activeTab={activeTab}
+          onTabChange={(tab) => {
+            if (tab === 'explorar') {
+              onBack();
+            } else if (onTabChange) {
+              onTabChange(tab);
+            } else {
+              setActiveTab(tab);
+            }
+          }}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }

@@ -57,6 +57,10 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
   const [selectedAmenityIds, setSelectedAmenityIds] = useState([]);
   const [availableAmenities, setAvailableAmenities] = useState([]);
 
+  // Modo Simplificado (agenda visual + WhatsApp) — por complexo
+  const [venueMode, setVenueMode] = useState('completo'); // 'completo' | 'simplificado'
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+
   // Nova comodidade
   const [newAmenityName, setNewAmenityName] = useState('');
   const [addingAmenity, setAddingAmenity] = useState(false);
@@ -144,6 +148,11 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
       setPhone(venue.phone || '');
       setCoverImageUrl(venue.cover_image_url || venue.image_url || '');
       setCancelLimitHours(venue.cancel_limit_hours != null ? String(venue.cancel_limit_hours) : '0');
+      const currentMode = String(venue.mode || (venue.is_simplified ? 'simplificado' : 'completo')).toLowerCase() === 'simplificado'
+        ? 'simplificado'
+        : 'completo';
+      setVenueMode(currentMode);
+      setWhatsappNumber(venue.whatsapp_number || '');
 
       if (venue.user_id || venue.owner?.id) {
         setSelectedUserId(venue.user_id || venue.owner?.id);
@@ -174,6 +183,8 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
       setPhone('');
       setCoverImageUrl('');
       setCancelLimitHours('0');
+      setVenueMode('completo');
+      setWhatsappNumber('');
       setSelectedAmenityIds([]);
       setSelectedUserId(currentUser?.id || null);
       setNewManagerName('');
@@ -240,6 +251,12 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
       return false;
     }
 
+    // Modo Simplificado exige WhatsApp (whatsapp_number ou phone como fallback)
+    if (venueMode === 'simplificado' && !whatsappNumber.trim() && !phone.trim()) {
+      setErrorMsg('No modo Simplificado, informe o WhatsApp do complexo para receber os agendamentos.');
+      return false;
+    }
+
     if (isAdmin && !isEditing) {
       if (managerMode === 'select' && !selectedUserId) {
         setErrorMsg('Selecione um usuário para ser o gestor deste complexo.');
@@ -283,8 +300,15 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
         phone: phone.trim() || null,
         cover_image_url: coverImageUrl.trim() || null,
         cancel_limit_hours: parseInt(cancelLimitHours) || 0,
+        whatsapp_number: whatsappNumber.trim() || null,
         amenity_ids: selectedAmenityIds,
       };
+
+      // Modo de funcionamento é por complexo. Apenas ADMIN pode alterar o modo;
+      // o gestor mantém o modo atual e configura apenas o WhatsApp.
+      if (isAdmin) {
+        payload.mode = venueMode;
+      }
 
       if (isAdmin) {
         if (managerMode === 'select' && selectedUserId) {
@@ -603,6 +627,74 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
                 value={phone}
                 onChangeText={setPhone}
               />
+            </View>
+
+            {/* Modo de Funcionamento (por complexo) */}
+            {isAdmin ? (
+              <View style={[styles.fieldGroup, styles.managerSection, { borderColor: colors.primary + '30', backgroundColor: colors.primary + '08' }]}>
+                <Text style={[styles.sectionHeading, { color: colors.primary }]}>Modo de funcionamento</Text>
+                <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 4, marginBottom: 10, lineHeight: 17 }}>
+                  Completo: o usuário reserva direto pelo sistema. Simplificado: agenda apenas visual — o botão Agendar abre o WhatsApp do complexo e nenhuma reserva é criada automaticamente.
+                </Text>
+
+                <View style={styles.modeToggleRow}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => setVenueMode('completo')}
+                    style={[
+                      styles.modeBtn,
+                      {
+                        backgroundColor: venueMode === 'completo' ? colors.primary : colors.surface,
+                        borderColor: venueMode === 'completo' ? colors.primary : colors.border,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.modeBtnText, { color: venueMode === 'completo' ? '#FFFFFF' : colors.text }]}>
+                      Completo
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => setVenueMode('simplificado')}
+                    style={[
+                      styles.modeBtn,
+                      {
+                        backgroundColor: venueMode === 'simplificado' ? '#10B981' : colors.surface,
+                        borderColor: venueMode === 'simplificado' ? '#10B981' : colors.border,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.modeBtnText, { color: venueMode === 'simplificado' ? '#FFFFFF' : colors.text }]}>
+                      Simplificado
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {venueMode === 'simplificado' ? (
+                  <Text style={{ color: colors.textMuted, fontSize: 11, lineHeight: 16 }}>
+                    O usuário acessa direto pelo link /complexo/nome-do-complexo, vê quadras e horários, e ao clicar em Agendar é levado ao WhatsApp abaixo. A tela inicial e a navegação para outros complexos ficam indisponíveis nesse acesso.
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
+
+            {/* WhatsApp do modo Simplificado (gestor e admin) */}
+            <View style={styles.fieldGroup}>
+              <Text style={[styles.label, { color: colors.text }]}>
+                WhatsApp para agendamentos {venueMode === 'simplificado' ? '*' : '(modo Simplificado)'}
+              </Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                placeholder="Ex: 5511988888888"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="phone-pad"
+                value={whatsappNumber}
+                onChangeText={setWhatsappNumber}
+              />
+              <Text style={[{ color: colors.textMuted, marginTop: 4, fontSize: 11 }]}>
+                Usado no botão Agendar quando o complexo está no modo Simplificado. Se vazio, será usado o telefone acima.
+              </Text>
             </View>
 
             {/* Imagem de Capa do Complexo (Upload, Presets HD & URL) */}

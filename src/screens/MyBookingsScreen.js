@@ -24,6 +24,7 @@ import {
   User,
   Layers,
   Sparkles,
+  Banknote,
 } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -202,6 +203,19 @@ export function MyBookingsScreen({ onTabChange, onGoToExplore, onOpenAuth }) {
     );
   };
 
+  const renderPaymentBadge = (item) => {
+    if (item.status === 'cancelled') return null;
+    const isPaid = Boolean(item.is_paid);
+    return (
+      <View style={[styles.statusBadge, { backgroundColor: isPaid ? '#ECFDF5' : '#FFFBEB' }]}>
+        <Banknote size={13} color={isPaid ? '#10B981' : '#D97706'} />
+        <Text style={[styles.statusBadgeText, { color: isPaid ? '#10B981' : '#D97706' }]}>
+          {isPaid ? 'Pago' : 'Pagamento pendente'}
+        </Text>
+      </View>
+    );
+  };
+
   const renderItem = ({ item }) => {
     const isCancelled = item.status === 'cancelled';
     const startDate = item.start_time ? new Date(item.start_time.replace(' ', 'T')) : null;
@@ -240,7 +254,10 @@ export function MyBookingsScreen({ onTabChange, onGoToExplore, onOpenAuth }) {
               </Text>
             </View>
           </View>
-          {renderStatusBadge(item.status)}
+          <View style={styles.badgesCol}>
+            {renderStatusBadge(item.status)}
+            {renderPaymentBadge(item)}
+          </View>
         </View>
 
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -523,6 +540,10 @@ const styles = StyleSheet.create({
   statusBadgeText: {
     fontSize: 11,
     fontWeight: '700',
+  },
+  badgesCol: {
+    alignItems: 'flex-end',
+    gap: 4,
   },
   divider: {
     height: 1,

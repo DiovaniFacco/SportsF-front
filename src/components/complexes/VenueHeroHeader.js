@@ -15,7 +15,7 @@ import { SportsBadgeGroup } from '../common/SportsBadgeGroup';
 import { optimizeImageUrl } from '../../utils/imageUtils';
 import { shareVenueLink } from '../../utils/linking';
 
-export function VenueHeroHeader({ venue, onBack }) {
+export function VenueHeroHeader({ venue, onBack, hideBack = false }) {
   const { colors } = useTheme();
   const [copiedToast, setCopiedToast] = useState(false);
 
@@ -43,24 +43,26 @@ export function VenueHeroHeader({ venue, onBack }) {
         </View>
       ) : null}
 
-      {/* Top Navigation Header with SFACCO Brand Identity */}
-      <View style={[styles.topNavRow, { backgroundColor: colors.surface }]}>
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={onBack}
-          style={[styles.backButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-        >
-          <ArrowLeft size={18} color={colors.textPrimary} />
-          <Text style={[styles.backText, { color: colors.textPrimary }]}>Voltar</Text>
-        </TouchableOpacity>
+      {/* Top Navigation Header with SFACCO Brand Identity (oculto no link exclusivo simplificado) */}
+      {!hideBack ? (
+        <View style={[styles.topNavRow, { backgroundColor: colors.surface }]}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={onBack}
+            style={[styles.backButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+          >
+            <ArrowLeft size={18} color={colors.textPrimary} />
+            <Text style={[styles.backText, { color: colors.textPrimary }]}>Voltar</Text>
+          </TouchableOpacity>
 
-        <View style={styles.navRightRow}>
-          <View style={styles.logoContainer}>
-            <Text style={[styles.letraS, { color: colors.letraS }]}>S</Text>
-            <Text style={[styles.brandName, { color: colors.brandName }]}>facco</Text>
+          <View style={styles.navRightRow}>
+            <View style={styles.logoContainer}>
+              <Text style={[styles.letraS, { color: colors.letraS }]}>S</Text>
+              <Text style={[styles.brandName, { color: colors.brandName }]}>facco</Text>
+            </View>
           </View>
         </View>
-      </View>
+      ) : null}
 
       {/* Hero Cover Image Banner */}
       <View style={[styles.heroWrapper, { backgroundColor: colors.backgroundSecondary }]}>
@@ -69,6 +71,14 @@ export function VenueHeroHeader({ venue, onBack }) {
           style={styles.coverImage}
           resizeMode="cover"
         />
+
+        {/* Marca Sfacco flutuante no modo link exclusivo (sem a barra branca vazia) */}
+        {hideBack ? (
+          <View style={styles.brandOverlay}>
+            <Text style={styles.brandOverlayS}>S</Text>
+            <Text style={styles.brandOverlayName}>facco</Text>
+          </View>
+        ) : null}
 
         {/* Floating Top Right Badge - Status */}
         {venue.is_open_today ? (
@@ -299,5 +309,41 @@ const styles = StyleSheet.create({
     rowGap: 8,
     paddingTop: theme.spacing.sm,
     borderTopWidth: 1,
+  },
+  brandOverlay: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 999,
+    zIndex: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  brandOverlayS: {
+    fontFamily:
+      Platform.OS === 'web'
+        ? "'Great Vibes', cursive, 'GreatVibes_400Regular'"
+        : 'GreatVibes_400Regular',
+    fontSize: 22,
+    marginRight: -2,
+    color: '#881337',
+  },
+  brandOverlayName: {
+    fontFamily:
+      Platform.OS === 'web'
+        ? "'Josefin Sans', sans-serif, 'JosefinSans_700Bold'"
+        : 'JosefinSans_700Bold',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+    color: '#1F2937',
   },
 });

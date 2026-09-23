@@ -20,7 +20,8 @@ export function slugify(text) {
 
 /**
  * Extrai o identificador único (slug do complexo ou ID de fallback) de qualquer formato de URL suportado.
- * Ex: ?complex=arena-central-esportes, ?c=arena-central-esportes, /complex/arena-central-esportes, #complex-arena-central-esportes, sfacco://complex/arena-central-esportes
+ * Ex: /complexo/arena-central, ?complex=arena-central-esportes, ?c=arena-central-esportes, /complex/arena-central-esportes, #complex-arena-central-esportes, sfacco://complex/arena-central-esportes
+ * O formato canônico do modo Simplificado é: /complexo/nome-do-complexo
  */
 export function getVenueIdFromUrl(urlStr) {
   if (!urlStr) return null;
@@ -32,7 +33,7 @@ export function getVenueIdFromUrl(urlStr) {
 
     const url = new URL(cleanUrlStr);
 
-    // 1. Busca em query params prioritários
+    // 1. Busca em query params prioritários (mantidos por compatibilidade)
     const params = url.searchParams;
     const venueIdentifier =
       params.get('complex') ||
@@ -45,19 +46,23 @@ export function getVenueIdFromUrl(urlStr) {
 
     if (venueIdentifier) return venueIdentifier;
 
-    // 2. Busca na estrutura de caminhos (/complex/nome-da-quadra ou /venue/nome-da-quadra)
+    // 2. Busca na estrutura de caminhos
+    // Suporta PT-BR canônico (/complexo/slug, /complexos/slug) e EN legado (/complex/slug, /venue/slug)
     const pathParts = url.pathname.split('/').filter(Boolean);
     const venueIndex = pathParts.findIndex(
-      (part) => part.toLowerCase() === 'complex' || part.toLowerCase() === 'venue'
+      (part) => {
+        const p = part.toLowerCase();
+        return p === 'complex' || p === 'complexo' || p === 'complexos' || p === 'venue' || p === 'venues';
+      }
     );
     if (venueIndex !== -1 && pathParts[venueIndex + 1]) {
-      return pathParts[venueIndex + 1];
+      return decodeURIComponent(pathParts[venueIndex + 1]);
     }
 
     // 3. Busca na âncora/hash (#complex-nome-da-quadra ou #venue-nome-da-quadra)
     if (url.hash) {
       const hashContent = url.hash.replace(/^#/, '');
-      const match = hashContent.match(/(?:complex|venue)[/-]?([a-zA-Z0-9_-]+)/i);
+      const match = hashContent.match(/(?:complexo?s?|venue?s?)[/-]?([a-zA-Z0-9_-]+)/i);
       if (match && match[1]) {
         return match[1];
       }
@@ -81,6 +86,7 @@ export function getVenueSlug(venue) {
 
 /**
  * Gera a URL segura e amigável para o link direto do complexo.
+ * Formato canônico (modo Simplificado): /complexo/nome-do-complexo
  */
 export function buildVenueUrl(venue) {
   const slug = getVenueSlug(venue);
@@ -88,35 +94,46 @@ export function buildVenueUrl(venue) {
 
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
     const origin = window.location.origin;
-    const pathname = window.location.pathname;
-    return `${origin}${pathname}?complex=${slug}`;
+    return `${origin}/complexo/${slug}`;
   }
-  return Linking.createURL(`complex/${slug}`);
+  return Linking.createURL(`complexo/${slug}`);
 }
 
 /**
  * Atualiza a barra de endereço do navegador no ambiente Web mantendo URLs amigáveis sem recarregar a página.
+ * Usa o formato canônico /complexo/slug. Mantém leitura dos formatos legados via query param.
  */
 export function syncVenueUrlInBrowser(venue) {
   if (Platform.OS === 'web' && typeof window !== 'undefined' && window.history) {
     try {
-      const currentUrl = new URL(window.location.href);
       const slug = getVenueSlug(venue);
 
       if (slug) {
-        currentUrl.searchParams.set('complex', slug);
-        // Limpa parâmetros antigos inseguros
-        currentUrl.searchParams.delete('venueId');
-        currentUrl.searchParams.delete('complexId');
-        currentUrl.searchParams.delete('venue');
-      } else {
+        const currentUrl = new URL(window.location.href);
+        const targetPath = `/complexo/${slug}`;
+        // Limpa query params legados ao usar o formato canônico
         currentUrl.searchParams.delete('complex');
         currentUrl.searchParams.delete('c');
         currentUrl.searchParams.delete('venue');
         currentUrl.searchParams.delete('venueId');
         currentUrl.searchParams.delete('complexId');
+        currentUrl.searchParams.delete('venueSlug');
+        currentUrl.searchParams.delete('complexSlug');
+        window.history.pushState({}, '', `${targetPath}${currentUrl.search}${currentUrl.hash}`);
+      } else {
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.delete('complex');
+        currentUrl.searchParams.delete('c');
+        currentUrl.searchParams.delete('venue');
+        currentUrl.searchParams.delete('venueId');
+        currentUrl.searchParams.delete('complexId');
+        // Volta para a raiz somente se estávamos em uma rota de complexo
+        if (/^\/(complexo|complexos|complex|venue|venues)(\/|$)/i.test(currentUrl.pathname)) {
+          window.history.pushState({}, '', `/${currentUrl.search}${currentUrl.hash}`);
+        } else {
+          window.history.pushState({}, '', currentUrl.toString());
+        }
       }
-      window.history.pushState({}, '', currentUrl.toString());
     } catch (e) {
       console.warn('Não foi possível sincronizar URL no navegador:', e);
     }

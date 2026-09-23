@@ -35,10 +35,15 @@ import { ErrorState } from '../components/common/ErrorState';
 import { EmptyState } from '../components/common/EmptyState';
 import { BottomNav } from '../components/common/BottomNav';
 import { optimizeImageUrl } from '../utils/imageUtils';
+import { isSimplifiedVenue, openWhatsappBooking } from '../utils/whatsapp';
 
-export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange }) {
+export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange, hideBottomNav = false }) {
   const { colors } = useTheme();
   const { user, isAuthenticated } = useAuth();
+
+  // Modo Simplificado: agenda apenas visual, Agendar abre o WhatsApp (sem criar reserva).
+  const isSimplified = isSimplifiedVenue(venue);
+  const [whatsappError, setWhatsappError] = useState(null);
 
   const getTodayStr = () => {
     const today = new Date();
@@ -103,7 +108,23 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
     });
   };
 
-  const handleOpenConfirmModal = () => {
+  const handleOpenConfirmModal = async () => {
+    // MODO SIMPLIFICADO: não cria reserva — abre o WhatsApp com mensagem pré-preenchida.
+    if (isSimplified) {
+      setWhatsappError(null);
+      const times = selectedSlots.map((s) => s.formatted_time);
+      const result = await openWhatsappBooking({
+        venue,
+        courtName: court?.name,
+        date: selectedDate,
+        times,
+      });
+      if (!result.success && result.error === 'no-number') {
+        setWhatsappError('Este complexo ainda não configurou um WhatsApp para agendamentos. Entre em contato diretamente pelo telefone do complexo.');
+      }
+      return;
+    }
+
     setModalError(null);
     setSuccessBooking(null);
     if (!isAuthenticated) {
@@ -312,6 +333,12 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
           onSelectDate={(date) => setSelectedDate(date)}
         />
 
+        {whatsappError ? (
+          <View style={[styles.simplifiedBanner, { backgroundColor: colors.error + '12', borderColor: colors.error + '40' }]}>
+            <Text style={{ color: colors.error, fontSize: 12, fontWeight: '700' }}>{whatsappError}</Text>
+          </View>
+        ) : null}
+
         {/* Status Legend */}
         <SlotLegend />
 
@@ -355,31 +382,34 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
         selectedSlots={selectedSlots}
         selectedDate={selectedDate}
         courtName={court.name}
+        confirmLabel={isSimplified ? 'Agendar via WhatsApp' : 'Agendar'}
         onClearSelection={() => setSelectedSlots([])}
         onConfirmSelection={handleOpenConfirmModal}
       />
 
-      {/* Booking Confirmation Modal */}
-      <BookingConfirmationModal
-        visible={isModalVisible}
-        onClose={() => {
-          setIsModalVisible(false);
-          setModalError(null);
-        }}
-        selectedSlots={selectedSlots}
-        selectedDate={selectedDate}
-        court={court}
-        venue={venue}
-        user={user}
-        onConfirmBooking={handleConfirmBooking}
-        isSubmitting={isSubmitting}
-        error={modalError}
-        successBooking={successBooking}
-        onFinishSuccess={handleFinishSuccess}
-      />
+      {/* Booking Confirmation Modal (modo completo apenas — simplificado usa WhatsApp) */}
+      {!isSimplified ? (
+        <BookingConfirmationModal
+          visible={isModalVisible}
+          onClose={() => {
+            setIsModalVisible(false);
+            setModalError(null);
+          }}
+          selectedSlots={selectedSlots}
+          selectedDate={selectedDate}
+          court={court}
+          venue={venue}
+          user={user}
+          onConfirmBooking={handleConfirmBooking}
+          isSubmitting={isSubmitting}
+          error={modalError}
+          successBooking={successBooking}
+          onFinishSuccess={handleFinishSuccess}
+        />
+      ) : null}
 
-      {/* Mobile Bottom Navigation (only shown if no slots are selected to prevent overlap) */}
-      {selectedSlots.length === 0 ? (
+      {/* Mobile Bottom Navigation (oculta no modo Simplificado com link exclusivo) */}
+      {selectedSlots.length === 0 && !hideBottomNav && !isSimplified ? (
         <BottomNav
           activeTab={activeTab}
           onTabChange={(tab) => {
@@ -523,5 +553,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+  },
+  simplifiedBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginHorizontal: theme.spacing.md,
+    marginVertical: theme.spacing.sm,
+    padding: theme.spacing.sm,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
   },
 });
