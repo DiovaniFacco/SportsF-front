@@ -61,6 +61,7 @@ export function TimePickerInput({
         <Clock size={18} color={colors.primary} style={{ marginRight: 8 }} />
         <input
           type="time"
+          lang="pt-BR"
           value={formattedValue.length === 5 ? formattedValue : '18:00'}
           step={step}
           disabled={disabled}

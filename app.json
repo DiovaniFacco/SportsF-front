@@ -18,6 +18,7 @@
       }
     },
     "web": {
+      "lang": "pt-BR",
       "favicon": "./public/favicon.png",
       "name": "Sports Facco",
       "shortName": "SportsFacco",
