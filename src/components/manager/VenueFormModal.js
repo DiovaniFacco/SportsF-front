@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -136,8 +136,16 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
     }
   }, [visible, isAdmin]);
 
+  // Guarda qual complexo já teve as comodidades sincronizadas nesta abertura,
+  // para não sobrescrever a seleção manual (ex.: nova comodidade recém-criada).
+  const amenitiesSyncKeyRef = useRef(null);
+
   useEffect(() => {
-    if (visible && venue) {
+    if (!visible) {
+      amenitiesSyncKeyRef.current = null;
+      return;
+    }
+    if (venue) {
       setName(venue.name || '');
       setDescription(venue.description || '');
       setAddress(venue.address ? venue.address.split(',')[0].split('-')[0].trim() : '');
@@ -158,21 +166,32 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
         setSelectedUserId(venue.user_id || venue.owner?.id);
       }
 
-      // Comodidades
+      // Se o venue já traz objetos com id, usa direto. Se traz só nomes,
+      // a conversão para ids acontece no efeito de sincronização abaixo,
+      // sem tocar nos demais campos do formulário.
       if (Array.isArray(venue.amenities)) {
-        const matched = availableAmenities
-          .filter((a) =>
-            venue.amenities.some((va) =>
-              typeof va === 'object' ? va.id === a.id || va.name === a.name : va === a.name
-            )
-          )
-          .map((a) => a.id);
-        setSelectedAmenityIds(matched);
+        const idsFromObjects = venue.amenities
+          .filter((va) => typeof va === 'object' && va !== null && va.id != null)
+          .map((va) => va.id);
+        if (idsFromObjects.length > 0) {
+          setSelectedAmenityIds(idsFromObjects);
+          amenitiesSyncKeyRef.current = `venue-${venue.id || 'edit'}`;
+        } else if (venue.amenities.length === 0) {
+          setSelectedAmenityIds([]);
+          amenitiesSyncKeyRef.current = `venue-${venue.id || 'edit'}`;
+        } else {
+          // Nomes apenas — aguarda availableAmenities carregar.
+          amenitiesSyncKeyRef.current = null;
+        }
       } else {
         setSelectedAmenityIds([]);
+        amenitiesSyncKeyRef.current = `venue-${venue.id || 'edit'}`;
       }
       setErrorMsg('');
-    } else if (visible && !venue) {
+    } else {
+      // Reset apenas ao abrir o modal para um novo cadastro ou ao trocar
+      // de complexo. Não depende de availableAmenities para não apagar
+      // o que o usuário já digitou ao cadastrar uma nova comodidade.
       setName('');
       setDescription('');
       setAddress('');
@@ -193,8 +212,37 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
       setNewManagerPhone('');
       setManagerMode('select');
       setErrorMsg('');
+      amenitiesSyncKeyRef.current = 'new';
     }
-  }, [visible, venue, availableAmenities, currentUser?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, venue?.id]);
+
+  // Sincroniza a seleção de comodidades em modo edição quando a lista
+  // de comodidades termina de carregar. Roda uma única vez por abertura,
+  // então criar/excluir comodidades depois não zera nem sobrescreve nada.
+  useEffect(() => {
+    if (!visible || !venue || !Array.isArray(venue.amenities)) return;
+    if (availableAmenities.length === 0) return;
+    const syncKey = `venue-${venue.id || 'edit'}`;
+    if (amenitiesSyncKeyRef.current === syncKey) return;
+    const matched = availableAmenities
+      .filter((a) =>
+        venue.amenities.some((va) =>
+          typeof va === 'object' && va !== null ? va.id === a.id || va.name === a.name : va === a.name
+        )
+      )
+      .map((a) => a.id);
+    setSelectedAmenityIds(matched);
+    amenitiesSyncKeyRef.current = syncKey;
+  }, [visible, venue?.id, availableAmenities]);
+
+  // Se o usuário logado carregar depois da abertura (novo cadastro sem
+  // gestor selecionado), define o gestor padrão sem tocar nos demais campos.
+  useEffect(() => {
+    if (visible && !venue && !selectedUserId && currentUser?.id) {
+      setSelectedUserId(currentUser.id);
+    }
+  }, [visible, venue?.id, currentUser?.id, selectedUserId]);
 
   const toggleAmenity = (amenityId) => {
     setSelectedAmenityIds((prev) =>
