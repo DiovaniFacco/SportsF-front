@@ -1,12 +1,12 @@
-const CACHE_NAME = 'sports-facco-v1';
+const CACHE_NAME = 'sports-facco-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/manifest.json',
-  '/favicon.png',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/apple-touch-icon.png'
+  '/manifest.json?v=2',
+  '/favicon.png?v=2',
+  '/icon-192.png?v=2',
+  '/icon-512.png?v=2',
+  '/apple-touch-icon.png?v=2'
 ];
 
 // Instalação do Service Worker e precache dos ativos principais

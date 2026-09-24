@@ -214,9 +214,7 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
     const doCancel = async () => {
       try {
         await cancelBooking(booking.id);
-        setBookings((prev) =>
-          prev.map((b) => (b.id === booking.id ? { ...b, status: 'cancelled' } : b))
-        );
+        setBookings((prev) => prev.filter((b) => b.id !== booking.id));
         fetchScheduleData(true);
       } catch (err) {
         console.error('Erro ao cancelar reserva:', err);
@@ -732,15 +730,13 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
             const matchingBlock = hasIndefinite
               ? (indefiniteBlock || exactBlock)
               : (exactBlock || slotFallbackBlock);
-            const matchingBooking = bookings.find((b) => isSameDate(b.start_time, selectedDate) && extractTimeStr(b.start_time) === slotStartStr);
+            const matchingBooking = bookings.find((b) => isSameDate(b.start_time, selectedDate) && extractTimeStr(b.start_time) === slotStartStr && b.status !== 'cancelled');
 
             let status = 'free';
             if (hasIndefinite || matchingBlock || slot.blocked) {
               status = 'blocked';
             } else if (matchingBooking) {
-              if (matchingBooking.status === 'cancelled') {
-                status = 'cancelled';
-              } else if (matchingBooking.is_manual) {
+              if (matchingBooking.is_manual) {
                 status = 'booked_manual';
               } else {
                 status = 'booked_app';
