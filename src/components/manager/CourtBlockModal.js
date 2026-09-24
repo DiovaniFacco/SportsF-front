@@ -10,8 +10,9 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  Switch,
 } from 'react-native';
-import { X, Calendar, Clock, AlertTriangle, ShieldAlert, CheckCircle2 } from 'lucide-react-native';
+import { X, Calendar, Clock, AlertTriangle, ShieldAlert, CheckCircle2, Infinity as InfinityIcon } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { createCourtBlock } from '../../api/courtBlocks';
@@ -43,6 +44,7 @@ export function CourtBlockModal({
   const [startTime, setStartTime] = useState(initialStartTime);
   const [endTime, setEndTime] = useState(initialEndTime);
   const [reason, setReason] = useState('Manutenção do Piso');
+  const [isIndefinite, setIsIndefinite] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -62,6 +64,7 @@ export function CourtBlockModal({
       setStartTime(initialStartTime || '12:00');
       setEndTime(initialEndTime || '14:00');
       setReason('Manutenção do Piso');
+      setIsIndefinite(false);
       setErrorMessage('');
     }
   }, [visible, courts, initialCourtId, initialStartTime, initialEndTime, initialDate]);
@@ -71,8 +74,12 @@ export function CourtBlockModal({
       setErrorMessage('Selecione uma quadra para realizar o bloqueio.');
       return;
     }
-    if (!startTime || !endTime) {
-      setErrorMessage('Informe os horários de início e término.');
+    if (!startTime) {
+      setErrorMessage('Informe o horário de início do bloqueio.');
+      return;
+    }
+    if (!isIndefinite && !endTime) {
+      setErrorMessage('Informe o horário de término ou ative o bloqueio por tempo indeterminado.');
       return;
     }
     if (!reason.trim()) {
@@ -85,16 +92,21 @@ export function CourtBlockModal({
 
     try {
       const fullStartTime = `${date} ${startTime.length === 5 ? startTime + ':00' : startTime}`;
-      const fullEndTime = `${date} ${endTime.length === 5 ? endTime + ':00' : endTime}`;
+      const fullEndTime = isIndefinite
+        ? null
+        : `${date} ${endTime.length === 5 ? endTime + ':00' : endTime}`;
 
       await createCourtBlock({
         courtId: selectedCourtId,
         startTime: fullStartTime,
         endTime: fullEndTime,
         reason: reason.trim(),
+        isIndefinite,
       });
 
-      const msg = 'Bloqueio de quadra registrado com sucesso!';
+      const msg = isIndefinite
+        ? 'Quadra bloqueada por tempo indeterminado! Ela ficará indisponível até você desbloquear.'
+        : 'Bloqueio de quadra registrado com sucesso!';
       if (Platform.OS === 'web') {
         window.alert(msg);
       } else {
@@ -105,7 +117,12 @@ export function CourtBlockModal({
       onClose();
     } catch (err) {
       console.error('Erro ao bloquear quadra:', err);
-      setErrorMessage('Não foi possível salvar o bloqueio da quadra.');
+      const apiMsg =
+        err.response?.data?.message ||
+        err.response?.data?.errors?.end_time?.[0] ||
+        err.response?.data?.errors?.is_indefinite?.[0] ||
+        'Não foi possível salvar o bloqueio da quadra.';
+      setErrorMessage(apiMsg);
     } finally {
       setSubmitting(false);
     }
@@ -186,6 +203,45 @@ export function CourtBlockModal({
               />
             </View>
 
+            {/* Toggle: tempo indeterminado */}
+            <View
+              style={[
+                styles.indefiniteBox,
+                {
+                  backgroundColor: isIndefinite ? colors.error + '12' : colors.background,
+                  borderColor: isIndefinite ? colors.error + '50' : colors.border,
+                },
+              ]}
+            >
+              <View style={styles.indefiniteRow}>
+                <View style={[styles.indefiniteIcon, { backgroundColor: colors.error + '18' }]}>
+                  <InfinityIcon size={18} color={colors.error} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.indefiniteTitle, { color: colors.text }]}>
+                    Bloquear por tempo indeterminado
+                  </Text>
+                  <Text style={[styles.indefiniteDesc, { color: colors.textMuted }]}>
+                    Sem data de término. A quadra fica indisponível até você desbloquear.
+                  </Text>
+                </View>
+                <Switch
+                  value={isIndefinite}
+                  onValueChange={setIsIndefinite}
+                  trackColor={{ false: colors.border, true: colors.error }}
+                  thumbColor="#FFFFFF"
+                />
+              </View>
+              {isIndefinite ? (
+                <View style={[styles.indefiniteAlert, { backgroundColor: colors.error + '12' }]}>
+                  <AlertTriangle size={14} color={colors.error} style={{ marginRight: 6 }} />
+                  <Text style={[styles.indefiniteAlertText, { color: colors.error }]}>
+                    A quadra ficará indisponível em todos os dias e horários a partir de {date} às {startTime} até o desbloqueio manual.
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+
             {/* Horários */}
             <View style={styles.rowInputs}>
               <View style={[styles.inputGroup, { flex: 1 }]}>
@@ -197,14 +253,16 @@ export function CourtBlockModal({
                 />
               </View>
 
-              <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>Fim do Bloqueio *</Text>
-                <TimePickerInput
-                  value={endTime}
-                  onChangeTime={setEndTime}
-                  colors={colors}
-                />
-              </View>
+              {!isIndefinite ? (
+                <View style={[styles.inputGroup, { flex: 1 }]}>
+                  <Text style={[styles.inputLabel, { color: colors.text }]}>Fim do Bloqueio *</Text>
+                  <TimePickerInput
+                    value={endTime}
+                    onChangeTime={setEndTime}
+                    colors={colors}
+                  />
+                </View>
+              ) : null}
             </View>
 
             {/* Motivo presets */}
@@ -393,6 +451,46 @@ const styles = StyleSheet.create({
   presetText: {
     fontSize: 12,
     fontWeight: '700',
+  },
+  indefiniteBox: {
+    borderWidth: 1,
+    borderRadius: theme.radius.md,
+    padding: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
+  },
+  indefiniteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  indefiniteIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  indefiniteTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  indefiniteDesc: {
+    fontSize: 11,
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  indefiniteAlert: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 10,
+    padding: 8,
+    borderRadius: theme.radius.sm,
+  },
+  indefiniteAlertText: {
+    flex: 1,
+    fontSize: 11,
+    fontWeight: '600',
+    lineHeight: 15,
   },
   modalFooter: {
     flexDirection: 'row',

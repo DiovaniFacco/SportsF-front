@@ -88,14 +88,24 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
     setError(null);
 
     try {
-      const [bookingsRes, blocksRes] = await Promise.all([
+      const [bookingsRes, blocksRes, indefiniteRes] = await Promise.all([
         getUserBookings({ date: selectedDate }),
         getCourtBlocks({ date: selectedDate }),
+        // Garante que bloqueios por tempo indeterminado apareçam mesmo
+        // que o filtro por data não os retorne em algum edge case.
+        getCourtBlocks({ indefinite_only: true }).catch(() => ({ data: [] })),
       ]);
       const list = bookingsRes?.data || (Array.isArray(bookingsRes) ? bookingsRes : []);
       const blocksList = blocksRes?.data || (Array.isArray(blocksRes) ? blocksRes : []);
+      const indefiniteList = indefiniteRes?.data || (Array.isArray(indefiniteRes) ? indefiniteRes : []);
+      // Merge dedup por id (data + indeterminados)
+      const mergedMap = new Map();
+      [...blocksList, ...indefiniteList].forEach((b) => {
+        if (b && b.id != null) mergedMap.set(String(b.id), b);
+      });
+      const mergedBlocks = Array.from(mergedMap.values());
       setBookings(list);
-      setCourtBlocks(blocksList);
+      setCourtBlocks(mergedBlocks);
 
       // Busca a grade real de slots e turnos de cada quadra ativada para o gestor
       if (activeCourtsList.length > 0) {
@@ -143,17 +153,26 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
         fetchScheduleData(true);
       } catch (err) {
         console.error('Erro ao remover bloqueio:', err);
+        const apiMsg = err.response?.data?.message || 'Não foi possível remover o bloqueio.';
+        if (Platform.OS === 'web') {
+          window.alert(apiMsg);
+        } else {
+          Alert.alert('Erro', apiMsg);
+        }
       }
     };
 
-    const confirmMsg = `Remover o bloqueio "${block.reason || 'Manutenção'}" na quadra? O horário voltará a ficar disponível.`;
+    const isIndef = isIndefiniteBlock(block);
+    const confirmMsg = isIndef
+      ? `Esta quadra está BLOQUEADA POR TEMPO INDETERMINADO ("${block.reason || 'Sem motivo'}").\n\nDesbloquear agora? A quadra voltará a ficar disponível para agendamentos.`
+      : `Remover o bloqueio "${block.reason || 'Manutenção'}" na quadra? O horário voltará a ficar disponível.`;
 
     if (Platform.OS === 'web') {
       if (window.confirm(confirmMsg)) {
         doUnblock();
       }
     } else {
-      Alert.alert('Desbloquear Quadra', confirmMsg, [
+      Alert.alert(isIndef ? 'Desbloquear Quadra (Indeterminado)' : 'Desbloquear Quadra', confirmMsg, [
         { text: 'Manter Bloqueado', style: 'cancel' },
         { text: 'Liberar Quadra', style: 'destructive', onPress: doUnblock },
       ]);
@@ -406,6 +425,7 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
               selectedDate={selectedDate}
               bookings={bookings.filter((b) => String(b.court_id) === String(court.id))}
               courtBlocks={courtBlocks.filter((cb) => String(cb.court_id) === String(court.id))}
+              onUnblock={handleRemoveBlock}
               onSlotClick={(slotInfo) => {
                 if (slotInfo.block) {
                   handleRemoveBlock(slotInfo.block);
@@ -449,6 +469,11 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
   );
 }
 
+function isIndefiniteBlock(block) {
+  if (!block) return false;
+  return Boolean(block.is_indefinite) || block.end_time == null;
+}
+
 function isSameDate(dateTimeStr, targetDateStr) {
   if (!dateTimeStr || !targetDateStr) return false;
   const cleanStr = String(dateTimeStr).trim();
@@ -471,11 +496,33 @@ function extractTimeStr(dateTimeStr) {
 /**
  * Componente que renderiza a matriz de horários verdadeiramente dinâmica para uma quadra.
  */
-function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBlocks = [], onSlotClick }) {
+function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBlocks = [], onSlotClick, onUnblock }) {
   const { colors } = useTheme();
 
   const slots = courtSlotsData?.slots || [];
   const isOperating = courtSlotsData?.operating !== false;
+
+  // Bloqueio por tempo indeterminado ativo para esta quadra:
+  // - vem do backend via available-slots (blocked_indefinitely + blockout), ou
+  // - vem da lista de blockouts (is_indefinite ou end_time null com início <= data selecionada).
+  const indefiniteFromSlots = courtSlotsData?.blocked_indefinitely || courtSlotsData?.is_blocked_indefinitely
+    ? (courtSlotsData?.blockout || { reason: courtSlotsData?.block_reason, is_indefinite: true })
+    : null;
+  const indefiniteFromList = courtBlocks.find((cb) => {
+    if (!isIndefiniteBlock(cb)) return false;
+    try {
+      const startDate = String(cb.start_time).substring(0, 10);
+      return startDate <= selectedDate;
+    } catch {
+      return true;
+    }
+  });
+  const indefiniteBlock = indefiniteFromSlots?.reason || indefiniteFromSlots?.id
+    ? { ...indefiniteFromSlots, court_id: court.id }
+    : indefiniteFromList || null;
+  const hasIndefinite = Boolean(
+    indefiniteBlock || court?.is_blocked_indefinitely || court?.blocked_indefinitely
+  );
 
   let freeCount = 0;
   let bookedCount = 0;
@@ -483,7 +530,18 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
 
   slots.forEach((slot) => {
     const slotStartStr = extractTimeStr(slot.start_time);
-    const isBlocked = slot.blocked || courtBlocks.some((cb) => isSameDate(cb.start_time, selectedDate) && extractTimeStr(cb.start_time) === slotStartStr);
+    const isBlocked = hasIndefinite
+      || slot.blocked
+      || courtBlocks.some((cb) => {
+        if (isIndefiniteBlock(cb)) {
+          try {
+            return String(cb.start_time).substring(0, 10) <= selectedDate;
+          } catch {
+            return true;
+          }
+        }
+        return isSameDate(cb.start_time, selectedDate) && extractTimeStr(cb.start_time) === slotStartStr;
+      });
     const b = bookings.find((bk) => isSameDate(bk.start_time, selectedDate) && extractTimeStr(bk.start_time) === slotStartStr);
 
     if (isBlocked) {
@@ -496,11 +554,15 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
   });
 
   return (
-    <View style={[styles.matrixCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+    <View style={[styles.matrixCard, { backgroundColor: colors.surface, borderColor: hasIndefinite ? colors.error : colors.border }]}>
       <View style={[styles.matrixCardHeader, { borderBottomColor: colors.border }]}>
         <View style={{ flex: 1 }}>
           <Text style={[styles.matrixCourtName, { color: colors.text }]}>{court.name}</Text>
-          {isOperating && slots.length > 0 ? (
+          {hasIndefinite ? (
+            <Text style={[styles.matrixCourtStats, { color: colors.error, fontWeight: '800' }]}>
+              ⛔ Bloqueada por tempo indeterminado{indefiniteBlock?.reason ? ` • ${indefiniteBlock.reason}` : ''}
+            </Text>
+          ) : isOperating && slots.length > 0 ? (
             <Text style={[styles.matrixCourtStats, { color: colors.textMuted }]}>
               {freeCount} livres • {bookedCount} ocupados {blockedCount > 0 ? `• ${blockedCount} bloqueados` : ''}
             </Text>
@@ -512,13 +574,45 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
         </View>
       </View>
 
-      {!isOperating || slots.length === 0 ? (
-        <View style={styles.closedCourtContainer}>
-          <Clock size={20} color={colors.textMuted} style={{ marginBottom: 6 }} />
-          <Text style={[styles.closedCourtText, { color: colors.textMuted }]}>
-            Nenhum turno de funcionamento configurado para este dia da semana.
-          </Text>
+      {hasIndefinite ? (
+        <View style={[styles.indefiniteBanner, { backgroundColor: colors.error + '12', borderColor: colors.error + '40' }]}>
+          <ShieldAlert size={16} color={colors.error} style={{ marginRight: 8 }} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.indefiniteBannerTitle, { color: colors.error }]}>
+              Quadra indisponível até desbloqueio manual
+            </Text>
+            <Text style={[styles.indefiniteBannerText, { color: colors.text }]}>
+              {indefiniteBlock?.reason || courtSlotsData?.block_reason || 'Sem motivo informado'}
+              {indefiniteBlock?.start_time ? ` • desde ${String(indefiniteBlock.start_time).substring(0, 16).replace('T', ' ')}` : ''}
+            </Text>
+          </View>
+          {indefiniteBlock?.id ? (
+            <TouchableOpacity
+              onPress={() => onUnblock?.(indefiniteBlock)}
+              style={[styles.unblockBtn, { backgroundColor: colors.error }]}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.unblockBtnText}>Desbloquear</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
+      ) : null}
+
+      {!isOperating || slots.length === 0 ? (
+        hasIndefinite ? (
+          <View style={styles.closedCourtContainer}>
+            <Text style={[styles.closedCourtText, { color: colors.error }]}>
+              Todos os horários estão bloqueados por tempo indeterminado. Toque em Desbloquear para liberar a quadra.
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.closedCourtContainer}>
+            <Clock size={20} color={colors.textMuted} style={{ marginBottom: 6 }} />
+            <Text style={[styles.closedCourtText, { color: colors.textMuted }]}>
+              Nenhum turno de funcionamento configurado para este dia da semana.
+            </Text>
+          </View>
+        )
       ) : (
         <View style={styles.gridWrapContainer}>
           {slots.map((slot) => {
@@ -526,11 +620,12 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
             const slotEndStr = extractTimeStr(slot.end_time);
             const displayTime = slot.formatted_time || `${slotStartStr} - ${slotEndStr}`;
 
-            const matchingBlock = courtBlocks.find((cb) => isSameDate(cb.start_time, selectedDate) && extractTimeStr(cb.start_time) === slotStartStr);
+            const exactBlock = courtBlocks.find((cb) => !isIndefiniteBlock(cb) && isSameDate(cb.start_time, selectedDate) && extractTimeStr(cb.start_time) === slotStartStr);
+            const matchingBlock = hasIndefinite ? (indefiniteBlock || exactBlock) : (exactBlock || (slot.blocked ? { reason: slot.block_reason, court_id: court.id } : null));
             const matchingBooking = bookings.find((b) => isSameDate(b.start_time, selectedDate) && extractTimeStr(b.start_time) === slotStartStr);
 
             let status = 'free';
-            if (matchingBlock || slot.blocked) {
+            if (hasIndefinite || matchingBlock || slot.blocked) {
               status = 'blocked';
             } else if (matchingBooking) {
               if (matchingBooking.status === 'cancelled') {
@@ -946,6 +1041,36 @@ const styles = StyleSheet.create({
   },
   matrixCourtPrice: {
     fontSize: theme.typography.sizes.body1,
+    fontWeight: '800',
+  },
+  indefiniteBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: theme.spacing.md,
+    marginTop: theme.spacing.sm,
+    padding: theme.spacing.sm,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    gap: 4,
+  },
+  indefiniteBannerTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  indefiniteBannerText: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  unblockBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: theme.radius.md,
+    marginLeft: 8,
+  },
+  unblockBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
     fontWeight: '800',
   },
   closedCourtContainer: {

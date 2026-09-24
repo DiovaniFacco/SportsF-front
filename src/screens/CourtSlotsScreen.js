@@ -265,6 +265,26 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
       );
     }
 
+    const isBlockedIndefinitely = Boolean(
+      slotsData?.blocked_indefinitely || slotsData?.is_blocked_indefinitely
+    );
+
+    if (isBlockedIndefinitely) {
+      return (
+        <View style={styles.paddingContainer}>
+          <View style={[styles.blockedCard, { backgroundColor: colors.error + '10', borderColor: colors.error + '40' }]}>
+            <Text style={[styles.blockedTitle, { color: colors.error }]}>
+              ⛔ Quadra temporariamente indisponível
+            </Text>
+            <Text style={[styles.blockedText, { color: colors.text }]}>
+              {slotsData?.message ||
+                `Esta quadra está indisponível por tempo indeterminado${slotsData?.block_reason ? ` (${slotsData.block_reason})` : ''}. Tente outra quadra ou data.`}
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
     if (!slotsData || slotsList.length === 0) {
       return (
         <View style={styles.paddingContainer}>
@@ -563,5 +583,19 @@ const styles = StyleSheet.create({
     padding: theme.spacing.sm,
     borderRadius: theme.radius.md,
     borderWidth: 1,
+  },
+  blockedCard: {
+    borderWidth: 1,
+    borderRadius: theme.radius.md,
+    padding: theme.spacing.md,
+    gap: 8,
+  },
+  blockedTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  blockedText: {
+    fontSize: 13,
+    lineHeight: 18,
   },
 });

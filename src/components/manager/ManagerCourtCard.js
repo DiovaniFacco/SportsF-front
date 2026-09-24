@@ -24,6 +24,14 @@ export function ManagerCourtCard({ court, onEdit, onDelete, onOpenHours, onOpenP
   const rulesCount = (court.pricing_rules?.length || court.pricingRules?.length || 0);
   const specialCount = (court.special_prices?.length || court.specialPrices?.length || 0);
   const hasFlexiblePricing = rulesCount > 0 || specialCount > 0;
+  const isBlockedIndefinitely = Boolean(
+    court.is_blocked_indefinitely || court.blocked_indefinitely || court.active_indefinite_blockout || court.activeIndefiniteBlockout
+  );
+  const indefiniteReason =
+    court.active_indefinite_blockout?.reason ||
+    court.activeIndefiniteBlockout?.reason ||
+    court.indefinite_block_reason ||
+    null;
 
   return (
     <View style={[styles.cardContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -59,6 +67,14 @@ export function ManagerCourtCard({ court, onEdit, onDelete, onOpenHours, onOpenP
         <Text style={[styles.courtName, { color: colors.text }]} numberOfLines={2}>
           {court.name}
         </Text>
+
+        {isBlockedIndefinitely ? (
+          <View style={[styles.blockedBanner, { backgroundColor: colors.error + '12', borderColor: colors.error + '40' }]}>
+            <Text style={[styles.blockedBannerText, { color: colors.error }]}>
+              ⛔ Bloqueada por tempo indeterminado{indefiniteReason ? ` • ${indefiniteReason}` : ' • toque em Desbloquear na agenda para liberar'}
+            </Text>
+          </View>
+        ) : null}
 
         {/* Modalidades Badges */}
         <View style={styles.sportsRow}>
@@ -205,6 +221,18 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     padding: theme.spacing.md,
+  },
+  blockedBanner: {
+    borderWidth: 1,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginTop: 6,
+    marginBottom: 2,
+  },
+  blockedBannerText: {
+    fontSize: 11,
+    fontWeight: '800',
   },
   courtName: {
     fontSize: theme.typography.sizes.h4,
