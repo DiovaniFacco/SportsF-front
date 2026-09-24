@@ -13,8 +13,8 @@ import { RegisterScreen } from './src/screens/RegisterScreen';
 import { ManagerHomeScreen } from './src/screens/manager/ManagerHomeScreen';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
-import { getVenueIdFromUrl, syncVenueUrlInBrowser, getDefaultVenueSlug, getDefaultVenueCandidates, isGestaoRoute, syncGestaoUrlInBrowser } from './src/utils/linking';
-import { getVenueDetails } from './src/api/venues';
+import { getVenueIdFromUrl, syncVenueUrlInBrowser, getDefaultVenueSlug, getDefaultVenueCandidates, getSubdomainSlug, isGestaoRoute, syncGestaoUrlInBrowser } from './src/utils/linking';
+import { getVenueDetails, getVenues } from './src/api/venues';
 import { isSimplifiedVenue } from './src/utils/whatsapp';
 
 function MainAppContent() {
@@ -99,11 +99,27 @@ function MainAppContent() {
 
     // Tenta os candidatos em sequência (subdomínio curto pode não ser o slug real).
     // Ex: ["recanto", "recanto-beach-sports-e-lazer"] — o primeiro que existir vence.
+    // Por último, casa o subdomínio por prefixo na lista (funciona mesmo sem a env).
     const loadDefaultVenue = async () => {
       const candidates = getDefaultVenueCandidates();
       for (const candidate of candidates) {
         const venue = await loadVenueByIdentifier(candidate);
         if (venue) return venue;
+      }
+      try {
+        const sub = getSubdomainSlug();
+        if (sub && isMounted) {
+          const list = await getVenues();
+          const match =
+            list.find((v) => v.slug === sub) ||
+            list.find((v) => v.slug && v.slug.startsWith(`${sub}-`)) ||
+            list.find((v) => v.slug && sub.startsWith(v.slug));
+          if (match) {
+            return await loadVenueByIdentifier(match.slug || match.id);
+          }
+        }
+      } catch (err) {
+        console.error('Erro no fallback de venue do domínio:', err);
       }
       return null;
     };
@@ -130,13 +146,9 @@ function MainAppContent() {
           } else if (isInitial) {
             // Em domínio white-label, carrega o complexo em background (para o "voltar"
             // da gestão cair nele) mas permanece em /gestao.
-            const candidates = getDefaultVenueCandidates();
-            if (candidates.length > 0) {
+            if (getDefaultVenueSlug()) {
               setEnteredViaDirectLink(true);
-              for (const candidate of candidates) {
-                const venue = await loadVenueByIdentifier(candidate);
-                if (venue) break;
-              }
+              await loadDefaultVenue();
               if (isMounted) {
                 setIsManagerView(true);
                 setAuthScreen(null);
