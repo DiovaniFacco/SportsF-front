@@ -10,7 +10,6 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
-  ScrollView,
 } from 'react-native';
 import {
   Clock,
@@ -28,6 +27,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { getUserBookings, cancelBooking, updateBookingPayment } from '../../api/bookings';
 import { parseServerDateTime } from '../../utils/datetime';
+import { ScrollableRow } from '../common/ScrollableRow';
 import { EmptyState } from '../common/EmptyState';
 import { ErrorState } from '../common/ErrorState';
 import { FilterChip } from '../common/FilterChip';
@@ -360,7 +360,7 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
           />
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
+        <ScrollableRow edgeColor={colors.surface} contentContainerStyle={styles.chipsRow} accessibilityLabel="Filtro de status. Arraste para o lado para ver mais opções">
           {filters.map((f) => (
             <FilterChip
               key={f.id}
@@ -369,9 +369,9 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
               onPress={() => setStatusFilter(f.id)}
             />
           ))}
-        </ScrollView>
+        </ScrollableRow>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
+        <ScrollableRow edgeColor={colors.surface} contentContainerStyle={styles.chipsRow} accessibilityLabel="Filtro de pagamento. Arraste para o lado para ver mais opções">
           {paymentFilters.map((f) => (
             <FilterChip
               key={f.id}
@@ -380,10 +380,10 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
               onPress={() => setPaymentFilter(f.id)}
             />
           ))}
-        </ScrollView>
+        </ScrollableRow>
 
         {courts.length > 1 ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
+          <ScrollableRow edgeColor={colors.surface} contentContainerStyle={styles.chipsRow} accessibilityLabel="Filtro por quadra. Arraste para o lado para ver mais quadras">
             <FilterChip
               label="Todas as quadras"
               isSelected={courtFilter === 'ALL'}
@@ -397,7 +397,7 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
                 onPress={() => setCourtFilter(c.id)}
               />
             ))}
-          </ScrollView>
+          </ScrollableRow>
         ) : null}
       </View>
 

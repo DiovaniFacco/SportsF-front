@@ -1,7 +1,7 @@
 {
-  "short_name": "ReservaQuadras",
-  "name": "Reserva de Quadras - Gestão e Agendamentos",
-  "description": "Sistema completo para agendamento de horários e gestão de arenas e quadras esportivas.",
+  "short_name": "SportsFacco",
+  "name": "Sports Facco - Reserva de Quadras",
+  "description": "Sports Facco: agendamento de horários e gestão de arenas e quadras esportivas.",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -26,6 +26,6 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "theme_color": "#16A34A",
+  "theme_color": "#881337",
   "background_color": "#F8FAFC"
 }

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "front",
+    "name": "Sports Facco",
     "slug": "front",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -11,7 +11,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#881337",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -19,9 +19,9 @@
     },
     "web": {
       "favicon": "./public/favicon.png",
-      "name": "Reserva de Quadras",
-      "shortName": "ReservaQuadras",
-      "themeColor": "#16A34A",
+      "name": "Sports Facco",
+      "shortName": "SportsFacco",
+      "themeColor": "#881337",
       "backgroundColor": "#F8FAFC",
       "display": "standalone",
       "orientation": "portrait"

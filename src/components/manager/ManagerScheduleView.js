@@ -35,6 +35,7 @@ import { getCourtBlocks, deleteCourtBlock } from '../../api/courtBlocks';
 import { getAvailableSlots } from '../../api/slots';
 import { EmptyState } from '../common/EmptyState';
 import { ManagerMetricsCards } from './ManagerMetricsCards';
+import { ScrollableRow } from '../common/ScrollableRow';
 
 export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBlockModal, refreshKey, headerComponent }) {
   const { colors } = useTheme();
@@ -143,15 +144,47 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
     fetchScheduleData(true);
   };
 
-  const handleRemoveBlock = (block) => {
+  const handleRemoveBlock = (block, slotInfo = null) => {
+    // O slot pode carregar o id do bloqueio mesmo quando a lista courtBlocks
+    // está desatualizada (backend passa block_id no available-slots).
+    const resolvedId =
+      block?.id ??
+      block?.block_id ??
+      block?.blockout_id ??
+      block?.blockout?.id ??
+      slotInfo?.slot?.block_id ??
+      slotInfo?.slot?.blockout_id ??
+      slotInfo?.slot?.blockout?.id ??
+      slotInfo?.block_id ??
+      null;
+
+    if (resolvedId == null) {
+      const msg =
+        'Não foi possível identificar o bloqueio para remover. Atualize a agenda e tente novamente. Se o bloqueio abrange vários horários, ele será removido pelo horário inicial.';
+      console.warn('handleRemoveBlock sem id:', block, slotInfo);
+      if (Platform.OS === 'web') {
+        window.alert(msg);
+      } else {
+        Alert.alert('Bloqueio não identificado', msg);
+      }
+      fetchScheduleData(true);
+      return;
+    }
+
+    const resolvedBlock = { ...block, id: resolvedId };
+
     const doUnblock = async () => {
       try {
-        await deleteCourtBlock(block.id);
-        setCourtBlocks((prev) => prev.filter((b) => b.id !== block.id));
+        await deleteCourtBlock(resolvedId);
+        setCourtBlocks((prev) => prev.filter((b) => String(b.id) !== String(resolvedId)));
         fetchScheduleData(true);
       } catch (err) {
         console.error('Erro ao remover bloqueio:', err);
-        const apiMsg = err.response?.data?.message || 'Não foi possível remover o bloqueio.';
+        const apiMsg =
+          err.response?.data?.message ||
+          (err.response?.status === 404
+            ? 'Bloqueio não encontrado. Ele pode já ter sido removido — atualize a agenda.'
+            : 'Não foi possível remover o bloqueio.');
         if (Platform.OS === 'web') {
           window.alert(apiMsg);
         } else {
@@ -160,10 +193,10 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
       }
     };
 
-    const isIndef = isIndefiniteBlock(block);
+    const isIndef = isIndefiniteBlock(resolvedBlock);
     const confirmMsg = isIndef
-      ? `Esta quadra está BLOQUEADA POR TEMPO INDETERMINADO ("${block.reason || 'Sem motivo'}").\n\nDesbloquear agora? A quadra voltará a ficar disponível para agendamentos.`
-      : `Remover o bloqueio "${block.reason || 'Manutenção'}" na quadra? O horário voltará a ficar disponível.`;
+      ? `Esta quadra está BLOQUEADA POR TEMPO INDETERMINADO ("${resolvedBlock.reason || 'Sem motivo'}").\n\nDesbloquear agora? A quadra voltará a ficar disponível para agendamentos.`
+      : `Remover o bloqueio "${resolvedBlock.reason || 'Manutenção'}" na quadra? O horário voltará a ficar disponível.`;
 
     if (Platform.OS === 'web') {
       if (window.confirm(confirmMsg)) {
@@ -225,10 +258,10 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
   const renderFixedControls = () => (
     <View style={[styles.fixedControls, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
       {/* Seletor de Datas (Chips Horizontais) */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
+      <ScrollableRow
+        edgeColor={colors.surface}
         contentContainerStyle={styles.datesScrollContent}
+        accessibilityLabel="Seletor de datas. Arraste para o lado para ver mais dias"
       >
         {dateChips.map((chip) => {
           const isSelected = selectedDate === chip.dateStr;
@@ -254,14 +287,14 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
             </TouchableOpacity>
           );
         })}
-      </ScrollView>
+      </ScrollableRow>
 
       {/* Filtro por Quadra */}
       {activeCourtsList.length > 0 ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
+        <ScrollableRow
+          edgeColor={colors.surface}
           contentContainerStyle={styles.courtFilterScrollContainer}
+          accessibilityLabel="Filtro por quadra. Arraste para o lado para ver mais quadras"
         >
           <TouchableOpacity
             onPress={() => setSelectedCourtId('ALL')}
@@ -308,7 +341,7 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
               </TouchableOpacity>
             );
           })}
-        </ScrollView>
+        </ScrollableRow>
       ) : null}
     </View>
   );
@@ -426,7 +459,7 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
               onUnblock={handleRemoveBlock}
               onSlotClick={(slotInfo) => {
                 if (slotInfo.block) {
-                  handleRemoveBlock(slotInfo.block);
+                  handleRemoveBlock(slotInfo.block, slotInfo);
                 } else if (slotInfo.booking) {
                   const b = slotInfo.booking;
                   const client = b.customer_name || b.user?.name || 'Cliente';
@@ -491,6 +524,68 @@ function extractTimeStr(dateTimeStr) {
   return str.substring(0, 5);
 }
 
+function parseDateTimeMs(dateTimeStr) {
+  if (!dateTimeStr) return NaN;
+  const s = String(dateTimeStr).trim().replace('T', ' ');
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ ](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (m) {
+    const [, Y, Mo, D, H, Mi, S] = m;
+    return new Date(Number(Y), Number(Mo) - 1, Number(D), Number(H), Number(Mi), Number(S || '0')).getTime();
+  }
+  const t = Date.parse(s);
+  return Number.isNaN(t) ? NaN : t;
+}
+
+/**
+ * Encontra o bloqueio que atinge um slot.
+ * Suporta bloqueio de intervalo (ex: 13:00-21:00 cobrindo vários slots de 1h),
+ * que antes só encontrava o slot inicial e causava DELETE sem id (Server Error).
+ */
+function findBlockForSlot(courtBlocks = [], slot, selectedDate) {
+  if (!slot || !Array.isArray(courtBlocks) || courtBlocks.length === 0) return null;
+
+  // Compat: backend pode enviar block_id direto no slot (available-slots).
+  const slotBlockId =
+    slot.block_id ?? slot.blockout_id ?? slot.blockout?.id ?? null;
+  if (slotBlockId != null) {
+    const byId = courtBlocks.find((b) => String(b?.id) === String(slotBlockId));
+    if (byId) return byId;
+  }
+
+  const slotStartMs = parseDateTimeMs(slot.start_time);
+  const slotEndMs = parseDateTimeMs(slot.end_time);
+
+  if (Number.isNaN(slotStartMs) || Number.isNaN(slotEndMs)) {
+    const slotStartStr = extractTimeStr(slot.start_time);
+    return (
+      courtBlocks.find(
+        (cb) =>
+          !isIndefiniteBlock(cb) &&
+          isSameDate(cb.start_time, selectedDate) &&
+          extractTimeStr(cb.start_time) === slotStartStr
+      ) || null
+    );
+  }
+
+  const overlapping = courtBlocks.filter((cb) => {
+    if (!cb || isIndefiniteBlock(cb)) return false;
+    const bS = parseDateTimeMs(cb.start_time);
+    const bE = parseDateTimeMs(cb.end_time);
+    if (Number.isNaN(bS) || Number.isNaN(bE)) {
+      // Fallback: mesmo dia + mesmo início
+      return (
+        isSameDate(cb.start_time, selectedDate) &&
+        extractTimeStr(cb.start_time) === extractTimeStr(slot.start_time)
+      );
+    }
+    return bS < slotEndMs && bE > slotStartMs;
+  });
+
+  if (overlapping.length === 0) return null;
+  overlapping.sort((a, b) => parseDateTimeMs(a.start_time) - parseDateTimeMs(b.start_time));
+  return overlapping[0];
+}
+
 /**
  * Componente que renderiza a matriz de horários verdadeiramente dinâmica para uma quadra.
  */
@@ -528,8 +623,10 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
 
   slots.forEach((slot) => {
     const slotStartStr = extractTimeStr(slot.start_time);
+    const overlappingBlock = findBlockForSlot(courtBlocks, slot, selectedDate);
     const isBlocked = hasIndefinite
       || slot.blocked
+      || Boolean(overlappingBlock)
       || courtBlocks.some((cb) => {
         if (isIndefiniteBlock(cb)) {
           try {
@@ -538,6 +635,7 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
             return true;
           }
         }
+        // Mantido como fallback para formatos sem end_time parseável
         return isSameDate(cb.start_time, selectedDate) && extractTimeStr(cb.start_time) === slotStartStr;
       });
     const b = bookings.find((bk) => isSameDate(bk.start_time, selectedDate) && extractTimeStr(bk.start_time) === slotStartStr);
@@ -618,8 +716,22 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
             const slotEndStr = extractTimeStr(slot.end_time);
             const displayTime = slot.formatted_time || `${slotStartStr} - ${slotEndStr}`;
 
-            const exactBlock = courtBlocks.find((cb) => !isIndefiniteBlock(cb) && isSameDate(cb.start_time, selectedDate) && extractTimeStr(cb.start_time) === slotStartStr);
-            const matchingBlock = hasIndefinite ? (indefiniteBlock || exactBlock) : (exactBlock || (slot.blocked ? { reason: slot.block_reason, court_id: court.id } : null));
+            const overlappingBlock = findBlockForSlot(courtBlocks, slot, selectedDate);
+            const exactBlock =
+              overlappingBlock ||
+              courtBlocks.find((cb) => !isIndefiniteBlock(cb) && isSameDate(cb.start_time, selectedDate) && extractTimeStr(cb.start_time) === slotStartStr);
+            // Se o slot vem bloqueado do backend mas não achamos o registro na lista,
+            // monta fallback com block_id (quando disponível) para permitir o desbloqueio.
+            const slotFallbackBlock = slot.blocked
+              ? {
+                  id: slot.block_id ?? slot.blockout_id ?? slot.blockout?.id ?? null,
+                  reason: slot.block_reason,
+                  court_id: court.id,
+                }
+              : null;
+            const matchingBlock = hasIndefinite
+              ? (indefiniteBlock || exactBlock)
+              : (exactBlock || slotFallbackBlock);
             const matchingBooking = bookings.find((b) => isSameDate(b.start_time, selectedDate) && extractTimeStr(b.start_time) === slotStartStr);
 
             let status = 'free';

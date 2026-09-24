@@ -24,6 +24,7 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { getUserBookings } from '../../api/bookings';
+import { ScrollableRow } from '../common/ScrollableRow';
 
 export function ManagerMetricsView({ courts = [], headerComponent }) {
   const { colors } = useTheme();
@@ -131,10 +132,10 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
           <Text style={[styles.periodTitle, { color: colors.textPrimary }]}>Faturamento & Métricas do Complexo</Text>
         </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
+        <ScrollableRow
+          edgeColor={colors.surface}
           contentContainerStyle={styles.periodChipsScrollContent}
+          accessibilityLabel="Seletor de período. Arraste para o lado para ver mais períodos"
         >
           <TouchableOpacity
             activeOpacity={0.7}
@@ -183,7 +184,7 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
               Este Mês
             </Text>
           </TouchableOpacity>
-        </ScrollView>
+        </ScrollableRow>
       </View>
 
       {loading && !refreshing ? (

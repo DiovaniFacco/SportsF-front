@@ -47,6 +47,7 @@ import { CourtOperatingHoursModal } from '../../components/manager/CourtOperatin
 import { CourtPricingModal } from '../../components/manager/CourtPricingModal';
 import { EmptyState } from '../../components/common/EmptyState';
 import { ErrorState } from '../../components/common/ErrorState';
+import { ScrollableRow } from '../../components/common/ScrollableRow';
 
 export function ManagerHomeScreen({ onBackToUserView }) {
   const { colors } = useTheme();
@@ -369,7 +370,11 @@ export function ManagerHomeScreen({ onBackToUserView }) {
 
       {/* Seletor de Complexos: só ocupa espaço quando há mais de um */}
       {allVenues.length > 1 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.venuePillScroll}>
+        <ScrollableRow
+          edgeColor={colors.surface}
+          contentContainerStyle={styles.venuePillScroll}
+          accessibilityLabel="Seletor de complexos. Arraste para o lado para ver mais complexos"
+        >
           {allVenues.map((v) => {
             const isSelected = activeVenue?.id === v.id;
             return (
@@ -392,15 +397,14 @@ export function ManagerHomeScreen({ onBackToUserView }) {
               </TouchableOpacity>
             );
           })}
-        </ScrollView>
+        </ScrollableRow>
       ) : null}
 
       {/* Navegação Interna de Abas do Gestor (sempre visível) */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
+      <ScrollableRow
+        edgeColor={colors.surface}
         contentContainerStyle={styles.tabsScrollContent}
-        style={styles.tabsContainer}
+        accessibilityLabel="Abas do painel. Arraste para o lado para ver mais opções"
       >
         <TouchableOpacity
           activeOpacity={0.7}
@@ -493,7 +497,7 @@ export function ManagerHomeScreen({ onBackToUserView }) {
             Quadras ({totalCourts})
           </Text>
         </TouchableOpacity>
-      </ScrollView>
+      </ScrollableRow>
     </View>
   );
 
