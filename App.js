@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Platform } from 'react-native';
+import { StyleSheet, View, Platform, ActivityIndicator } from 'react-native';
 import * as Linking from 'expo-linking';
 import { useFonts, GreatVibes_400Regular } from '@expo-google-fonts/great-vibes';
 import { JosefinSans_700Bold } from '@expo-google-fonts/josefin-sans';
@@ -13,7 +13,7 @@ import { RegisterScreen } from './src/screens/RegisterScreen';
 import { ManagerHomeScreen } from './src/screens/manager/ManagerHomeScreen';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
-import { getVenueIdFromUrl, syncVenueUrlInBrowser } from './src/utils/linking';
+import { getVenueIdFromUrl, syncVenueUrlInBrowser, getDefaultVenueSlug, isGestaoRoute, syncGestaoUrlInBrowser } from './src/utils/linking';
 import { getVenueDetails } from './src/api/venues';
 import { isSimplifiedVenue } from './src/utils/whatsapp';
 
@@ -27,7 +27,7 @@ function MainAppContent() {
   // Usado para travar o modo Simplificado sem tela inicial nem navegação para outros complexos.
   const [enteredViaDirectLink, setEnteredViaDirectLink] = useState(false);
   const { colors } = useTheme();
-  const { isManager } = useAuth();
+  const { isManager, isAuthenticated, isLoading: authLoading } = useAuth();
 
   // Modo Simplificado travado: acesso exclusivo via link, somente este complexo.
   const simplifiedLock = !!selectedVenue && isSimplifiedVenue(selectedVenue) && enteredViaDirectLink && !isManagerView;
@@ -38,6 +38,10 @@ function MainAppContent() {
 
   const handleSelectVenue = (venue) => {
     setSelectedVenue(venue);
+    // Em /gestao a URL é própria — não sobrescreve ao trocar de complexo por dentro do painel.
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && isGestaoRoute(window.location.href)) {
+      return;
+    }
     syncVenueUrlInBrowser(venue);
   };
 
@@ -48,29 +52,111 @@ function MainAppContent() {
     syncVenueUrlInBrowser(null);
   };
 
+  const openManagerView = () => {
+    setIsManagerView(true);
+    setAuthScreen(null);
+    syncGestaoUrlInBrowser();
+  };
+
+  const closeManagerView = () => {
+    setIsManagerView(false);
+    setAuthScreen(null);
+    // Volta a URL para o contexto atual (complexo aberto ou raiz).
+    // Usa force:true porque a URL atual ainda é /gestao.
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      try {
+        if (lockRef.current.venue) {
+          syncVenueUrlInBrowser(lockRef.current.venue, { force: true });
+        } else if (isGestaoRoute(window.location.href)) {
+          window.history.pushState({}, '', '/');
+        }
+      } catch {
+        // mantém URL atual em caso de falha
+      }
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
 
+    const loadVenueByIdentifier = async (identifier) => {
+      try {
+        const venue = await getVenueDetails(identifier);
+        if (isMounted && venue) {
+          setSelectedVenue(venue);
+          setSelectedCourt(null);
+          setIsManagerView(false);
+          setAuthScreen(null);
+          setActiveTab('explorar');
+          syncVenueUrlInBrowser(venue);
+        }
+        return venue;
+      } catch (err) {
+        console.error('Erro ao carregar complexo do link:', err);
+        return null;
+      }
+    };
+
     const handleUrl = async (url, isInitial = false) => {
+      const gestao = isGestaoRoute(url);
       const venueId = getVenueIdFromUrl(url);
+
+      // 1. Rota de gestão: /gestao (ou /gestao/...) — entra no painel ou cai no login pelo guard.
+      if (gestao) {
+        if (isMounted) {
+          setIsManagerView(true);
+          setAuthScreen(null);
+          // Se já veio com /complexo/slug junto (ex: /gestao?complex=x), respeita o venue
+          // sem sair da gestão (loadVenueByIdentifier desliga isManagerView; religamos após).
+          if (venueId) {
+            if (isInitial) setEnteredViaDirectLink(true);
+            await loadVenueByIdentifier(venueId);
+            if (isMounted) {
+              setIsManagerView(true);
+              setAuthScreen(null);
+            }
+            syncGestaoUrlInBrowser();
+          } else if (isInitial) {
+            // Em domínio white-label, carrega o complexo em background (para o "voltar"
+            // da gestão cair nele) mas permanece em /gestao.
+            const defaultSlug = getDefaultVenueSlug();
+            if (defaultSlug) {
+              setEnteredViaDirectLink(true);
+              await loadVenueByIdentifier(defaultSlug);
+              if (isMounted) {
+                setIsManagerView(true);
+                setAuthScreen(null);
+              }
+            }
+            syncGestaoUrlInBrowser();
+          } else {
+            syncGestaoUrlInBrowser();
+          }
+        }
+        return;
+      }
+
+      // 2. Link explícito de complexo (/complexo/slug, ?complex=..., etc) — fluxo atual.
       if (venueId) {
         if (isInitial && isMounted) {
           setEnteredViaDirectLink(true);
         }
-        try {
-          const venue = await getVenueDetails(venueId);
-          if (isMounted && venue) {
-            setSelectedVenue(venue);
-            setSelectedCourt(null);
-            setIsManagerView(false);
-            setAuthScreen(null);
-            setActiveTab('explorar');
-            syncVenueUrlInBrowser(venue);
-          }
-        } catch (err) {
-          console.error('Erro ao carregar complexo do link:', err);
+        await loadVenueByIdentifier(venueId);
+        return;
+      }
+
+      // 3. Domínio white-label (recanto.sfacco.com.br/ ou EXPO_PUBLIC_VENUE_SLUG):
+      // entra direto no complexo sem precisar de /complexo/slug na URL.
+      const defaultSlug = getDefaultVenueSlug();
+      if (defaultSlug) {
+        if (isInitial && isMounted) {
+          setEnteredViaDirectLink(true);
         }
-      } else if (isInitial) {
+        await loadVenueByIdentifier(defaultSlug);
+        return;
+      }
+
+      if (isInitial) {
         // Acesso sem link específico: tela inicial normal (modo completo).
         if (isMounted) setEnteredViaDirectLink(false);
       }
@@ -94,13 +180,30 @@ function MainAppContent() {
     let handlePopState;
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       handlePopState = () => {
-        const vId = getVenueIdFromUrl(window.location.href);
+        const currentHref = window.location.href;
+        // Entrando/saindo de /gestao via voltar/avançar do navegador.
+        if (isGestaoRoute(currentHref)) {
+          setIsManagerView(true);
+          setAuthScreen(null);
+          return;
+        }
+        // Saindo de /gestao para outra rota: fecha o painel.
+        // (A URL já foi alterada pelo navegador no popstate.)
+        setIsManagerView(false);
+        const vId = getVenueIdFromUrl(currentHref);
         if (vId) {
-          handleUrl(window.location.href, false);
+          handleUrl(currentHref, false);
         } else {
           // No modo Simplificado travado, impede sair do complexo via voltar do navegador.
           if (lockRef.current.locked && lockRef.current.venue) {
             syncVenueUrlInBrowser(lockRef.current.venue);
+            return;
+          }
+          // Em domínio white-label sem slug na URL, recarrega o complexo padrão
+          // em vez de cair na lista geral.
+          const fallbackSlug = getDefaultVenueSlug();
+          if (fallbackSlug) {
+            handleUrl(currentHref, false);
             return;
           }
           setSelectedVenue(null);
@@ -122,10 +225,26 @@ function MainAppContent() {
     // No modo Simplificado travado, o usuário não navega para outras abas/complexos.
     if (simplifiedLock) return;
     if (tabId === 'gestao') {
-      setIsManagerView(true);
+      openManagerView();
     } else {
+      const wasManager = isManagerView;
       setIsManagerView(false);
       setActiveTab(tabId);
+      // Ao sair da gestão pela navegação, restaura a URL do complexo (ou raiz).
+      if (wasManager && Platform.OS === 'web' && typeof window !== 'undefined') {
+        try {
+          if (selectedVenue && !isGestaoRoute(window.location.href)) {
+            // já está fora de /gestao — garante URL canônica do complexo
+            syncVenueUrlInBrowser(selectedVenue);
+          } else if (isGestaoRoute(window.location.href)) {
+            // ainda em /gestao — força saída para o complexo (ou raiz)
+            if (selectedVenue) syncVenueUrlInBrowser(selectedVenue, { force: true });
+            else window.history.pushState({}, '', '/');
+          }
+        } catch {
+          // mantém URL atual
+        }
+      }
     }
   };
 
@@ -183,9 +302,30 @@ function MainAppContent() {
     }
 
     if (isManagerView) {
+      // Guarda de rota /gestao: logado + GESTOR_ESPACO/ADMIN entra direto,
+      // senão cai no login (e após logar o AuthContext re-renderiza para o painel).
+      if (authLoading) {
+        return (
+          <View style={[styles.container, { backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }]}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        );
+      }
+      if (!isAuthenticated || !isManager) {
+        return (
+          <LoginScreen
+            onNavigateRegister={() => setAuthScreen('register')}
+            onBack={closeManagerView}
+            onLoginSuccess={() => {
+              // Permanece em /gestao; o guard acima libera o painel quando o role for gestor.
+              syncGestaoUrlInBrowser();
+            }}
+          />
+        );
+      }
       return (
         <ManagerHomeScreen
-          onBackToUserView={() => setIsManagerView(false)}
+          onBackToUserView={closeManagerView}
         />
       );
     }
@@ -196,7 +336,7 @@ function MainAppContent() {
           onTabChange={handleTabChange}
           onGoToExplore={() => setActiveTab('explorar')}
           onOpenAuth={() => setAuthScreen('login')}
-          onOpenManager={() => setIsManagerView(true)}
+          onOpenManager={openManagerView}
         />
       );
     }
@@ -241,7 +381,7 @@ function MainAppContent() {
       <ComplexesScreen
         onSelectVenue={handleSelectVenue}
         onOpenAuth={() => setAuthScreen('login')}
-        onOpenManager={() => setIsManagerView(true)}
+        onOpenManager={openManagerView}
         activeTab={activeTab}
         onTabChange={handleTabChange}
       />

@@ -100,12 +100,96 @@ export function buildVenueUrl(venue) {
 }
 
 /**
+ * Lê o slug padrão do complexo via env (white-label por domínio).
+ * Ex: EXPO_PUBLIC_VENUE_SLUG=recanto
+ * Aceita slug ("recanto") ou ID ("1") — o backend resolve os dois em GET /venues/{id|slug}.
+ */
+export function getDefaultVenueSlugFromEnv() {
+  try {
+    const raw =
+      typeof process !== 'undefined' ? process.env?.EXPO_PUBLIC_VENUE_SLUG : null;
+    const slug = String(raw || '').trim();
+    return slug || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Extrai o slug do tenant a partir do subdomínio.
+ * Ex: recanto.sfacco.com.br -> "recanto"
+ * Ignora www, api, admin e domínios fora do tenant (localhost, railway.app, etc).
+ * O sufixo pode ser sobrescrito via EXPO_PUBLIC_TENANT_DOMAIN (ex: "sfacco.com.br").
+ */
+export function getSubdomainSlug(hostnameParam = null) {
+  try {
+    let hostname = hostnameParam;
+    if (!hostname) {
+      if (Platform.OS !== 'web' || typeof window === 'undefined') return null;
+      hostname = window.location.hostname;
+    }
+    hostname = String(hostname || '').toLowerCase().trim();
+    if (!hostname) return null;
+
+    let suffix = 'sfacco.com.br';
+    try {
+      const envSuffix =
+        typeof process !== 'undefined' ? process.env?.EXPO_PUBLIC_TENANT_DOMAIN : null;
+      if (envSuffix && String(envSuffix).trim()) {
+        suffix = String(envSuffix).trim().toLowerCase().replace(/^\./, '');
+      }
+    } catch {
+      // mantém sufixo padrão
+    }
+
+    if (!hostname.endsWith(suffix)) return null;
+    const sub = hostname.slice(0, hostname.length - suffix.length).replace(/\.$/, '');
+    if (!sub || sub.includes('.')) return null;
+    const ignored = new Set(['www', 'api', 'admin', 'app', 'gestao', 'painel']);
+    if (ignored.has(sub)) return null;
+    return sub;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolve o identificador do complexo padrão do domínio atual.
+ * Prioridade: subdomínio (recanto.sfacco.com.br) > EXPO_PUBLIC_VENUE_SLUG.
+ * Retorna slug ou ID, ou null quando é o domínio genérico.
+ */
+export function getDefaultVenueSlug() {
+  return getSubdomainSlug() || getDefaultVenueSlugFromEnv();
+}
+
+/**
+ * Retorna true quando a URL é a rota de gestão (/gestao ou /gestao/...).
+ */
+export function isGestaoRoute(urlStr) {
+  if (!urlStr) return false;
+  try {
+    let cleanUrlStr = urlStr;
+    if (!cleanUrlStr.includes('://') && !cleanUrlStr.startsWith('http')) {
+      cleanUrlStr = `http://localhost${cleanUrlStr.startsWith('/') ? '' : '/'}${cleanUrlStr}`;
+    }
+    const path = new URL(cleanUrlStr).pathname.toLowerCase();
+    return path === '/gestao' || path.startsWith('/gestao/');
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Atualiza a barra de endereço do navegador no ambiente Web mantendo URLs amigáveis sem recarregar a página.
  * Usa o formato canônico /complexo/slug. Mantém leitura dos formatos legados via query param.
+ * Não sobrescreve a rota /gestao (a gestão tem URL própria).
  */
-export function syncVenueUrlInBrowser(venue) {
+export function syncVenueUrlInBrowser(venue, opts = {}) {
   if (Platform.OS === 'web' && typeof window !== 'undefined' && window.history) {
     try {
+      // Em /gestao a URL é própria — não clobber, salvo saída explícita (force:true).
+      if (!opts.force && isGestaoRoute(window.location.href)) return;
+
       const slug = getVenueSlug(venue);
 
       if (slug) {
@@ -136,6 +220,22 @@ export function syncVenueUrlInBrowser(venue) {
       }
     } catch (e) {
       console.warn('Não foi possível sincronizar URL no navegador:', e);
+    }
+  }
+}
+
+/**
+ * Leva o navegador para /gestao sem recarregar (usado ao abrir a gestão).
+ */
+export function syncGestaoUrlInBrowser() {
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.history) {
+    try {
+      const currentUrl = new URL(window.location.href);
+      if (currentUrl.pathname.toLowerCase() !== '/gestao') {
+        window.history.pushState({}, '', `/gestao${currentUrl.search}${currentUrl.hash}`);
+      }
+    } catch (e) {
+      console.warn('Não foi possível sincronizar URL de gestão:', e);
     }
   }
 }
