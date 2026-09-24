@@ -12,6 +12,7 @@ export async function createBooking({
   customerName = null,
   customerPhone = null,
   isPaid = false,
+  paidAmount = null,
 }) {
   const payload = {
     court_id: courtId,
@@ -23,6 +24,10 @@ export async function createBooking({
     customer_phone: customerPhone,
     is_paid: isPaid,
   };
+  // Novo fluxo: gestor informa quanto foi pago; o backend define pago/pendente/nao_pago.
+  if (paidAmount !== null && paidAmount !== undefined) {
+    payload.paid_amount = paidAmount;
+  }
 
   const response = await apiClient.post('/bookings', payload);
   return response.data;
@@ -32,12 +37,14 @@ export async function createBooking({
  * Cria várias reservas de uma vez, de forma atômica (tudo ou nada).
  * Usado pela seleção multi-slot: ou todos os horários são reservados, ou nenhum.
  */
-export async function createBookingsBatch({ courtId, slots, notes = null }) {
+export async function createBookingsBatch({ courtId, slots, notes = null, paidAmount = null, isPaid = false }) {
   const payload = {
     court_id: courtId,
     slots: slots.map((s) => ({ start_time: s.startTime, end_time: s.endTime })),
     notes,
   };
+  if (paidAmount !== null && paidAmount !== undefined) payload.paid_amount = paidAmount;
+  else if (isPaid) payload.is_paid = true;
 
   const response = await apiClient.post('/bookings/batch', payload);
   return response.data;
@@ -83,11 +90,17 @@ export async function cancelBooking(bookingId) {
 }
 
 /**
- * Marca um agendamento como pago ou pendente (gestor do complexo ou admin).
+ * Registra quanto foi pago (gestor do complexo ou admin).
+ * O SISTEMA define automaticamente: pago (>= total), pendente (parcial), nao_pago (0).
+ * Aceita número (novo) ou booleano legado: true quita o total, false zera.
  */
-export async function updateBookingPayment(bookingId, isPaid) {
+export async function updateBookingPayment(bookingId, paidAmountOrIsPaid) {
   try {
-    const response = await apiClient.patch(`/bookings/${bookingId}/payment`, { is_paid: isPaid });
+    const payload =
+      typeof paidAmountOrIsPaid === 'boolean'
+        ? { is_paid: paidAmountOrIsPaid }
+        : { paid_amount: paidAmountOrIsPaid };
+    const response = await apiClient.patch(`/bookings/${bookingId}/payment`, payload);
     return response.data;
   } catch (error) {
     console.error(`Erro ao atualizar pagamento do agendamento ${bookingId} na API:`, error.message);

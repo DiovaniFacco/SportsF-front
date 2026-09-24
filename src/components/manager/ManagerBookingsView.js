@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  Modal,
 } from 'react-native';
 import {
   Clock,
@@ -22,11 +23,24 @@ import {
   Search,
   FileText,
   Banknote,
+  X,
 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { getUserBookings, cancelBooking, updateBookingPayment } from '../../api/bookings';
 import { parseServerDateTime } from '../../utils/datetime';
+import {
+  PAYMENT_PAGO,
+  PAYMENT_PENDENTE,
+  PAYMENT_NAO_PAGO,
+  getPaymentStatus,
+  getPaidAmount,
+  getTotalPrice,
+  getRemainingAmount,
+  formatBRL,
+  parseBRLInput,
+  resolvePaymentStatus,
+} from '../../utils/payment';
 import { ScrollableRow } from '../common/ScrollableRow';
 import { EmptyState } from '../common/EmptyState';
 import { ErrorState } from '../common/ErrorState';
@@ -62,10 +76,14 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState('todos'); // todos | futuros | realizados | cancelados
-  const [paymentFilter, setPaymentFilter] = useState('all'); // all | paid | pending
+  const [paymentFilter, setPaymentFilter] = useState('all'); // all | pago | pendente | nao_pago
   const [courtFilter, setCourtFilter] = useState('ALL');
   const [search, setSearch] = useState('');
   const [togglingPaymentId, setTogglingPaymentId] = useState(null);
+  const [paymentModalBooking, setPaymentModalBooking] = useState(null);
+  const [paymentInput, setPaymentInput] = useState('');
+  const [savingPayment, setSavingPayment] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
 
   const courtIds = useMemo(() => new Set(courts.map((c) => String(c.id))), [courts]);
 
@@ -120,21 +138,42 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
     }
   };
 
-  const handleTogglePayment = async (booking) => {
-    const nextPaid = !booking.is_paid;
-    setTogglingPaymentId(booking.id);
+  const openPaymentModal = (booking) => {
+    setPaymentModalBooking(booking);
+    setPaymentInput(String(getPaidAmount(booking) ?? 0));
+    setPaymentError('');
+  };
+
+  const closePaymentModal = () => {
+    if (savingPayment) return;
+    setPaymentModalBooking(null);
+    setPaymentInput('');
+    setPaymentError('');
+  };
+
+  const handleSavePayment = async () => {
+    if (!paymentModalBooking) return;
+    const parsed = parseBRLInput(paymentInput);
+    if (!Number.isFinite(parsed)) {
+      setPaymentError('Informe um valor válido (ex: 40 ou 40,50).');
+      return;
+    }
+    setSavingPayment(true);
+    setTogglingPaymentId(paymentModalBooking.id);
     try {
-      await updateBookingPayment(booking.id, nextPaid);
-      setBookings((prev) => prev.map((b) => (b.id === booking.id ? { ...b, is_paid: nextPaid } : b)));
+      const res = await updateBookingPayment(paymentModalBooking.id, parsed);
+      const updated = res?.booking || res;
+      setBookings((prev) =>
+        prev.map((b) => (b.id === paymentModalBooking.id ? { ...b, ...updated } : b)),
+      );
       onChanged && onChanged();
+      closePaymentModal();
     } catch (err) {
-      const apiMsg = err.response?.data?.message || err.message || 'Erro ao atualizar pagamento.';
-      if (Platform.OS === 'web') {
-        window.alert(apiMsg);
-      } else {
-        Alert.alert('Erro', apiMsg);
-      }
+      const apiMsg =
+        err.response?.data?.message || err.message || 'Erro ao atualizar pagamento.';
+      setPaymentError(apiMsg);
     } finally {
+      setSavingPayment(false);
       setTogglingPaymentId(null);
     }
   };
@@ -156,6 +195,7 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
     let cancelados = 0;
     let pagos = 0;
     let pendentes = 0;
+    let naoPagos = 0;
     scoped.forEach((b) => {
       if (b.status === 'cancelled') {
         cancelados++;
@@ -163,11 +203,13 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
         const end = parseDateTime(b.end_time) || parseDateTime(b.start_time);
         if (end && end < now) realizados++;
         else futuros++;
-        if (b.is_paid) pagos++;
-        else pendentes++;
+        const ps = getPaymentStatus(b);
+        if (ps === PAYMENT_PAGO) pagos++;
+        else if (ps === PAYMENT_PENDENTE) pendentes++;
+        else naoPagos++;
       }
     });
-    return { todos: scoped.length, futuros, realizados, cancelados, pagos, pendentes };
+    return { todos: scoped.length, futuros, realizados, cancelados, pagos, pendentes, naoPagos };
   }, [scoped, now]);
 
   const filtered = useMemo(() => {
@@ -185,8 +227,16 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
           const e = parseDateTime(b.end_time) || parseDateTime(b.start_time);
           if (!e || e >= now) return false;
         }
-        if (paymentFilter === 'paid' && !b.is_paid) return false;
-        if (paymentFilter === 'pending' && (b.is_paid || b.status === 'cancelled')) return false;
+        const ps = getPaymentStatus(b);
+        if (paymentFilter === 'pago' || paymentFilter === 'paid') {
+          if (ps !== PAYMENT_PAGO) return false;
+        }
+        if (paymentFilter === 'pendente' || paymentFilter === 'pending') {
+          if (ps !== PAYMENT_PENDENTE || b.status === 'cancelled') return false;
+        }
+        if (paymentFilter === 'nao_pago') {
+          if (ps !== PAYMENT_NAO_PAGO || b.status === 'cancelled') return false;
+        }
         if (q) {
           const hay = [
             b.customer_name,
@@ -215,13 +265,24 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
 
   const paymentFilters = [
     { id: 'all', label: 'Pagto: todos' },
-    { id: 'paid', label: `Pagos (${counts.pagos})` },
-    { id: 'pending', label: `Pendentes (${counts.pendentes})` },
+    { id: 'pago', label: `Pagos (${counts.pagos})` },
+    { id: 'pendente', label: `Pendentes (${counts.pendentes})` },
+    { id: 'nao_pago', label: `Não pagos (${counts.naoPagos})` },
   ];
+
+  const getPaymentBadgeStyle = (ps) => {
+    if (ps === PAYMENT_PAGO) return { bg: colors.successSurface, fg: colors.success, label: 'PAGO' };
+    if (ps === PAYMENT_PENDENTE) return { bg: colors.warningSurface, fg: colors.gold, label: 'PENDENTE' };
+    return { bg: colors.errorSurface, fg: colors.error, label: 'NÃO PAGO' };
+  };
 
   const renderCard = ({ item }) => {
     const isCancelled = item.status === 'cancelled';
-    const isPaid = Boolean(item.is_paid);
+    const paymentStatus = getPaymentStatus(item);
+    const payBadge = getPaymentBadgeStyle(paymentStatus);
+    const paid = getPaidAmount(item);
+    const total = getTotalPrice(item);
+    const remaining = getRemainingAmount(item);
     const isManual = Boolean(item.is_manual);
     const end = parseDateTime(item.end_time) || parseDateTime(item.start_time);
     const isPast = end ? end < new Date() : false;
@@ -265,14 +326,12 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
                 <Text style={[styles.badgeText, { color: colors.primary }]}>AGENDADO</Text>
               </View>
             )}
-            {!isCancelled ? (
-              <View style={[styles.badge, { backgroundColor: isPaid ? colors.successSurface : colors.warningSurface }]}>
-                <Banknote size={13} color={isPaid ? colors.success : colors.gold} style={{ marginRight: 4 }} />
-                <Text style={[styles.badgeText, { color: isPaid ? colors.success : colors.gold }]}>
-                  {isPaid ? 'PAGO' : 'PENDENTE'}
-                </Text>
-              </View>
-            ) : null}
+            <View style={[styles.badge, { backgroundColor: payBadge.bg }]}>
+              <Banknote size={13} color={payBadge.fg} style={{ marginRight: 4 }} />
+              <Text style={[styles.badgeText, { color: payBadge.fg }]}>
+                {payBadge.label}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -306,27 +365,38 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
         ) : null}
 
         <View style={[styles.cardFooter, { borderTopColor: colors.border }]}>
-          <Text style={[styles.priceText, { color: colors.textPrimary }]}>
-            R$ {item.total_price != null ? parseFloat(item.total_price).toFixed(2) : '—'}
-          </Text>
+          <View>
+            <Text style={[styles.priceText, { color: colors.textPrimary }]}>
+              {formatBRL(total)}
+            </Text>
+            {paymentStatus !== PAYMENT_PAGO ? (
+              <Text style={[styles.remainingText, { color: colors.textMuted }]}>
+                Pago {formatBRL(paid)} • Falta {formatBRL(remaining)}
+              </Text>
+            ) : (
+              <Text style={[styles.remainingText, { color: colors.success }]}>
+                Pago {formatBRL(paid)}
+              </Text>
+            )}
+          </View>
           <View style={styles.footerActions}>
             {!isCancelled ? (
               <TouchableOpacity
                 activeOpacity={0.7}
-                onPress={() => handleTogglePayment(item)}
+                onPress={() => openPaymentModal(item)}
                 disabled={isTogglingPayment}
                 style={[
                   styles.btnPay,
                   {
-                    backgroundColor: isPaid ? colors.successSurface : colors.warningSurface,
-                    borderColor: isPaid ? colors.successSurface : colors.warningSurface,
+                    backgroundColor: payBadge.bg,
+                    borderColor: payBadge.bg,
                     opacity: isTogglingPayment ? 0.6 : 1,
                   },
                 ]}
               >
-                <Banknote size={13} color={isPaid ? colors.success : colors.gold} style={{ marginRight: 4 }} />
-                <Text style={[styles.btnPayText, { color: isPaid ? colors.success : colors.gold }]}>
-                  {isTogglingPayment ? '...' : isPaid ? 'Marcar pendente' : 'Marcar pago'}
+                <Banknote size={13} color={payBadge.fg} style={{ marginRight: 4 }} />
+                <Text style={[styles.btnPayText, { color: payBadge.fg }]}>
+                  {isTogglingPayment ? '...' : 'Registrar pagamento'}
                 </Text>
               </TouchableOpacity>
             ) : null}
@@ -431,6 +501,114 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
           }
         />
       )}
+
+      <Modal
+        animationType="slide"
+        transparent
+        visible={!!paymentModalBooking}
+        onRequestClose={closePaymentModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Registrar pagamento</Text>
+                {paymentModalBooking ? (
+                  <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>
+                    {paymentModalBooking.court?.name || 'Quadra'} • Total {formatBRL(getTotalPrice(paymentModalBooking))}
+                  </Text>
+                ) : null}
+              </View>
+              <TouchableOpacity onPress={closePaymentModal} style={[styles.modalClose, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <X size={18} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              {paymentError ? (
+                <View style={[styles.modalError, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}>
+                  <Text style={[styles.modalErrorText, { color: colors.error }]}>{paymentError}</Text>
+                </View>
+              ) : null}
+
+              <Text style={[styles.modalLabel, { color: colors.textPrimary }]}>Quanto foi pago? (R$)</Text>
+              <View style={[styles.modalInputWrap, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <Banknote size={18} color={colors.textMuted} style={{ marginRight: 8 }} />
+                <TextInput
+                  style={[styles.modalInput, { color: colors.textPrimary }]}
+                  value={paymentInput}
+                  onChangeText={setPaymentInput}
+                  placeholder="Ex: 40"
+                  placeholderTextColor={colors.textMuted}
+                  keyboardType="decimal-pad"
+                  editable={!savingPayment}
+                />
+              </View>
+
+              <View style={styles.quickRow}>
+                <TouchableOpacity
+                  style={[styles.quickBtn, { borderColor: colors.border, backgroundColor: colors.background }]}
+                  onPress={() => setPaymentInput('0')}
+                  disabled={savingPayment}
+                >
+                  <Text style={[styles.quickBtnText, { color: colors.textSecondary }]}>Não pago</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.quickBtn, { borderColor: colors.border, backgroundColor: colors.background }]}
+                  onPress={() => {
+                    if (!paymentModalBooking) return;
+                    const total = getTotalPrice(paymentModalBooking);
+                    setPaymentInput(String(Math.floor(total / 2)));
+                  }}
+                  disabled={savingPayment}
+                >
+                  <Text style={[styles.quickBtnText, { color: colors.textSecondary }]}>Metade</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.quickBtn, { borderColor: colors.success, backgroundColor: colors.successSurface }]}
+                  onPress={() => {
+                    if (!paymentModalBooking) return;
+                    setPaymentInput(String(getTotalPrice(paymentModalBooking)));
+                  }}
+                  disabled={savingPayment}
+                >
+                  <Text style={[styles.quickBtnText, { color: colors.success }]}>Valor total</Text>
+                </TouchableOpacity>
+              </View>
+
+              {paymentModalBooking ? (
+                <View style={[styles.previewBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  {(() => {
+                    const parsed = parseBRLInput(paymentInput);
+                    const total = getTotalPrice(paymentModalBooking);
+                    const preview = Number.isFinite(parsed) ? resolvePaymentStatus(parsed, total) : null;
+                    const label = preview === PAYMENT_PAGO ? 'PAGO (valor integral)' : preview === PAYMENT_PENDENTE ? `PENDENTE (falta ${formatBRL(Math.max(0, total - parsed))})` : preview === PAYMENT_NAO_PAGO ? 'NÃO PAGO' : '—';
+                    const fg = preview === PAYMENT_PAGO ? colors.success : preview === PAYMENT_PENDENTE ? colors.gold : colors.error;
+                    return (
+                      <Text style={[styles.previewText, { color: colors.textSecondary }]}>
+                        O sistema vai marcar como: <Text style={{ fontWeight: '800', color: fg }}>{label}</Text>
+                      </Text>
+                    );
+                  })()}
+                </View>
+              ) : null}
+            </View>
+
+            <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
+              <TouchableOpacity onPress={closePaymentModal} style={[styles.modalCancel, { borderColor: colors.border }]} disabled={savingPayment}>
+                <Text style={[styles.modalCancelText, { color: colors.textPrimary }]}>Fechar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleSavePayment}
+                style={[styles.modalSave, { backgroundColor: colors.primary, opacity: savingPayment ? 0.6 : 1 }]}
+                disabled={savingPayment}
+              >
+                <Text style={styles.modalSaveText}>{savingPayment ? 'Salvando...' : 'Salvar valor'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -541,6 +719,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
   },
+  remainingText: {
+    fontSize: 11,
+    marginTop: 2,
+  },
   btnCancel: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -580,4 +762,64 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: theme.typography.sizes.label,
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  modalCard: {
+    width: '96%',
+    maxWidth: 440,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: theme.spacing.md,
+    borderBottomWidth: 1,
+    gap: 8,
+  },
+  modalTitle: { fontSize: 15, fontWeight: '800' },
+  modalSubtitle: { fontSize: 12, marginTop: 2 },
+  modalClose: {
+    width: 32, height: 32, borderRadius: 16, borderWidth: 1,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  modalBody: { padding: theme.spacing.md, gap: 10 },
+  modalLabel: { fontSize: 13, fontWeight: '700' },
+  modalInputWrap: {
+    flexDirection: 'row', alignItems: 'center',
+    borderWidth: 1, borderRadius: theme.radius.md,
+    paddingHorizontal: 12, height: 46,
+  },
+  modalInput: { flex: 1, fontSize: 16, fontWeight: '700' },
+  modalError: { padding: 10, borderRadius: theme.radius.md, borderWidth: 1 },
+  modalErrorText: { fontSize: 12, fontWeight: '600' },
+  quickRow: { flexDirection: 'row', gap: 8 },
+  quickBtn: {
+    flex: 1, paddingVertical: 9, borderRadius: theme.radius.md,
+    borderWidth: 1, alignItems: 'center',
+  },
+  quickBtnText: { fontSize: 12, fontWeight: '700' },
+  previewBox: { padding: 10, borderRadius: theme.radius.md, borderWidth: 1 },
+  previewText: { fontSize: 12 },
+  modalFooter: {
+    flexDirection: 'row', gap: 8,
+    padding: theme.spacing.md, borderTopWidth: 1,
+  },
+  modalCancel: {
+    flex: 1, alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 11, borderRadius: theme.radius.md, borderWidth: 1,
+  },
+  modalCancelText: { fontSize: 13, fontWeight: '700' },
+  modalSave: {
+    flex: 1.4, alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 11, borderRadius: theme.radius.md,
+  },
+  modalSaveText: { color: '#fff', fontSize: 13, fontWeight: '800' },
 });

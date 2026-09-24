@@ -31,6 +31,7 @@ import { useAuth } from '../context/AuthContext';
 import { theme } from '../styles/theme';
 import { getUserBookings, cancelBooking } from '../api/bookings';
 import { parseServerDateTime } from '../utils/datetime';
+import { getPaymentStatus, getPaidAmount, getRemainingAmount, formatBRL, PAYMENT_PAGO, PAYMENT_PENDENTE } from '../utils/payment';
 import { BottomNav } from '../components/common/BottomNav';
 import { SkeletonCard } from '../components/common/SkeletonCard';
 import { EmptyState } from '../components/common/EmptyState';
@@ -205,14 +206,30 @@ export function MyBookingsScreen({ onTabChange, onGoToExplore, onOpenAuth }) {
   };
 
   const renderPaymentBadge = (item) => {
-    if (item.status === 'cancelled') return null;
-    const isPaid = Boolean(item.is_paid);
+    const ps = getPaymentStatus(item);
+    if (ps === PAYMENT_PAGO) {
+      return (
+        <View style={[styles.statusBadge, { backgroundColor: colors.successSurface }]}>
+          <Banknote size={13} color={colors.success} />
+          <Text style={[styles.statusBadgeText, { color: colors.success }]}>Pago</Text>
+        </View>
+      );
+    }
+    if (ps === PAYMENT_PENDENTE) {
+      const remaining = getRemainingAmount(item);
+      return (
+        <View style={[styles.statusBadge, { backgroundColor: colors.warningSurface }]}>
+          <Banknote size={13} color={colors.gold} />
+          <Text style={[styles.statusBadgeText, { color: colors.gold }]}>
+            Pendente • Falta {formatBRL(remaining)}
+          </Text>
+        </View>
+      );
+    }
     return (
-      <View style={[styles.statusBadge, { backgroundColor: isPaid ? colors.successSurface : colors.warningSurface }]}>
-        <Banknote size={13} color={isPaid ? colors.success : colors.gold} />
-        <Text style={[styles.statusBadgeText, { color: isPaid ? colors.success : colors.gold }]}>
-          {isPaid ? 'Pago' : 'Pagamento pendente'}
-        </Text>
+      <View style={[styles.statusBadge, { backgroundColor: colors.errorSurface }]}>
+        <Banknote size={13} color={colors.error} />
+        <Text style={[styles.statusBadgeText, { color: colors.error }]}>Não pago</Text>
       </View>
     );
   };
@@ -230,6 +247,7 @@ export function MyBookingsScreen({ onTabChange, onGoToExplore, onOpenAuth }) {
     const priceFormatted = item.total_price
       ? `R$ ${Number(item.total_price).toFixed(2).replace('.', ',')}`
       : 'R$ --';
+    const paidFormatted = getPaidAmount(item) > 0 ? formatBRL(getPaidAmount(item)) : null;
 
     return (
       <View
@@ -291,6 +309,11 @@ export function MyBookingsScreen({ onTabChange, onGoToExplore, onOpenAuth }) {
           <View style={styles.priceCol}>
             <Text style={[styles.priceLabel, { color: colors.textMuted }]}>Valor total</Text>
             <Text style={[styles.priceValue, { color: colors.primary }]}>{priceFormatted}</Text>
+            {paidFormatted ? (
+              <Text style={[styles.priceLabel, { color: colors.textMuted }]}>Pago: {paidFormatted}</Text>
+            ) : (
+              <Text style={[styles.priceLabel, { color: colors.textMuted }]}>Pago: R$ 0,00</Text>
+            )}
           </View>
 
           {canCancel ? (

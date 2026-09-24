@@ -16,6 +16,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { createBooking } from '../../api/bookings';
 import { getTodayStrInSaoPaulo } from '../../utils/datetime';
+import { formatBRL, parseBRLInput, resolvePaymentStatus, PAYMENT_PAGO, PAYMENT_PENDENTE, PAYMENT_NAO_PAGO } from '../../utils/payment';
 import { DatePickerInput } from '../common/DatePickerInput';
 import { TimePickerInput } from '../common/TimePickerInput';
 
@@ -41,7 +42,7 @@ export function ManualBookingModal({
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [notes, setNotes] = useState('');
-  const [isPaid, setIsPaid] = useState(false);
+  const [paidInput, setPaidInput] = useState('0');
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -55,7 +56,7 @@ export function ManualBookingModal({
       setCustomerName('');
       setCustomerPhone('');
       setNotes('');
-      setIsPaid(false);
+      setPaidInput('0');
       setErrorMessage('');
     }
   }, [visible, courts, initialCourtId, initialStartTime, initialEndTime, initialDate]);
@@ -92,6 +93,13 @@ export function ManualBookingModal({
       const fullStartTime = `${date} ${startTime.length === 5 ? startTime + ':00' : startTime}`;
       const fullEndTime = `${date} ${endTime.length === 5 ? endTime + ':00' : endTime}`;
 
+      const paidAmount = parseBRLInput(paidInput);
+      if (!Number.isFinite(paidAmount)) {
+        setErrorMessage('Informe um valor pago válido (ex: 0, 40 ou 80).');
+        setSubmitting(false);
+        return;
+      }
+
       await createBooking({
         courtId: selectedCourtId,
         startTime: fullStartTime,
@@ -100,7 +108,7 @@ export function ManualBookingModal({
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim() || null,
         notes: notes.trim() || 'Agendamento presencial / balcão',
-        isPaid,
+        paidAmount,
       });
 
       const msg = 'Agendamento balcão realizado com sucesso!';
@@ -260,47 +268,56 @@ export function ManualBookingModal({
               </View>
             </View>
 
-            {/* Pagamento */}
+            {/* Pagamento: quanto já foi recebido */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Pagamento *</Text>
+              <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Valor já recebido (R$) *</Text>
+              <View style={[styles.inputWrapper, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <Banknote size={18} color={colors.textMuted} style={{ marginRight: 10 }} />
+                <TextInput
+                  style={[styles.input, { color: colors.textPrimary }]}
+                  value={paidInput}
+                  onChangeText={setPaidInput}
+                  placeholder="Ex: 0, 40 ou 80"
+                  keyboardType="decimal-pad"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </View>
+              {(() => {
+                const selectedCourt = courts.find((c) => String(c.id) === String(selectedCourtId));
+                const rate = selectedCourt?.hourly_rate != null ? Number(selectedCourt.hourly_rate) : null;
+                const paid = parseBRLInput(paidInput);
+                const preview = Number.isFinite(paid) ? ' • ' : '';
+                return (
+                  <Text style={[styles.paymentHint, { color: colors.textMuted }]}>
+                    {rate != null ? `Valor da quadra/hora: ${formatBRL(rate)}.` : 'Informe quanto o cliente já pagou.'}
+                    {Number.isFinite(paid) && paid === 0 ? ' Ficará como NÃO PAGO.' : ''}
+                    {Number.isFinite(paid) && paid > 0 && (rate == null || paid < rate) ? ' Ficará como PENDENTE (pagamento parcial).' : ''}
+                    {Number.isFinite(paid) && rate != null && paid >= rate ? ' Ficará como PAGO (valor integral).' : ''}
+                    {preview === '' && !Number.isFinite(paid) ? ' Valor inválido.' : ''}
+                  </Text>
+                );
+              })()}
               <View style={styles.paymentRow}>
                 <TouchableOpacity
                   activeOpacity={0.8}
-                  onPress={() => setIsPaid(true)}
-                  style={[
-                    styles.paymentBtn,
-                    {
-                      backgroundColor: isPaid ? colors.success : colors.background,
-                      borderColor: isPaid ? colors.success : colors.border,
-                    },
-                  ]}
+                  onPress={() => setPaidInput('0')}
+                  style={[styles.paymentBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
                 >
-                  <Banknote size={15} color={isPaid ? colors.white : colors.textMuted} style={{ marginRight: 6 }} />
-                  <Text style={[styles.paymentBtnText, { color: isPaid ? colors.white : colors.textSecondary }]}>
-                    Pago
-                  </Text>
+                  <Text style={[styles.paymentBtnText, { color: colors.textSecondary }]}>Não pago</Text>
                 </TouchableOpacity>
-
                 <TouchableOpacity
                   activeOpacity={0.8}
-                  onPress={() => setIsPaid(false)}
-                  style={[
-                    styles.paymentBtn,
-                    {
-                      backgroundColor: !isPaid ? '#F59E0B' : colors.background,
-                      borderColor: !isPaid ? '#F59E0B' : colors.border,
-                    },
-                  ]}
+                  onPress={() => {
+                    const selectedCourt = courts.find((c) => String(c.id) === String(selectedCourtId));
+                    const rate = selectedCourt?.hourly_rate != null ? Number(selectedCourt.hourly_rate) : null;
+                    if (rate != null) setPaidInput(String(rate));
+                  }}
+                  style={[styles.paymentBtn, { backgroundColor: colors.successSurface, borderColor: colors.success }]}
                 >
-                  <Clock size={15} color={!isPaid ? colors.white : colors.textMuted} style={{ marginRight: 6 }} />
-                  <Text style={[styles.paymentBtnText, { color: !isPaid ? colors.white : colors.textSecondary }]}>
-                    Pendente
-                  </Text>
+                  <Banknote size={15} color={colors.success} style={{ marginRight: 6 }} />
+                  <Text style={[styles.paymentBtnText, { color: colors.success }]}>Valor total</Text>
                 </TouchableOpacity>
               </View>
-              <Text style={[styles.paymentHint, { color: colors.textMuted }]}>
-                {isPaid ? 'Valor já recebido pelo complexo.' : 'Pagamento ficará pendente no agendamento.'}
-              </Text>
             </View>
           </ScrollView>
 
