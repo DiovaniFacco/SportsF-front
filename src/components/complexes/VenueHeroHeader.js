@@ -37,7 +37,7 @@ export function VenueHeroHeader({ venue, onBack, hideBack = false }) {
     <View style={[styles.container, { backgroundColor: colors.surface, borderBottomColor: colors.borderSubtle }]}>
       {/* Toast Feedback de Confirmação */}
       {copiedToast ? (
-        <View style={styles.toastBanner}>
+        <View style={[styles.toastBanner, { backgroundColor: colors.success }]}>
           <Check size={16} color={colors.white} />
           <Text style={styles.toastText}>Link direto do complexo copiado!</Text>
         </View>
@@ -75,8 +75,8 @@ export function VenueHeroHeader({ venue, onBack, hideBack = false }) {
         {/* Marca Sfacco flutuante no modo link exclusivo (sem a barra branca vazia) */}
         {hideBack ? (
           <View style={styles.brandOverlay}>
-            <Text style={styles.brandOverlayS}>S</Text>
-            <Text style={styles.brandOverlayName}>facco</Text>
+            <Text style={[styles.brandOverlayS, { color: colors.letraS }]}>S</Text>
+            <Text style={[styles.brandOverlayName, { color: colors.textPrimary }]}>facco</Text>
           </View>
         ) : null}
 
@@ -154,7 +154,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: colors.success,
     paddingVertical: 8,
     paddingHorizontal: theme.spacing.md,
   },
@@ -334,7 +333,6 @@ const styles = StyleSheet.create({
         : 'GreatVibes_400Regular',
     fontSize: 22,
     marginRight: -2,
-    color: colors.letraS,
   },
   brandOverlayName: {
     fontFamily:
@@ -344,6 +342,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: -0.5,
-    color: colors.textPrimary,
   },
 });

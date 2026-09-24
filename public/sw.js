@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reserva-quadras-v1';
+const CACHE_NAME = 'reserva-quadras-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

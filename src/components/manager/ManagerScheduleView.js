@@ -714,7 +714,7 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
                 ) : status === 'free' ? (
                   <View style={styles.slotFreeContent}>
                     <PlusCircle size={13} color={colors.success} />
-                    <Text style={styles.slotFreeText}>Livre</Text>
+                    <Text style={[styles.slotFreeText, { color: colors.success }]}>Livre</Text>
                   </View>
                 ) : status === 'booked_manual' ? (
                   <View style={styles.slotBookedContent}>
@@ -1123,7 +1123,6 @@ const styles = StyleSheet.create({
   slotFreeText: {
     fontSize: theme.typography.sizes.caption,
     fontWeight: '700',
-    color: colors.success,
   },
   slotBookedContent: {
     flexDirection: 'row',

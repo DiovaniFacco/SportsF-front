@@ -36,7 +36,7 @@ export function ComplexCard({ venue, onPress }) {
     >
       {/* Toast Feedback */}
       {copiedToast ? (
-        <View style={styles.toastBanner}>
+        <View style={[styles.toastBanner, { backgroundColor: colors.success }]}>
           <Check size={14} color={colors.white} />
           <Text style={styles.toastText}>Link do complexo copiado!</Text>
         </View>
@@ -188,7 +188,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: colors.success,
     paddingVertical: 6,
     paddingHorizontal: theme.spacing.md,
     borderTopLeftRadius: theme.radius.lg,
