@@ -17,6 +17,23 @@ export function normalizeWhatsappNumber(raw) {
 }
 
 /**
+ * Garante o formato internacional exigido pelo wa.me (código do país + número).
+ * Números BR em formato local (10-11 dígitos, ex: "(55) 99134-2669" -> "55991342669")
+ * ganham o DDI 55. Números que já trazem DDI (12-13 dígitos iniciados em 55)
+ * são mantidos. Demais formatos são devolvidos como estão.
+ */
+export function toInternationalWhatsappNumber(raw) {
+  const digits = normalizeWhatsappNumber(raw).replace(/^0+(?=\d)/, '');
+  if (!digits) return '';
+  // Número BR em formato local tem 10-11 dígitos (nunca é um número
+  // internacional completo, que teria 12-13 com o DDI) → prefixa 55.
+  if (digits.length === 10 || digits.length === 11) {
+    return `55${digits}`;
+  }
+  return digits;
+}
+
+/**
  * Retorna true se o complexo está no modo Simplificado.
  * Aceita tanto `mode === 'simplificado'` (novo) quanto `is_simplified === true` (accessor do backend).
  * Qualquer outro valor é tratado como modo completo (comportamento atual preservado).
@@ -29,12 +46,12 @@ export function isSimplifiedVenue(venue) {
 }
 
 /**
- * Resolve o número de WhatsApp efetivo do complexo.
+ * Resolve o número de WhatsApp efetivo do complexo em formato internacional.
  * Prioriza `whatsapp_number`, com fallback para `phone`.
  */
 export function getVenueWhatsappNumber(venue) {
   if (!venue) return '';
-  return normalizeWhatsappNumber(venue.whatsapp_number || venue.phone || '');
+  return toInternationalWhatsappNumber(venue.whatsapp_number || venue.phone || '');
 }
 
 /**

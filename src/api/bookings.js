@@ -29,6 +29,21 @@ export async function createBooking({
 }
 
 /**
+ * Cria várias reservas de uma vez, de forma atômica (tudo ou nada).
+ * Usado pela seleção multi-slot: ou todos os horários são reservados, ou nenhum.
+ */
+export async function createBookingsBatch({ courtId, slots, notes = null }) {
+  const payload = {
+    court_id: courtId,
+    slots: slots.map((s) => ({ start_time: s.startTime, end_time: s.endTime })),
+    notes,
+  };
+
+  const response = await apiClient.post('/bookings/batch', payload);
+  return response.data;
+}
+
+/**
  * Lista os agendamentos do usuário logado (ou todos para gestor/admin).
  */
 export async function getUserBookings(params = {}) {

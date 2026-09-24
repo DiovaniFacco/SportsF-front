@@ -27,14 +27,14 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { getUserBookings, cancelBooking, updateBookingPayment } from '../../api/bookings';
+import { parseServerDateTime } from '../../utils/datetime';
 import { EmptyState } from '../common/EmptyState';
 import { ErrorState } from '../common/ErrorState';
 import { FilterChip } from '../common/FilterChip';
 
 function parseDateTime(value) {
-  if (!value) return null;
-  const d = new Date(String(value).replace(' ', 'T'));
-  return isNaN(d.getTime()) ? null : d;
+  // Horário do servidor = America/Sao_Paulo (não o fuso do dispositivo).
+  return parseServerDateTime(value);
 }
 
 function formatDateTime(start, end) {

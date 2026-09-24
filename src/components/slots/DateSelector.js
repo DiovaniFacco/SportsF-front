@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-nati
 import { Calendar } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
+import { getTodayStrInSaoPaulo } from '../../utils/datetime';
 
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -11,29 +12,30 @@ export function DateSelector({ selectedDate, onSelectDate, daysCount = 14 }) {
   const { colors } = useTheme();
   const scrollViewRef = useRef(null);
 
-  // Gerar os próximos N dias a partir de hoje
+  // Gerar os próximos N dias a partir de hoje (hoje no fuso de SP,
+  // âncora ao meio-dia UTC para não sofrer virada de dia no dispositivo).
   const days = [];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const [baseY, baseM, baseD] = getTodayStrInSaoPaulo().split('-').map(Number);
+  const base = new Date(Date.UTC(baseY, baseM - 1, baseD, 12));
 
   for (let i = 0; i < daysCount; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
+    const d = new Date(base.getTime());
+    d.setUTCDate(base.getUTCDate() + i);
 
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const dayNum = String(d.getDate()).padStart(2, '0');
+    const year = d.getUTCFullYear();
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const dayNum = String(d.getUTCDate()).padStart(2, '0');
     const dateStr = `${year}-${month}-${dayNum}`;
 
-    let label = WEEKDAYS[d.getDay()];
+    let label = WEEKDAYS[d.getUTCDay()];
     if (i === 0) label = 'Hoje';
     else if (i === 1) label = 'Amanhã';
 
     days.push({
       dateStr,
-      dayNumber: d.getDate(),
+      dayNumber: d.getUTCDate(),
       dayLabel: label,
-      monthLabel: MONTHS[d.getMonth()].toUpperCase(),
+      monthLabel: MONTHS[d.getUTCMonth()].toUpperCase(),
       isToday: i === 0,
     });
   }

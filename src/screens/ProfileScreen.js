@@ -33,6 +33,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { theme } from '../styles/theme';
 import { getUserBookings } from '../api/bookings';
+import { parseServerDateTime } from '../utils/datetime';
 import { BottomNav } from '../components/common/BottomNav';
 import { SkeletonCard } from '../components/common/SkeletonCard';
 import { ErrorState } from '../components/common/ErrorState';
@@ -137,7 +138,7 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
   const now = new Date();
   const upcomingCount = bookings.filter((b) => {
     const isCancelled = b.status === 'cancelled';
-    const startDate = b.start_time ? new Date(b.start_time.replace(' ', 'T')) : null;
+    const startDate = b.start_time ? parseServerDateTime(b.start_time) : null;
     return startDate && startDate > now && !isCancelled;
   }).length;
 

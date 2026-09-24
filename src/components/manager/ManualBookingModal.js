@@ -15,6 +15,7 @@ import { X, Calendar, Clock, User, Phone, FileText, CheckCircle2, ShieldAlert, B
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { createBooking } from '../../api/bookings';
+import { getTodayStrInSaoPaulo } from '../../utils/datetime';
 import { DatePickerInput } from '../common/DatePickerInput';
 import { TimePickerInput } from '../common/TimePickerInput';
 
@@ -31,13 +32,7 @@ export function ManualBookingModal({
 }) {
   const { colors } = useTheme();
 
-  const getTodayStr = () => {
-    const d = new Date();
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-  };
+  const getTodayStr = () => getTodayStrInSaoPaulo();
 
   const [selectedCourtId, setSelectedCourtId] = useState(initialCourtId);
   const [date, setDate] = useState(initialDate || getTodayStr());
@@ -80,12 +75,13 @@ export function ManualBookingModal({
       setErrorMessage('Por favor, informe o nome do cliente.');
       return;
     }
-    if (!customerPhone.trim()) {
-      setErrorMessage('Por favor, informe o telefone do cliente.');
-      return;
-    }
+    // Telefone é opcional (a API também aceita sem).
     if (!startTime || !endTime) {
       setErrorMessage('Informe o horário de início e término.');
+      return;
+    }
+    if (startTime >= endTime) {
+      setErrorMessage('O horário de término deve ser após o horário de início.');
       return;
     }
 
@@ -102,7 +98,7 @@ export function ManualBookingModal({
         endTime: fullEndTime,
         isManual: true,
         customerName: customerName.trim(),
-        customerPhone: customerPhone.trim(),
+        customerPhone: customerPhone.trim() || null,
         notes: notes.trim() || 'Agendamento presencial / balcão',
         isPaid,
       });
@@ -234,7 +230,7 @@ export function ManualBookingModal({
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Telefone / WhatsApp *</Text>
+              <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Telefone / WhatsApp (opcional)</Text>
               <View style={[styles.inputWrapper, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <Phone size={18} color={colors.textMuted} style={{ marginRight: 10 }} />
                 <TextInput

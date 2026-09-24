@@ -30,6 +30,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { theme } from '../styles/theme';
 import { getUserBookings, cancelBooking } from '../api/bookings';
+import { parseServerDateTime } from '../utils/datetime';
 import { BottomNav } from '../components/common/BottomNav';
 import { SkeletonCard } from '../components/common/SkeletonCard';
 import { EmptyState } from '../components/common/EmptyState';
@@ -132,12 +133,12 @@ export function MyBookingsScreen({ onTabChange, onGoToExplore, onOpenAuth }) {
   };
 
   // Formatar data: "YYYY-MM-DD HH:mm:ss" ou ISO -> "Qui, 20/08/2026"
+  // (horário do servidor = America/Sao_Paulo, não o fuso do dispositivo)
   const formatDateStr = (dateString) => {
     if (!dateString) return '';
     try {
-      const cleanStr = dateString.replace(' ', 'T');
-      const d = new Date(cleanStr);
-      if (isNaN(d.getTime())) return dateString;
+      const d = parseServerDateTime(dateString);
+      if (!d) return dateString;
 
       const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
       const dayName = days[d.getDay()];
@@ -169,7 +170,7 @@ export function MyBookingsScreen({ onTabChange, onGoToExplore, onOpenAuth }) {
   const now = new Date();
   const filteredBookings = bookings.filter((item) => {
     const isCancelled = item.status === 'cancelled';
-    const startDate = item.start_time ? new Date(item.start_time.replace(' ', 'T')) : null;
+    const startDate = item.start_time ? parseServerDateTime(item.start_time) : null;
     const isUpcoming = startDate && startDate > now && !isCancelled;
 
     if (selectedFilter === 'Próximos') return isUpcoming;
@@ -218,7 +219,7 @@ export function MyBookingsScreen({ onTabChange, onGoToExplore, onOpenAuth }) {
 
   const renderItem = ({ item }) => {
     const isCancelled = item.status === 'cancelled';
-    const startDate = item.start_time ? new Date(item.start_time.replace(' ', 'T')) : null;
+    const startDate = item.start_time ? parseServerDateTime(item.start_time) : null;
     const isFuture = startDate && startDate > now;
     const canCancel = isFuture && !isCancelled;
 

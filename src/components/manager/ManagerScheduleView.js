@@ -30,6 +30,7 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { getUserBookings, cancelBooking } from '../../api/bookings';
+import { getTodayStrInSaoPaulo } from '../../utils/datetime';
 import { getCourtBlocks, deleteCourtBlock } from '../../api/courtBlocks';
 import { getAvailableSlots } from '../../api/slots';
 import { EmptyState } from '../common/EmptyState';
@@ -38,13 +39,7 @@ import { ManagerMetricsCards } from './ManagerMetricsCards';
 export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBlockModal, refreshKey, headerComponent }) {
   const { colors } = useTheme();
 
-  const getTodayStr = () => {
-    const d = new Date();
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-  };
+  const getTodayStr = () => getTodayStrInSaoPaulo();
 
   const [selectedDate, setSelectedDate] = useState(getTodayStr());
   const [selectedCourtId, setSelectedCourtId] = useState('ALL'); // 'ALL' or courtId
@@ -62,20 +57,23 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
     { id: 2, name: 'Quadra Society 2 - Coberta VIP', hourly_rate: 180 },
   ];
 
-  // Gera lista de datas para atalhos rápidos (Próximos 7 dias)
+  // Gera lista de datas para atalhos rápidos (Próximos 7 dias, base hoje em SP)
   const generateDateChips = () => {
     const dates = [];
-    const today = new Date();
+    const WEEKDAYS_PT = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+    const MONTHS_PT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    const [baseY, baseM, baseD] = getTodayStrInSaoPaulo().split('-').map(Number);
+    const base = new Date(Date.UTC(baseY, baseM - 1, baseD, 12));
     for (let i = 0; i < 7; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
+      const d = new Date(base.getTime());
+      d.setUTCDate(base.getUTCDate() + i);
+      const yyyy = d.getUTCFullYear();
+      const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+      const dd = String(d.getUTCDate()).padStart(2, '0');
       const dateStr = `${yyyy}-${mm}-${dd}`;
-      const dayLabel = i === 0 ? 'Hoje' : i === 1 ? 'Amanhã' : d.toLocaleDateString('pt-BR', { weekday: 'short' });
-      const dayNum = d.getDate();
-      const monthStr = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
+      const dayLabel = i === 0 ? 'Hoje' : i === 1 ? 'Amanhã' : WEEKDAYS_PT[d.getUTCDay()];
+      const dayNum = d.getUTCDate();
+      const monthStr = MONTHS_PT[d.getUTCMonth()];
       dates.push({ dateStr, dayLabel, dayNum, monthStr });
     }
     return dates;

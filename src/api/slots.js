@@ -1,4 +1,5 @@
 import apiClient from './client';
+import { parseServerDateTime } from '../utils/datetime';
 
 /**
  * Busca a grade de horários e turnos de funcionamento disponíveis para uma quadra em uma data específica (YYYY-MM-DD).
@@ -19,9 +20,10 @@ export async function getAvailableSlots(courtId, dateStr, options = {}) {
     if (response.data && Array.isArray(response.data.slots)) {
       if (!includePast) {
         const now = new Date();
-        response.data.slots = response.data.slots.filter(
-          (s) => new Date(s.start_time.replace(' ', 'T')) > now
-        );
+        response.data.slots = response.data.slots.filter((s) => {
+          const slotDate = parseServerDateTime(s.start_time);
+          return slotDate ? slotDate > now : true;
+        });
       }
       return response.data;
     }

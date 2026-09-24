@@ -24,7 +24,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { theme } from '../styles/theme';
 import { getAvailableSlots } from '../api/slots';
-import { createBooking } from '../api/bookings';
+import { createBooking, createBookingsBatch } from '../api/bookings';
 import { DateSelector } from '../components/slots/DateSelector';
 import { SlotLegend } from '../components/slots/SlotLegend';
 import { SlotCard } from '../components/slots/SlotCard';
@@ -36,6 +36,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { BottomNav } from '../components/common/BottomNav';
 import { optimizeImageUrl } from '../utils/imageUtils';
 import { isSimplifiedVenue, openWhatsappBooking } from '../utils/whatsapp';
+import { getTodayStrInSaoPaulo, parseServerDateTime } from '../utils/datetime';
 
 export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange, hideBottomNav = false }) {
   const { colors } = useTheme();
@@ -45,13 +46,7 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
   const isSimplified = isSimplifiedVenue(venue);
   const [whatsappError, setWhatsappError] = useState(null);
 
-  const getTodayStr = () => {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-  };
+  const getTodayStr = () => getTodayStrInSaoPaulo();
 
   const [selectedDate, setSelectedDate] = useState(getTodayStr());
   const [slotsData, setSlotsData] = useState(null);
@@ -150,14 +145,29 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
 
     try {
       let lastBooking = null;
-      for (const slot of selectedSlots) {
-        const res = await createBooking({
+      // Seleção múltipla usa o endpoint em lote (atômico: tudo ou nada).
+      // Evita "sucesso parcial" quando um dos horários falha.
+      if (selectedSlots.length > 1) {
+        const res = await createBookingsBatch({
           courtId: court.id,
-          startTime: slot.start_time,
-          endTime: slot.end_time,
+          slots: selectedSlots.map((slot) => ({
+            startTime: slot.start_time,
+            endTime: slot.end_time,
+          })),
           notes,
         });
-        lastBooking = res.booking;
+        const created = res.bookings || (res.booking ? [res.booking] : []);
+        lastBooking = created[created.length - 1] || null;
+      } else {
+        for (const slot of selectedSlots) {
+          const res = await createBooking({
+            courtId: court.id,
+            startTime: slot.start_time,
+            endTime: slot.end_time,
+            notes,
+          });
+          lastBooking = res.booking;
+        }
       }
 
       setSuccessBooking(lastBooking || { success: true });
@@ -189,8 +199,9 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
   const now = new Date();
   const slotsList = (slotsData?.slots || []).filter((s) => {
     if (!s.start_time) return true;
-    const slotDate = new Date(s.start_time.replace(' ', 'T'));
-    return slotDate > now;
+    // Compara o instante absoluto (horário de SP do servidor) com agora.
+    const slotDate = parseServerDateTime(s.start_time);
+    return slotDate ? slotDate > now : true;
   });
 
   // Agrupar horários por período
@@ -285,12 +296,35 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
       );
     }
 
-    if (!slotsData || slotsList.length === 0) {
+    if (!slotsData || (slotsData?.slots || []).length === 0) {
+      // Mensagem precisa conforme o motivo real (B16): data passada,
+      // quadra sem grade no dia, ou grade de hoje já esgotada.
+      const isPast = Boolean(slotsData?.is_past);
+      const noGrade = Boolean(slotsData) && slotsData.operating === false;
+      const title = isPast ? 'Data no passado' : noGrade ? 'Sem grade neste dia' : 'Nenhum horário disponível';
+      const message =
+        (isPast && (slotsData?.message || 'Esta data já passou. Selecione hoje ou uma data futura.')) ||
+        (noGrade && 'Esta quadra não possui grade de horários cadastrada para a data selecionada.') ||
+        (slotsData?.message && slotsData.slots?.length === 0 ? slotsData.message : null) ||
+        'Todos os horários desta data já passaram ou foram ocupados. Tente outra data.';
       return (
         <View style={styles.paddingContainer}>
           <EmptyState
-            title="Nenhum horário disponível"
-            message="Não encontramos horários cadastrados para esta quadra na data selecionada."
+            title={title}
+            message={message}
+            onResetFilters={() => fetchSlots()}
+          />
+        </View>
+      );
+    }
+
+    if (slotsList.length === 0) {
+      // Grade existe, mas nada futuro a exibir (ex.: resto do dia esgotado).
+      return (
+        <View style={styles.paddingContainer}>
+          <EmptyState
+            title="Horários esgotados"
+            message="Todos os horários desta data já passaram ou foram ocupados. Tente outra data."
             onResetFilters={() => fetchSlots()}
           />
         </View>

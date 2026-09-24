@@ -74,6 +74,18 @@ export function CourtOperatingHoursModal({ visible, court, onClose, onSuccess })
       return;
     }
 
+    // Validação local (o backend também valida): formato HH:MM real e
+    // término após o início — turnos sempre no mesmo dia.
+    const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
+    if (!timeRe.test(startTime.trim()) || !timeRe.test(endTime.trim())) {
+      setErrorMsg('Informe horários válidos no formato HH:MM (ex: 08:00 às 22:00).');
+      return;
+    }
+    if (endTime.trim() <= startTime.trim()) {
+      setErrorMsg('O término deve ser após o início (turnos sempre no mesmo dia).');
+      return;
+    }
+
     const durationNum = parseInt(slotDuration, 10);
     if (isNaN(durationNum) || durationNum < 15 || durationNum > 240) {
       setErrorMsg('Duração do slot deve ser entre 15 e 240 minutos.');
