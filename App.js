@@ -26,6 +26,18 @@ function MainAppContent() {
   // True quando o app foi aberto diretamente pelo link do complexo (/complexo/slug).
   // Usado para travar o modo Simplificado sem tela inicial nem navegação para outros complexos.
   const [enteredViaDirectLink, setEnteredViaDirectLink] = useState(false);
+  // Splash de boot: em domínio white-label ou /gestao, segura a tela inicial
+  // até resolver o roteamento (evita flash da lista + busca duplicada de venues).
+  const [bootLoading, setBootLoading] = useState(() => {
+    try {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        return !!getDefaultVenueSlug() || isGestaoRoute(window.location.href);
+      }
+    } catch {
+      // ignora e segue sem splash
+    }
+    return false;
+  });
   const { colors } = useTheme();
   const { isManager, isAuthenticated, isLoading: authLoading } = useAuth();
 
@@ -35,6 +47,8 @@ function MainAppContent() {
   // Ref para uso dentro do listener de popstate (evita closure desatualizada).
   const lockRef = useRef({ locked: false, venue: null });
   lockRef.current = { locked: simplifiedLock, venue: selectedVenue };
+  // Dedupe do evento 'url' (expo-linking pode reemitir a URL inicial na web).
+  const lastHandledRef = useRef({ url: null, at: 0 });
 
   const handleSelectVenue = (venue) => {
     setSelectedVenue(venue);
@@ -97,29 +111,31 @@ function MainAppContent() {
       }
     };
 
-    // Tenta os candidatos em sequência (subdomínio curto pode não ser o slug real).
-    // Ex: ["recanto", "recanto-beach-sports-e-lazer"] — o primeiro que existir vence.
-    // Por último, casa o subdomínio por prefixo na lista (funciona mesmo sem a env).
+    // Rápido: 1 busca de lista + match local + 1 detalhe (sem 404s em sequência).
+    // Casa slug/ID exato primeiro; por último, prefixo ("recanto" -> "recanto-beach-...").
     const loadDefaultVenue = async () => {
-      const candidates = getDefaultVenueCandidates();
-      for (const candidate of candidates) {
+      try {
+        if (!isMounted) return null;
+        const wanted = getDefaultVenueCandidates().map((c) => String(c).toLowerCase().trim());
+        const sub = (getSubdomainSlug() || '').toLowerCase();
+        const list = await getVenues();
+        if (!isMounted) return null;
+        const norm = (s) => String(s || '').toLowerCase().trim();
+        const match =
+          list.find((v) => wanted.includes(norm(v.slug)) || wanted.includes(String(v.id))) ||
+          (sub
+            ? list.find((v) => v.slug === sub) ||
+              list.find((v) => v.slug && v.slug.startsWith(`${sub}-`)) ||
+              list.find((v) => v.slug && sub.startsWith(v.slug))
+            : null);
+        if (match) return await loadVenueByIdentifier(match.slug || match.id);
+      } catch (err) {
+        console.error('Erro ao resolver venue do domínio:', err);
+      }
+      // Fallback: tentativas diretas (cobre caso fora da lista).
+      for (const candidate of getDefaultVenueCandidates()) {
         const venue = await loadVenueByIdentifier(candidate);
         if (venue) return venue;
-      }
-      try {
-        const sub = getSubdomainSlug();
-        if (sub && isMounted) {
-          const list = await getVenues();
-          const match =
-            list.find((v) => v.slug === sub) ||
-            list.find((v) => v.slug && v.slug.startsWith(`${sub}-`)) ||
-            list.find((v) => v.slug && sub.startsWith(v.slug));
-          if (match) {
-            return await loadVenueByIdentifier(match.slug || match.id);
-          }
-        }
-      } catch (err) {
-        console.error('Erro no fallback de venue do domínio:', err);
       }
       return null;
     };
@@ -191,16 +207,33 @@ function MainAppContent() {
 
     // Check initial URL on launch
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      handleUrl(window.location.href, true);
-    } else {
-      Linking.getInitialURL().then((url) => {
-        if (url) handleUrl(url, true);
+      lastHandledRef.current = { url: window.location.href, at: Date.now() };
+      handleUrl(window.location.href, true).finally(() => {
+        if (isMounted) setBootLoading(false);
       });
+    } else {
+      Linking.getInitialURL()
+        .then((url) => {
+          if (url) {
+            lastHandledRef.current = { url, at: Date.now() };
+            return handleUrl(url, true);
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (isMounted) setBootLoading(false);
+        });
     }
 
     // Listen to deep link events
     const subscription = Linking.addEventListener('url', (event) => {
-      if (event.url) handleUrl(event.url, false);
+      if (!event.url) return;
+      const now = Date.now();
+      if (event.url === lastHandledRef.current.url && now - lastHandledRef.current.at < 2000) {
+        return;
+      }
+      lastHandledRef.current = { url: event.url, at: now };
+      handleUrl(event.url, false);
     });
 
     // Listen to browser back/forward buttons on Web
@@ -276,6 +309,14 @@ function MainAppContent() {
   };
 
   const renderCurrentScreen = () => {
+    // Boot em domínio white-label /gestao: splash em vez do flash da lista.
+    if (bootLoading && !selectedVenue && !isManagerView) {
+      return (
+        <View style={[styles.container, { backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      );
+    }
     // MODO SIMPLIFICADO (link exclusivo /complexo/slug):
     // sem tela inicial, sem lista/busca de outros complexos, sem abas de navegação.
     // Apenas quadras + horários do complexo + Agendar via WhatsApp (sem criar reserva).

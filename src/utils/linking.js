@@ -108,7 +108,10 @@ export function getDefaultVenueSlugFromEnv() {
   try {
     const raw =
       typeof process !== 'undefined' ? process.env?.EXPO_PUBLIC_VENUE_SLUG : null;
-    const slug = String(raw || '').trim();
+    let slug = String(raw || '').trim();
+    // Tolerância a erro comum no Railway: colar "EXPO_PUBLIC_VENUE_SLUG=slug" no campo valor.
+    slug = slug.replace(/^(EXPO_PUBLIC_VENUE_SLUG\s*=\s*)/i, '').trim();
+    slug = slug.replace(/^["']|["']$/g, '').trim();
     return slug || null;
   } catch {
     return null;
