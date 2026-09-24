@@ -67,7 +67,7 @@ export function ManagerMetricsCards({ bookings = [], totalSlotsCount = 32, defau
             <View style={styles.metricHeaderRow}>
               <Text style={[styles.metricTitle, { color: colors.textMuted }]}>Faturamento Estimado</Text>
               <View style={[styles.iconCircle, { backgroundColor: colors.successSurface }]}>
-                <DollarSign size={15} color=colors.success />
+                <DollarSign size={15} color={colors.success} />
               </View>
             </View>
             <Text style={[styles.metricValue, { color: colors.textPrimary }]}>
@@ -83,7 +83,7 @@ export function ManagerMetricsCards({ bookings = [], totalSlotsCount = 32, defau
             <View style={styles.metricHeaderRow}>
               <Text style={[styles.metricTitle, { color: colors.textMuted }]}>Taxa de Ocupação</Text>
               <View style={[styles.iconCircle, { backgroundColor: colors.infoSurface }]}>
-                <TrendingUp size={15} color=colors.info />
+                <TrendingUp size={15} color={colors.info} />
               </View>
             </View>
             <Text style={[styles.metricValue, { color: colors.textPrimary }]}>{occupancyPercentage}%</Text>
@@ -97,17 +97,17 @@ export function ManagerMetricsCards({ bookings = [], totalSlotsCount = 32, defau
             <View style={styles.metricHeaderRow}>
               <Text style={[styles.metricTitle, { color: colors.textMuted }]}>Balcão vs App</Text>
               <View style={[styles.iconCircle, { backgroundColor: colors.holdingSurface }]}>
-                <Users size={15} color=colors.holding />
+                <Users size={15} color={colors.holding} />
               </View>
             </View>
             <View style={styles.ratioRow}>
               <View style={styles.ratioItem}>
-                <Store size={13} color=colors.holding style={{ marginRight: 2 }} />
+                <Store size={13} color={colors.holding} style={{ marginRight: 2 }} />
                 <Text style={[styles.ratioText, { color: colors.holding }]}>{manualCount} Balcão</Text>
               </View>
               <Text style={[styles.ratioSeparator, { color: colors.textMuted }]}>•</Text>
               <View style={styles.ratioItem}>
-                <Smartphone size={13} color=colors.info style={{ marginRight: 2 }} />
+                <Smartphone size={13} color={colors.info} style={{ marginRight: 2 }} />
                 <Text style={[styles.ratioText, { color: colors.info }]}>{appCount} App</Text>
               </View>
             </View>

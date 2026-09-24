@@ -97,7 +97,7 @@ export function ManagerCourtCard({ court, onEdit, onDelete, onOpenHours, onOpenP
                 { backgroundColor: colors.goldSurface, borderColor: colors.goldSurface, flexDirection: 'row', alignItems: 'center', gap: 3 },
               ]}
             >
-              <Zap size={11} color=colors.gold />
+              <Zap size={11} color={colors.gold} />
               <Text style={[styles.sportChipText, { color: colors.textPrimary }]}>
                 Tarifa Flexível ({rulesCount + specialCount})
               </Text>

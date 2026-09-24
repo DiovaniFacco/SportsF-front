@@ -715,19 +715,19 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
                   </View>
                 ) : status === 'free' ? (
                   <View style={styles.slotFreeContent}>
-                    <PlusCircle size={13} color=colors.success />
+                    <PlusCircle size={13} color={colors.success} />
                     <Text style={styles.slotFreeText}>Livre</Text>
                   </View>
                 ) : status === 'booked_manual' ? (
                   <View style={styles.slotBookedContent}>
-                    <Store size={13} color=colors.holding />
+                    <Store size={13} color={colors.holding} />
                     <Text numberOfLines={1} style={[styles.slotClientText, { color: colors.holding }]}>
                       {matchingBooking.customer_name?.split(' ')[0] || 'Balcão'}
                     </Text>
                   </View>
                 ) : status === 'booked_app' ? (
                   <View style={styles.slotBookedContent}>
-                    <Smartphone size={13} color=colors.info />
+                    <Smartphone size={13} color={colors.info} />
                     <Text numberOfLines={1} style={[styles.slotClientText, { color: colors.info }]}>
                       {(matchingBooking.customer_name || matchingBooking.user?.name)?.split(' ')[0] || 'App'}
                     </Text>
@@ -785,9 +785,9 @@ function BookingScheduleCard({ booking, onCancel }) {
           ]}
         >
           {isManual ? (
-            <Store size={14} color=colors.holding style={{ marginRight: 4 }} />
+            <Store size={14} color={colors.holding} style={{ marginRight: 4 }} />
           ) : (
-            <Smartphone size={14} color=colors.success style={{ marginRight: 4 }} />
+            <Smartphone size={14} color={colors.success} style={{ marginRight: 4 }} />
           )}
           <Text
             style={[
@@ -806,7 +806,7 @@ function BookingScheduleCard({ booking, onCancel }) {
           </View>
         ) : (
           <View style={[styles.statusBadge, { backgroundColor: colors.successSurface }]}>
-            <CheckCircle size={14} color=colors.success style={{ marginRight: 4 }} />
+            <CheckCircle size={14} color={colors.success} style={{ marginRight: 4 }} />
             <Text style={[styles.statusBadgeText, { color: colors.success }]}>CONFIRMADO</Text>
           </View>
         )}

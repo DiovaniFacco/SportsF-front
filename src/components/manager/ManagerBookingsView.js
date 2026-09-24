@@ -256,7 +256,7 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
               </View>
             ) : isPast ? (
               <View style={[styles.badge, { backgroundColor: colors.successSurface }]}>
-                <CheckCircle size={13} color=colors.success style={{ marginRight: 4 }} />
+                <CheckCircle size={13} color={colors.success} style={{ marginRight: 4 }} />
                 <Text style={[styles.badgeText, { color: colors.success }]}>REALIZADO</Text>
               </View>
             ) : (
@@ -281,9 +281,9 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
           <Text style={[styles.infoText, { color: colors.textPrimary }]}>{client}</Text>
           <View style={[styles.originBadge, { backgroundColor: isManual ? colors.holdingSurface : colors.infoSurface, marginLeft: 8 }]}>
             {isManual ? (
-              <Store size={12} color=colors.holding style={{ marginRight: 3 }} />
+              <Store size={12} color={colors.holding} style={{ marginRight: 3 }} />
             ) : (
-              <Smartphone size={12} color=colors.info style={{ marginRight: 3 }} />
+              <Smartphone size={12} color={colors.info} style={{ marginRight: 3 }} />
             )}
             <Text style={[styles.originText, { color: isManual ? colors.holding : colors.info }]}>
               {isManual ? 'BALCÃO' : 'APP'}

@@ -200,14 +200,14 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
               <View style={styles.kpiHeader}>
                 <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>Faturamento Estimado</Text>
                 <View style={[styles.iconBox, { backgroundColor: colors.successSurface }]}>
-                  <DollarSign size={18} color=colors.success />
+                  <DollarSign size={18} color={colors.success} />
                 </View>
               </View>
               <Text style={[styles.kpiValue, { color: colors.textPrimary }]}>
                 R$ {totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Text>
               <View style={styles.kpiFooter}>
-                <TrendingUp size={14} color=colors.success style={{ marginRight: 4 }} />
+                <TrendingUp size={14} color={colors.success} style={{ marginRight: 4 }} />
                 <Text style={[styles.kpiSubtext, { color: colors.success }]}>
                   {totalBookingsCount} agendamento{totalBookingsCount !== 1 ? 's' : ''} confirmado{totalBookingsCount !== 1 ? 's' : ''}
                 </Text>
@@ -224,7 +224,7 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
               </View>
               <Text style={[styles.kpiValue, { color: colors.textPrimary }]}>{totalCourts}</Text>
               <View style={styles.kpiFooter}>
-                <CheckCircle2 size={14} color=colors.success style={{ marginRight: 4 }} />
+                <CheckCircle2 size={14} color={colors.success} style={{ marginRight: 4 }} />
                 <Text style={[styles.kpiSubtext, { color: colors.textMuted }]}>
                   Todas em operação normal
                 </Text>
@@ -236,7 +236,7 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
               <View style={styles.kpiHeader}>
                 <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>Preço Médio / Hora</Text>
                 <View style={[styles.iconBox, { backgroundColor: colors.holdingSurface }]}>
-                  <Clock size={18} color=colors.holding />
+                  <Clock size={18} color={colors.holding} />
                 </View>
               </View>
               <Text style={[styles.kpiValue, { color: colors.textPrimary }]}>
@@ -295,7 +295,7 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
             <View style={styles.channelDetailsRow}>
               <View style={[styles.channelCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <View style={styles.channelTitleRow}>
-                  <Store size={16} color=colors.holding style={{ marginRight: 6 }} />
+                  <Store size={16} color={colors.holding} style={{ marginRight: 6 }} />
                   <Text style={[styles.channelTitle, { color: colors.textPrimary }]}>Balcão / Presencial</Text>
                 </View>
                 <Text style={[styles.channelCount, { color: colors.holding }]}>{manualCount} reservas ({manualPct}%)</Text>
@@ -306,7 +306,7 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
 
               <View style={[styles.channelCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <View style={styles.channelTitleRow}>
-                  <Smartphone size={16} color=colors.info style={{ marginRight: 6 }} />
+                  <Smartphone size={16} color={colors.info} style={{ marginRight: 6 }} />
                   <Text style={[styles.channelTitle, { color: colors.textPrimary }]}>Aplicativo SFACCO</Text>
                 </View>
                 <Text style={[styles.channelCount, { color: colors.info }]}>{appCount} reservas ({appPct}%)</Text>
