@@ -50,7 +50,7 @@ export function Header({
       {/* Top Bar: Brand Logo & Right Action Buttons */}
       <View style={styles.topBar}>
         <View style={styles.logoContainer}>
-          <Text style={[styles.letraS, { color: colors.letraS, textShadowColor: 'rgba(136, 19, 55, 0.4)' }]}>S</Text>
+          <Text style={[styles.letraS, { color: colors.letraS }]}>S</Text>
           <Text style={[styles.brandName, { color: colors.brandName }]}>facco</Text>
         </View>
 
@@ -60,7 +60,7 @@ export function Header({
             <TouchableOpacity
               activeOpacity={0.75}
               onPress={onOpenManager}
-              style={[styles.authBadge, { backgroundColor: colors.primary + '18', borderColor: colors.primary }]}
+              style={[styles.authBadge, { backgroundColor: colors.primaryLight, borderColor: colors.primary }]}
             >
               <Building2 size={14} color={colors.primary} style={{ marginRight: 4 }} />
               <Text style={[styles.authBadgeText, { color: colors.primary }]}>Gestão</Text>
@@ -85,8 +85,8 @@ export function Header({
               style={[styles.authBadge, { backgroundColor: colors.primary, borderColor: colors.primary }]}
               accessibilityLabel="Entrar ou Cadastrar"
             >
-              <LogIn size={14} color="#FFFFFF" style={{ marginRight: 4 }} />
-              <Text style={[styles.authBadgeText, { color: '#FFFFFF' }]}>Entrar</Text>
+              <LogIn size={14} color={colors.white} style={{ marginRight: 4 }} />
+              <Text style={[styles.authBadgeText, { color: colors.white }]}>Entrar</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -151,8 +151,6 @@ const styles = StyleSheet.create({
         : 'GreatVibes_400Regular',
     fontSize: 38,
     marginRight: -4,
-    textShadowOffset: { width: 0.5, height: 0.5 },
-    textShadowRadius: 1,
   },
   brandName: {
     fontFamily:
@@ -178,14 +176,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   authBadgeText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
   },
   heroTextContainer: {
     marginBottom: theme.spacing.sm,
   },
   greetingText: {
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '500',
     marginBottom: 2,
   },

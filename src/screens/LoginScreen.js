@@ -226,7 +226,7 @@ export function LoginScreen({ onNavigateRegister, onBack, onLoginSuccess }) {
             ]}
           >
             {loading ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
+              <ActivityIndicator size="small" color={colors.white} />
             ) : (
               <Text style={styles.primaryBtnText}>Entrar no SFACCO</Text>
             )}
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   iconBtn: {
     width: 40,
@@ -307,19 +307,19 @@ const styles = StyleSheet.create({
   },
   brandHeroContainer: {
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 24,
   },
   logoRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   letraS: {
     fontFamily:
       Platform.OS === 'web'
         ? "'Great Vibes', cursive, 'GreatVibes_400Regular'"
         : 'GreatVibes_400Regular',
-    fontSize: 54,
+    fontSize: 50,
     marginRight: -4,
   },
   brandName: {
@@ -327,31 +327,27 @@ const styles = StyleSheet.create({
       Platform.OS === 'web'
         ? "'Josefin Sans', sans-serif, 'JosefinSans_700Bold'"
         : 'JosefinSans_700Bold',
-    fontSize: 40,
+    fontSize: 36,
     fontWeight: '700',
     letterSpacing: -1,
   },
   title: {
-    fontSize: 24,
+    fontSize: theme.typography.sizes.h2,
     fontWeight: '800',
     textAlign: 'center',
     marginBottom: 6,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: theme.typography.sizes.body,
     textAlign: 'center',
-    maxWidth: 280,
+    maxWidth: 300,
     lineHeight: 20,
   },
   card: {
     borderRadius: theme.radius.xl,
     borderWidth: 1,
-    padding: 22,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
+    padding: theme.spacing.lg,
+    ...theme.shadows.sm,
   },
   errorContainer: {
     borderWidth: 1,
@@ -360,12 +356,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   errorText: {
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '600',
     textAlign: 'center',
   },
   inputGroup: {
-    marginBottom: 18,
+    marginBottom: theme.spacing.md,
   },
   labelRow: {
     flexDirection: 'row',
@@ -374,12 +370,12 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   label: {
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '600',
     marginBottom: 6,
   },
   forgotText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '600',
   },
   inputWrapper: {
@@ -395,7 +391,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: 14,
+    fontSize: theme.typography.sizes.body,
     paddingVertical: 8,
   },
   eyeBtn: {
@@ -406,24 +402,24 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 6,
+    marginTop: theme.spacing.sm,
   },
   primaryBtnText: {
     color: '#FFFFFF',
-    fontSize: 15,
+    fontSize: theme.typography.sizes.button,
     fontWeight: '700',
   },
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 22,
+    marginVertical: 20,
   },
   dividerLine: {
     flex: 1,
     height: 1,
   },
   dividerText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '500',
     paddingHorizontal: 12,
   },
@@ -439,20 +435,20 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   googleBtnText: {
-    fontSize: 14,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '600',
   },
   footerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 26,
+    marginTop: 24,
   },
   footerText: {
-    fontSize: 14,
+    fontSize: theme.typography.sizes.body,
   },
   footerLink: {
-    fontSize: 14,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
 });

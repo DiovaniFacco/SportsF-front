@@ -320,11 +320,11 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
           {/* Header */}
           <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
             <View style={styles.titleRow}>
-              <View style={[styles.iconBadge, { backgroundColor: colors.primary + '18' }]}>
+              <View style={[styles.iconBadge, { backgroundColor: colors.primaryLight }]}>
                 <DollarSign size={20} color={colors.primary} />
               </View>
               <View>
-                <Text style={[styles.modalTitle, { color: colors.text }]}>Precificação Flexível</Text>
+                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Precificação Flexível</Text>
                 <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>
                   {court?.name || 'Quadra'} (Base: R$ {court?.hourly_rate || '150'}/h)
                 </Text>
@@ -387,14 +387,14 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
           {/* Body */}
           <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
             {errorMsg ? (
-              <View style={[styles.alertBox, { backgroundColor: colors.error + '15', borderColor: colors.error + '40' }]}>
+              <View style={[styles.alertBox, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}>
                 <ShieldAlert size={18} color={colors.error} />
                 <Text style={[styles.alertText, { color: colors.error }]}>{errorMsg}</Text>
               </View>
             ) : null}
 
             {successMsg ? (
-              <View style={[styles.alertBox, { backgroundColor: colors.success + '15', borderColor: colors.success + '40' }]}>
+              <View style={[styles.alertBox, { backgroundColor: colors.successSurface, borderColor: colors.success }]}>
                 <CheckCircle2 size={18} color={colors.success} />
                 <Text style={[styles.alertText, { color: colors.success }]}>{successMsg}</Text>
               </View>
@@ -404,7 +404,7 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
             {activeTab === 'nobre' ? (
               <View>
                 <View style={[styles.cardForm, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                  <Text style={[styles.cardFormTitle, { color: colors.text }]}>Nova Tarifa de Pico</Text>
+                  <Text style={[styles.cardFormTitle, { color: colors.textPrimary }]}>Nova Tarifa de Pico</Text>
 
                   {/* Dia da Semana */}
                   <View style={styles.fieldGroup}>
@@ -428,7 +428,7 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
                               <Text
                                 style={[
                                   styles.chipDayText,
-                                  { color: isSelected ? '#FFFFFF' : colors.text },
+                                  { color: isSelected ? colors.white : colors.textPrimary },
                                 ]}
                               >
                                 {d.label.split('-')[0]}
@@ -465,7 +465,7 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
                     <View style={styles.inputFlex}>
                       <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Tarifa / Hora (R$)</Text>
                       <TextInput
-                        style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+                        style={[styles.input, { backgroundColor: colors.surface, color: colors.textPrimary, borderColor: colors.border }]}
                         placeholder="180,00"
                         placeholderTextColor={colors.textMuted}
                         keyboardType="numeric"
@@ -476,7 +476,7 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
                     <View style={styles.inputFlex}>
                       <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Descrição (Opicional)</Text>
                       <TextInput
-                        style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+                        style={[styles.input, { backgroundColor: colors.surface, color: colors.textPrimary, borderColor: colors.border }]}
                         placeholder="Horário de Pico"
                         placeholderTextColor={colors.textMuted}
                         value={ruleLabel}
@@ -492,10 +492,10 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
                     style={[styles.btnAddRule, { backgroundColor: colors.primary }]}
                   >
                     {submitting ? (
-                      <ActivityIndicator color="#FFFFFF" size="small" />
+                      <ActivityIndicator color={colors.white} size="small" />
                     ) : (
                       <>
-                        <Plus size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                        <Plus size={16} color={colors.white} style={{ marginRight: 6 }} />
                         <Text style={styles.btnAddRuleText}>Adicionar Horário Nobre</Text>
                       </>
                     )}
@@ -504,7 +504,7 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
 
                 {/* Lista de Regras de Horário Nobre */}
                 <View style={{ marginTop: theme.spacing.md }}>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>Horários Nobres Ativos</Text>
+                  <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Horários Nobres Ativos</Text>
                   {loading ? (
                     <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 14 }} />
                   ) : pricingRules.length === 0 ? (
@@ -525,23 +525,23 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
                           >
                             <View style={{ flex: 1 }}>
                               <View style={styles.ruleHeader}>
-                                <Text style={[styles.ruleDayName, { color: colors.text }]}>
+                                <Text style={[styles.ruleDayName, { color: colors.textPrimary }]}>
                                   {dayObj ? dayObj.label : `Dia ${rule.day_of_week}`}
                                 </Text>
-                                <View style={[styles.ruleBadge, { backgroundColor: colors.primary + '18' }]}>
+                                <View style={[styles.ruleBadge, { backgroundColor: colors.primaryLight }]}>
                                   <Text style={[styles.ruleBadgeText, { color: colors.primary }]}>
                                     R$ {parseFloat(rule.hourly_rate).toFixed(2)}/h
                                   </Text>
                                 </View>
                               </View>
                               <Text style={[styles.ruleTimeText, { color: colors.textMuted }]}>
-                                🕒 {rule.start_time.substring(0, 5)} às {rule.end_time.substring(0, 5)} • {rule.label || 'Horário Nobre'}
+                                {rule.start_time.substring(0, 5)} às {rule.end_time.substring(0, 5)} • {rule.label || 'Horário Nobre'}
                               </Text>
                             </View>
 
                             <TouchableOpacity
                               onPress={() => handleDeleteRule(rule.id)}
-                              style={[styles.btnDeleteIcon, { backgroundColor: colors.error + '12' }]}
+                              style={[styles.btnDeleteIcon, { backgroundColor: colors.errorSurface }]}
                             >
                               <Trash2 size={16} color={colors.error} />
                             </TouchableOpacity>
@@ -556,7 +556,7 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
               /* CONTEÚDO ABA: DATAS ESPECIAIS / FERIADOS */
               <View>
                 <View style={[styles.cardForm, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                  <Text style={[styles.cardFormTitle, { color: colors.text }]}>Novo Preço em Data Especial</Text>
+                  <Text style={[styles.cardFormTitle, { color: colors.textPrimary }]}>Novo Preço em Data Especial</Text>
 
                   <View style={styles.rowInputs}>
                     <View style={styles.inputFlex}>
@@ -570,7 +570,7 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
                     <View style={styles.inputFlex}>
                       <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Tarifa / Hora (R$)</Text>
                       <TextInput
-                        style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+                        style={[styles.input, { backgroundColor: colors.surface, color: colors.textPrimary, borderColor: colors.border }]}
                         placeholder="200,00"
                         placeholderTextColor={colors.textMuted}
                         keyboardType="numeric"
@@ -583,7 +583,7 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
                   <View style={{ marginTop: 10 }}>
                     <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Nome do Evento / Feriado</Text>
                     <TextInput
-                      style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+                      style={[styles.input, { backgroundColor: colors.surface, color: colors.textPrimary, borderColor: colors.border }]}
                       placeholder="Ex: Feriado de Natal / Carnaval"
                       placeholderTextColor={colors.textMuted}
                       value={specialLabel}
@@ -598,10 +598,10 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
                     style={[styles.btnAddRule, { backgroundColor: colors.primary }]}
                   >
                     {submitting ? (
-                      <ActivityIndicator color="#FFFFFF" size="small" />
+                      <ActivityIndicator color={colors.white} size="small" />
                     ) : (
                       <>
-                        <Plus size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                        <Plus size={16} color={colors.white} style={{ marginRight: 6 }} />
                         <Text style={styles.btnAddRuleText}>Salvar Preço em Feriado</Text>
                       </>
                     )}
@@ -610,7 +610,7 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
 
                 {/* Lista de Preços Especiais por Data */}
                 <View style={{ marginTop: theme.spacing.md }}>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>Preços de Feriados Cadastrados</Text>
+                  <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Preços de Feriados Cadastrados</Text>
                   {loading ? (
                     <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 14 }} />
                   ) : specialPrices.length === 0 ? (
@@ -629,10 +629,10 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
                         >
                           <View style={{ flex: 1 }}>
                             <View style={styles.ruleHeader}>
-                              <Text style={[styles.ruleDayName, { color: colors.text }]}>
-                                📅 {formatBrDate(sp.event_date)}
+                              <Text style={[styles.ruleDayName, { color: colors.textPrimary }]}>
+                                {formatBrDate(sp.event_date)}
                               </Text>
-                              <View style={[styles.ruleBadge, { backgroundColor: colors.primary + '18' }]}>
+                              <View style={[styles.ruleBadge, { backgroundColor: colors.primaryLight }]}>
                                 <Text style={[styles.ruleBadgeText, { color: colors.primary }]}>
                                   R$ {parseFloat(sp.hourly_rate).toFixed(2)}/h
                                 </Text>
@@ -645,7 +645,7 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
 
                           <TouchableOpacity
                             onPress={() => handleDeleteSpecialPrice(sp.id)}
-                            style={[styles.btnDeleteIcon, { backgroundColor: colors.error + '12' }]}
+                            style={[styles.btnDeleteIcon, { backgroundColor: colors.errorSurface }]}
                           >
                             <Trash2 size={16} color={colors.error} />
                           </TouchableOpacity>
@@ -664,7 +664,7 @@ export function CourtPricingModal({ visible, court, onClose, onSuccess }) {
               style={[styles.btnClose, { backgroundColor: colors.background, borderColor: colors.border }]}
               onPress={onClose}
             >
-              <Text style={[styles.btnCloseText, { color: colors.text }]}>Concluir</Text>
+              <Text style={[styles.btnCloseText, { color: colors.textPrimary }]}>Concluir</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -688,7 +688,7 @@ const styles = StyleSheet.create({
     maxHeight: '92%',
     borderRadius: theme.radius.xl,
     borderWidth: 1,
-    shadowColor: '#000000',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.25,
     shadowRadius: 20,
@@ -711,7 +711,7 @@ const styles = StyleSheet.create({
   iconBadge: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: theme.radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -743,7 +743,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.02)',
   },
   tabBtnText: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
   modalBody: {
@@ -759,7 +759,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   alertText: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '600',
     flex: 1,
   },
@@ -769,7 +769,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   cardFormTitle: {
-    fontSize: theme.typography.sizes.body1,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
     marginBottom: theme.spacing.md,
   },
@@ -803,7 +803,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: theme.radius.md,
     paddingHorizontal: theme.spacing.md,
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
   },
   btnAddRule: {
     flexDirection: 'row',
@@ -815,11 +815,11 @@ const styles = StyleSheet.create({
   },
   btnAddRuleText: {
     color: '#FFFFFF',
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
   sectionTitle: {
-    fontSize: theme.typography.sizes.body1,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
     marginBottom: 8,
   },
@@ -845,7 +845,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   ruleDayName: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
   ruleBadge: {
@@ -880,7 +880,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   btnCloseText: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
 });

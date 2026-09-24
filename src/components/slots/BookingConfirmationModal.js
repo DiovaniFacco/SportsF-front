@@ -80,7 +80,7 @@ export function BookingConfirmationModal({
           <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
             <View style={styles.headerTitleRow}>
               <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
-                {successBooking ? 'Agendamento Confirmado! ⚽' : 'Confirmar Agendamento'}
+                {successBooking ? 'Agendamento Confirmado!' : 'Confirmar Agendamento'}
               </Text>
             </View>
             <TouchableOpacity
@@ -302,7 +302,7 @@ export function BookingConfirmationModal({
                   ]}
                 >
                   {isSubmitting ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <ActivityIndicator size="small" color={colors.white} />
                   ) : (
                     <Text style={styles.confirmBtnText}>Confirmar Agendamento</Text>
                   )}
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: theme.radius.xl,
     borderWidth: 1,
     elevation: 20,
-    shadowColor: '#000',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: -10 },
     shadowOpacity: 0.25,
     shadowRadius: 16,
@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   detailLabel: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
   },
   detailValue: {
@@ -432,17 +432,17 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   paymentNoticeTitle: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '800',
   },
   paymentNoticeSub: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     marginTop: 2,
     lineHeight: 15,
   },
   paymentNoticeText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     lineHeight: 16,
   },
   userSection: {
@@ -453,10 +453,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   userSectionTitle: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
   },
   userSectionSub: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
   },
   notesContainer: {
     gap: 6,
@@ -467,14 +467,14 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   inputLabel: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '600',
   },
   notesInput: {
     borderRadius: theme.radius.md,
     borderWidth: 1,
     padding: 10,
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     minHeight: 60,
     textAlignVertical: 'top',
   },
@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
   },
   successContainer: {
@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   successSubtitle: {
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     textAlign: 'center',
     lineHeight: 18,
     paddingHorizontal: theme.spacing.md,
@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   summaryText: {
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '600',
   },
   modalFooter: {

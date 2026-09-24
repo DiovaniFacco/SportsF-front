@@ -38,7 +38,7 @@ export function VenueHeroHeader({ venue, onBack, hideBack = false }) {
       {/* Toast Feedback de Confirmação */}
       {copiedToast ? (
         <View style={styles.toastBanner}>
-          <Check size={16} color="#FFFFFF" />
+          <Check size={16} color={colors.white} />
           <Text style={styles.toastText}>Link direto do complexo copiado!</Text>
         </View>
       ) : null}
@@ -154,13 +154,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#10B981',
+    backgroundColor: colors.success,
     paddingVertical: 8,
     paddingHorizontal: theme.spacing.md,
   },
   toastText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '700',
   },
   topNavRow: {
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.full,
   },
   shareText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
   },
   logoContainer: {
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     color: '#FFFFFF',
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '700',
   },
   sportsContainer: {
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   iconShareBtn: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: theme.radius.full,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -319,9 +319,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.92)',
     paddingHorizontal: 12,
     paddingVertical: 4,
-    borderRadius: 999,
+    borderRadius: theme.radius.full,
     zIndex: 2,
-    shadowColor: '#000',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
         : 'GreatVibes_400Regular',
     fontSize: 22,
     marginRight: -2,
-    color: '#881337',
+    color: colors.letraS,
   },
   brandOverlayName: {
     fontFamily:
@@ -344,6 +344,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: -0.5,
-    color: '#1F2937',
+    color: colors.textPrimary,
   },
 });

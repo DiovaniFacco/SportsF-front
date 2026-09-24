@@ -34,6 +34,8 @@ import { useAuth } from '../context/AuthContext';
 import { theme } from '../styles/theme';
 import { getUserBookings } from '../api/bookings';
 import { BottomNav } from '../components/common/BottomNav';
+import { SkeletonCard } from '../components/common/SkeletonCard';
+import { ErrorState } from '../components/common/ErrorState';
 
 export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenManager }) {
   const { colors } = useTheme();
@@ -42,6 +44,7 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
   // Bookings state for stats
   const [bookings, setBookings] = useState([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
+  const [bookingsError, setBookingsError] = useState(null);
 
   // Profile Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -56,12 +59,14 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
   const fetchBookingsSummary = useCallback(async () => {
     if (!isAuthenticated) return;
     setLoadingBookings(true);
+    setBookingsError(null);
     try {
       const response = await getUserBookings();
       const list = Array.isArray(response) ? response : response.data || [];
       setBookings(list);
     } catch (err) {
       console.warn('Erro ao carregar resumo de agendamentos:', err);
+      setBookingsError('Não conseguimos carregar seu resumo. Verifique sua conexão.');
     } finally {
       setLoadingBookings(false);
     }
@@ -183,7 +188,7 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
                 onPress={onOpenAuth}
               >
                 <Text style={styles.authButtonText}>Fazer Login ou Cadastrar</Text>
-                <ArrowRight size={18} color="#FFFFFF" />
+                <ArrowRight size={18} color={colors.white} />
               </TouchableOpacity>
             </View>
           ) : (
@@ -229,6 +234,11 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
               </View>
 
               {/* Stats Dashboard Grid */}
+              {loadingBookings ? (
+                <SkeletonCard />
+              ) : bookingsError ? (
+                <ErrorState message={bookingsError} onRetry={fetchBookingsSummary} />
+              ) : (
               <View style={styles.statsGrid}>
                 <TouchableOpacity
                   activeOpacity={0.8}
@@ -247,21 +257,22 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
                   style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
                   onPress={() => onTabChange('agendamentos')}
                 >
-                  <View style={[styles.statIconBg, { backgroundColor: '#ECFDF5' }]}>
-                    <Sparkles size={18} color="#059669" />
+                  <View style={[styles.statIconBg, { backgroundColor: colors.successSurface }]}>
+                    <Sparkles size={18} color={colors.success} />
                   </View>
                   <Text style={[styles.statNumber, { color: colors.textPrimary }]}>{upcomingCount}</Text>
                   <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Próximos Jogos</Text>
                 </TouchableOpacity>
 
                 <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                  <View style={[styles.statIconBg, { backgroundColor: '#FEF3C7' }]}>
-                    <ShieldCheck size={18} color="#D97706" />
+                  <View style={[styles.statIconBg, { backgroundColor: colors.warningSurface }]}>
+                    <ShieldCheck size={18} color={colors.gold} />
                   </View>
                   <Text style={[styles.statNumber, { color: colors.textPrimary }]}>Ativa</Text>
                   <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Conta Verificada</Text>
                 </View>
               </View>
+              )}
 
               {/* Options & Shortcuts List */}
               <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Menu do Perfil</Text>
@@ -359,16 +370,16 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
                 {/* Botão Sair da Conta */}
                 <TouchableOpacity
                   activeOpacity={0.8}
-                  style={[styles.actionRowBtn, { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' }]}
+                  style={[styles.actionRowBtn, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}
                   onPress={handleLogoutConfirm}
                 >
                   <View style={styles.actionRowLeft}>
-                    <View style={[styles.actionIconCircle, { backgroundColor: '#FEE2E2' }]}>
+                    <View style={[styles.actionIconCircle, { backgroundColor: colors.errorSurface }]}>
                       <LogOut size={18} color={colors.error} />
                     </View>
                     <View style={styles.actionTextCol}>
                       <Text style={[styles.actionTitle, { color: colors.error }]}>Sair da Conta</Text>
-                      <Text style={[styles.actionSubtitle, { color: '#991B1B' }]}>Encerrar sessão com segurança</Text>
+                      <Text style={[styles.actionSubtitle, { color: colors.error }]}>Encerrar sessão com segurança</Text>
                     </View>
                   </View>
                   <ChevronRight size={18} color={colors.error} />
@@ -428,7 +439,7 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
                 disabled={updatingProfile}
               >
                 {updatingProfile ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <ActivityIndicator size="small" color={colors.white} />
                 ) : (
                   <Text style={styles.modalSaveText}>Salvar Alterações</Text>
                 )}
@@ -501,7 +512,7 @@ const styles = StyleSheet.create({
   mainWrapper: {
     flex: 1,
     width: '100%',
-    maxWidth: 1024,
+    maxWidth: 1280,
     alignSelf: 'center',
   },
   topHeader: {
@@ -524,11 +535,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: theme.spacing.md,
     marginBottom: theme.spacing.md,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 3,
+    ...theme.shadows.subtle,
   },
   userCardTop: {
     flexDirection: 'row',
@@ -538,7 +545,7 @@ const styles = StyleSheet.create({
   avatarCircle: {
     width: 60,
     height: 60,
-    borderRadius: 30,
+    borderRadius: theme.radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -557,7 +564,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.4,
   },
   userEmail: {
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '500',
     marginTop: 1,
   },
@@ -568,7 +575,7 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   userPhone: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '600',
   },
   roleBadge: {
@@ -582,13 +589,13 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   roleBadgeText: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '700',
   },
   editProfileBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 40,
+    height: 40,
+    borderRadius: theme.radius.full,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -607,9 +614,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   statIconBg: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 36,
+    height: 36,
+    borderRadius: theme.radius.full,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 6,
@@ -619,7 +626,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   statLabel: {
-    fontSize: 10,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
     textAlign: 'center',
     marginTop: 2,
@@ -651,7 +658,7 @@ const styles = StyleSheet.create({
   actionIconCircle: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: theme.radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -668,7 +675,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   actionSubtitle: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '500',
     marginTop: 2,
   },
@@ -679,7 +686,7 @@ const styles = StyleSheet.create({
   },
   badgeCountText: {
     color: '#FFFFFF',
-    fontSize: 10,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '800',
   },
   authCard: {
@@ -690,9 +697,9 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.lg,
   },
   authIconCircle: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: 64,
+    height: 64,
+    borderRadius: theme.radius.full,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: theme.spacing.md,
@@ -731,10 +738,10 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: '100%',
-    maxWidth: 440,
+    maxWidth: 560,
     borderRadius: theme.radius.xl,
     padding: theme.spacing.lg,
-    elevation: 10,
+    ...theme.shadows.lg,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -750,7 +757,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   inputLabel: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
     marginBottom: 4,
   },
@@ -774,7 +781,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.md,
   },
   modalCancelText: {
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '600',
   },
   modalSaveBtn: {
@@ -786,11 +793,11 @@ const styles = StyleSheet.create({
   },
   modalSaveText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '700',
   },
   helpIntro: {
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     lineHeight: 18,
     marginBottom: theme.spacing.md,
   },
@@ -802,11 +809,11 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.md,
   },
   supportItemTitle: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
   },
   supportItemValue: {
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '600',
     marginTop: 1,
   },
@@ -817,7 +824,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   versionText: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '500',
   },
 });

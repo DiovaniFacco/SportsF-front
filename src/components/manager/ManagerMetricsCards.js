@@ -36,10 +36,10 @@ export function ManagerMetricsCards({ bookings = [], totalSlotsCount = 32, defau
       >
         <View style={styles.summaryLeft}>
           <BarChart3 size={16} color={colors.primary} style={{ marginRight: 6 }} />
-          <Text style={[styles.summaryTitle, { color: colors.text }]}>
+          <Text style={[styles.summaryTitle, { color: colors.textPrimary }]}>
             Faturamento & Métricas:
           </Text>
-          <Text style={[styles.summaryHighlight, { color: '#10B981' }]}>
+          <Text style={[styles.summaryHighlight, { color: colors.success }]}>
             R$ {totalRevenue.toFixed(0)}
           </Text>
           <Text style={[styles.summaryBadge, { color: colors.textMuted }]}>
@@ -66,14 +66,14 @@ export function ManagerMetricsCards({ bookings = [], totalSlotsCount = 32, defau
           <View style={[styles.metricCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
             <View style={styles.metricHeaderRow}>
               <Text style={[styles.metricTitle, { color: colors.textMuted }]}>Faturamento Estimado</Text>
-              <View style={[styles.iconCircle, { backgroundColor: '#10B98118' }]}>
-                <DollarSign size={15} color="#10B981" />
+              <View style={[styles.iconCircle, { backgroundColor: colors.successSurface }]}>
+                <DollarSign size={15} color=colors.success />
               </View>
             </View>
-            <Text style={[styles.metricValue, { color: colors.text }]}>
+            <Text style={[styles.metricValue, { color: colors.textPrimary }]}>
               R$ {totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </Text>
-            <Text style={[styles.metricSubtext, { color: '#10B981' }]}>
+            <Text style={[styles.metricSubtext, { color: colors.success }]}>
               {activeBookings.length} reservas ativas
             </Text>
           </View>
@@ -82,12 +82,12 @@ export function ManagerMetricsCards({ bookings = [], totalSlotsCount = 32, defau
           <View style={[styles.metricCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
             <View style={styles.metricHeaderRow}>
               <Text style={[styles.metricTitle, { color: colors.textMuted }]}>Taxa de Ocupação</Text>
-              <View style={[styles.iconCircle, { backgroundColor: '#3B82F618' }]}>
-                <TrendingUp size={15} color="#3B82F6" />
+              <View style={[styles.iconCircle, { backgroundColor: colors.infoSurface }]}>
+                <TrendingUp size={15} color=colors.info />
               </View>
             </View>
-            <Text style={[styles.metricValue, { color: colors.text }]}>{occupancyPercentage}%</Text>
-            <Text style={[styles.metricSubtext, { color: '#3B82F6' }]}>
+            <Text style={[styles.metricValue, { color: colors.textPrimary }]}>{occupancyPercentage}%</Text>
+            <Text style={[styles.metricSubtext, { color: colors.info }]}>
               {activeBookings.length} de {totalSlotsCount} slots
             </Text>
           </View>
@@ -96,19 +96,19 @@ export function ManagerMetricsCards({ bookings = [], totalSlotsCount = 32, defau
           <View style={[styles.metricCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
             <View style={styles.metricHeaderRow}>
               <Text style={[styles.metricTitle, { color: colors.textMuted }]}>Balcão vs App</Text>
-              <View style={[styles.iconCircle, { backgroundColor: '#8B5CF618' }]}>
-                <Users size={15} color="#8B5CF6" />
+              <View style={[styles.iconCircle, { backgroundColor: colors.holdingSurface }]}>
+                <Users size={15} color=colors.holding />
               </View>
             </View>
             <View style={styles.ratioRow}>
               <View style={styles.ratioItem}>
-                <Store size={13} color="#8B5CF6" style={{ marginRight: 2 }} />
-                <Text style={[styles.ratioText, { color: '#8B5CF6' }]}>{manualCount} Balcão</Text>
+                <Store size={13} color=colors.holding style={{ marginRight: 2 }} />
+                <Text style={[styles.ratioText, { color: colors.holding }]}>{manualCount} Balcão</Text>
               </View>
               <Text style={[styles.ratioSeparator, { color: colors.textMuted }]}>•</Text>
               <View style={styles.ratioItem}>
-                <Smartphone size={13} color="#3B82F6" style={{ marginRight: 2 }} />
-                <Text style={[styles.ratioText, { color: '#3B82F6' }]}>{appCount} App</Text>
+                <Smartphone size={13} color=colors.info style={{ marginRight: 2 }} />
+                <Text style={[styles.ratioText, { color: colors.info }]}>{appCount} App</Text>
               </View>
             </View>
             <Text style={[styles.metricSubtext, { color: colors.textMuted }]}>Origem no dia</Text>
@@ -143,17 +143,17 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   summaryTitle: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
     marginRight: 4,
   },
   summaryHighlight: {
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '800',
     marginRight: 4,
   },
   summaryBadge: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
   },
   summaryRight: {
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   toggleText: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '700',
   },
   metricsContainer: {
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   metricTitle: {
-    fontSize: 10,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '700',
   },
   iconCircle: {
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   metricSubtext: {
-    fontSize: 10,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
   },
   ratioRow: {
@@ -218,10 +218,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   ratioText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '800',
   },
   ratioSeparator: {
-    fontSize: 10,
+    fontSize: theme.typography.sizes.caption,
   },
 });

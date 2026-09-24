@@ -46,10 +46,10 @@ const styles = StyleSheet.create({
   indicator: {
     width: 12,
     height: 12,
-    borderRadius: 6,
+    borderRadius: theme.radius.full,
   },
   availableIndicator: {
-    borderWidth: 1.5,
+    borderWidth: 1,
   },
   unavailableIndicator: {
     opacity: 0.8,

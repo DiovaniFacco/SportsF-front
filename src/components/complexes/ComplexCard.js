@@ -37,7 +37,7 @@ export function ComplexCard({ venue, onPress }) {
       {/* Toast Feedback */}
       {copiedToast ? (
         <View style={styles.toastBanner}>
-          <Check size={14} color="#FFFFFF" />
+          <Check size={14} color={colors.white} />
           <Text style={styles.toastText}>Link do complexo copiado!</Text>
         </View>
       ) : null}
@@ -110,7 +110,7 @@ export function ComplexCard({ venue, onPress }) {
             <View style={styles.priceRow}>
               <Text style={[styles.currency, { color: colors.primary }]}>R$</Text>
               <Text style={[styles.priceValue, { color: colors.textPrimary }]}>
-                {venue.starting_price ? Math.round(venue.starting_price) : '120'}
+                {venue.starting_price ? Math.round(venue.starting_price) : "—"}
               </Text>
               <Text style={[styles.perHour, { color: colors.textSecondary }]}>/hora</Text>
             </View>
@@ -141,15 +141,11 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.lg,
     marginBottom: theme.spacing.lg,
     overflow: 'visible',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
+    ...theme.shadows.sm,
   },
   imageWrapper: {
     position: 'relative',
-    height: 215,
+    height: 200,
     width: '100%',
     borderTopLeftRadius: theme.radius.lg,
     borderTopRightRadius: theme.radius.lg,
@@ -178,7 +174,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     color: '#FFFFFF',
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
   },
   sportsContainer: {
@@ -192,7 +188,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#10B981',
+    backgroundColor: colors.success,
     paddingVertical: 6,
     paddingHorizontal: theme.spacing.md,
     borderTopLeftRadius: theme.radius.lg,
@@ -200,11 +196,11 @@ const styles = StyleSheet.create({
   },
   toastText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
   },
   contentBody: {
-    padding: theme.spacing.lg,
+    padding: theme.spacing.md,
   },
   titleRow: {
     flexDirection: 'row',
@@ -246,7 +242,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   moreAmenities: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
   },
   cardFooter: {
@@ -263,7 +259,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   priceLabel: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     marginBottom: 1,
   },
   priceRow: {
@@ -271,34 +267,32 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
   },
   currency: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
     marginRight: 2,
   },
   priceValue: {
-    fontSize: 20,
+    fontSize: theme.typography.sizes.h3,
     fontWeight: '800',
     fontVariant: ['tabular-nums'],
   },
   perHour: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     marginLeft: 2,
   },
   ctaButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 9,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 10,
     borderRadius: theme.radius.md,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
+    ...theme.shadows.sm,
     elevation: 3,
     flexShrink: 0,
   },
   ctaText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '700',
   },
 });

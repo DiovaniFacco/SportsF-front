@@ -189,14 +189,14 @@ export function MyBookingsScreen({ onTabChange, onGoToExplore, onOpenAuth }) {
     }
     if (status === 'cancelled') {
       return (
-        <View style={[styles.statusBadge, { backgroundColor: '#FEF2F2' }]}>
+        <View style={[styles.statusBadge, { backgroundColor: colors.errorSurface }]}>
           <XCircle size={13} color={colors.error} />
           <Text style={[styles.statusBadgeText, { color: colors.error }]}>Cancelado</Text>
         </View>
       );
     }
     return (
-      <View style={[styles.statusBadge, { backgroundColor: '#FEF3C7' }]}>
+      <View style={[styles.statusBadge, { backgroundColor: colors.warningSurface }]}>
         <AlertCircle size={13} color={colors.warning} />
         <Text style={[styles.statusBadgeText, { color: colors.warning }]}>Pendente</Text>
       </View>
@@ -207,9 +207,9 @@ export function MyBookingsScreen({ onTabChange, onGoToExplore, onOpenAuth }) {
     if (item.status === 'cancelled') return null;
     const isPaid = Boolean(item.is_paid);
     return (
-      <View style={[styles.statusBadge, { backgroundColor: isPaid ? '#ECFDF5' : '#FFFBEB' }]}>
-        <Banknote size={13} color={isPaid ? '#10B981' : '#D97706'} />
-        <Text style={[styles.statusBadgeText, { color: isPaid ? '#10B981' : '#D97706' }]}>
+      <View style={[styles.statusBadge, { backgroundColor: isPaid ? colors.successSurface : colors.warningSurface }]}>
+        <Banknote size={13} color={isPaid ? colors.success : colors.gold} />
+        <Text style={[styles.statusBadgeText, { color: isPaid ? colors.success : colors.gold }]}>
           {isPaid ? 'Pago' : 'Pagamento pendente'}
         </Text>
       </View>
@@ -329,7 +329,7 @@ export function MyBookingsScreen({ onTabChange, onGoToExplore, onOpenAuth }) {
               onPress={onOpenAuth}
             >
               <Text style={styles.authButtonText}>Fazer Login / Cadastrar</Text>
-              <ArrowRight size={16} color="#FFFFFF" />
+              <ArrowRight size={16} color={colors.white} />
             </TouchableOpacity>
           </View>
         </View>
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
   mainWrapper: {
     flex: 1,
     width: '100%',
-    maxWidth: 1024,
+    maxWidth: 1280,
     alignSelf: 'center',
   },
   headerContainer: {
@@ -473,8 +473,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   headerBadge: {
-    width: 42,
-    height: 42,
+    width: 40,
+    height: 40,
     borderRadius: theme.radius.full,
     alignItems: 'center',
     justifyContent: 'center',
@@ -500,11 +500,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: theme.spacing.md,
     marginBottom: theme.spacing.md,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 2,
+    ...theme.shadows.subtle,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -526,19 +522,19 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   venueName: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '600',
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
     borderRadius: theme.radius.full,
     gap: 4,
   },
   statusBadgeText: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '700',
   },
   badgesCol: {
@@ -563,15 +559,13 @@ const styles = StyleSheet.create({
   iconCircle: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: theme.radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
   detailLabel: {
-    fontSize: 10,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   detailValue: {
     fontSize: theme.typography.sizes.bodySmall,
@@ -590,7 +584,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   priceLabel: {
-    fontSize: 10,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
   },
   priceValue: {
@@ -599,12 +593,12 @@ const styles = StyleSheet.create({
   },
   cancelBtn: {
     borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
     borderRadius: theme.radius.md,
   },
   cancelBtnText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
   },
   authCard: {

@@ -134,7 +134,7 @@ export function ManualBookingModal({
           {/* Top Bar */}
           <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
             <View>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Novo Agendamento Balcão</Text>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Novo Agendamento Balcão</Text>
               <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>
                 Reserva presencial ou via WhatsApp
               </Text>
@@ -143,20 +143,20 @@ export function ManualBookingModal({
               onPress={onClose}
               style={[styles.closeBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
             >
-              <X size={20} color={colors.text} />
+              <X size={20} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.formScroll} showsVerticalScrollIndicator={false}>
             {errorMessage ? (
-              <View style={[styles.errorBox, { backgroundColor: colors.error + '15', borderColor: colors.error + '40' }]}>
+              <View style={[styles.errorBox, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}>
                 <Text style={[styles.errorText, { color: colors.error }]}>{errorMessage}</Text>
               </View>
             ) : null}
 
             {/* Seleção de Quadra */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Quadra *</Text>
+              <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Quadra *</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
                 {courts.map((court) => {
                   const isSelected = selectedCourtId === court.id;
@@ -176,7 +176,7 @@ export function ManualBookingModal({
                       <Text
                         style={[
                           styles.chipText,
-                          { color: isSelected ? '#FFFFFF' : colors.text },
+                          { color: isSelected ? colors.white : colors.textPrimary },
                         ]}
                       >
                         {court.name}
@@ -189,7 +189,7 @@ export function ManualBookingModal({
 
             {/* Data */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Data *</Text>
+              <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Data *</Text>
               <DatePickerInput
                 value={date}
                 onChangeDate={setDate}
@@ -200,7 +200,7 @@ export function ManualBookingModal({
             {/* Horário Início e Término */}
             <View style={styles.rowInputs}>
               <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>Início *</Text>
+                <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Início *</Text>
                 <TimePickerInput
                   value={startTime}
                   onChangeTime={setStartTime}
@@ -209,7 +209,7 @@ export function ManualBookingModal({
               </View>
 
               <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>Término *</Text>
+                <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Término *</Text>
                 <TimePickerInput
                   value={endTime}
                   onChangeTime={setEndTime}
@@ -220,11 +220,11 @@ export function ManualBookingModal({
 
             {/* Dados do Cliente */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Nome do Cliente *</Text>
+              <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Nome do Cliente *</Text>
               <View style={[styles.inputWrapper, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <User size={18} color={colors.textMuted} style={{ marginRight: 10 }} />
                 <TextInput
-                  style={[styles.input, { color: colors.text }]}
+                  style={[styles.input, { color: colors.textPrimary }]}
                   value={customerName}
                   onChangeText={setCustomerName}
                   placeholder="Ex: João da Silva (Balcão)"
@@ -234,11 +234,11 @@ export function ManualBookingModal({
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Telefone / WhatsApp *</Text>
+              <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Telefone / WhatsApp *</Text>
               <View style={[styles.inputWrapper, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <Phone size={18} color={colors.textMuted} style={{ marginRight: 10 }} />
                 <TextInput
-                  style={[styles.input, { color: colors.text }]}
+                  style={[styles.input, { color: colors.textPrimary }]}
                   value={customerPhone}
                   onChangeText={setCustomerPhone}
                   placeholder="Ex: (54) 99988-7766"
@@ -250,11 +250,11 @@ export function ManualBookingModal({
 
             {/* Observações */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Observações</Text>
+              <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Observações</Text>
               <View style={[styles.inputWrapper, { backgroundColor: colors.background, borderColor: colors.border, height: 70, alignItems: 'flex-start', paddingTop: 10 }]}>
                 <FileText size={18} color={colors.textMuted} style={{ marginRight: 10, marginTop: 2 }} />
                 <TextInput
-                  style={[styles.input, { color: colors.text, textAlignVertical: 'top' }]}
+                  style={[styles.input, { color: colors.textPrimary, textAlignVertical: 'top' }]}
                   value={notes}
                   onChangeText={setNotes}
                   placeholder="Ex: Pago em dinheiro / Equipamento alugado"
@@ -266,7 +266,7 @@ export function ManualBookingModal({
 
             {/* Pagamento */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Pagamento *</Text>
+              <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Pagamento *</Text>
               <View style={styles.paymentRow}>
                 <TouchableOpacity
                   activeOpacity={0.8}
@@ -274,13 +274,13 @@ export function ManualBookingModal({
                   style={[
                     styles.paymentBtn,
                     {
-                      backgroundColor: isPaid ? '#10B981' : colors.background,
-                      borderColor: isPaid ? '#10B981' : colors.border,
+                      backgroundColor: isPaid ? colors.success : colors.background,
+                      borderColor: isPaid ? colors.success : colors.border,
                     },
                   ]}
                 >
-                  <Banknote size={15} color={isPaid ? '#FFFFFF' : colors.textMuted} style={{ marginRight: 6 }} />
-                  <Text style={[styles.paymentBtnText, { color: isPaid ? '#FFFFFF' : colors.textSecondary }]}>
+                  <Banknote size={15} color={isPaid ? colors.white : colors.textMuted} style={{ marginRight: 6 }} />
+                  <Text style={[styles.paymentBtnText, { color: isPaid ? colors.white : colors.textSecondary }]}>
                     Pago
                   </Text>
                 </TouchableOpacity>
@@ -296,8 +296,8 @@ export function ManualBookingModal({
                     },
                   ]}
                 >
-                  <Clock size={15} color={!isPaid ? '#FFFFFF' : colors.textMuted} style={{ marginRight: 6 }} />
-                  <Text style={[styles.paymentBtnText, { color: !isPaid ? '#FFFFFF' : colors.textSecondary }]}>
+                  <Clock size={15} color={!isPaid ? colors.white : colors.textMuted} style={{ marginRight: 6 }} />
+                  <Text style={[styles.paymentBtnText, { color: !isPaid ? colors.white : colors.textSecondary }]}>
                     Pendente
                   </Text>
                 </TouchableOpacity>
@@ -315,7 +315,7 @@ export function ManualBookingModal({
               style={[styles.cancelBtn, { borderColor: colors.border }]}
               disabled={submitting}
             >
-              <Text style={[styles.cancelBtnText, { color: colors.text }]}>Cancelar</Text>
+              <Text style={[styles.cancelBtnText, { color: colors.textPrimary }]}>Cancelar</Text>
             </TouchableOpacity>
 
             {onOpenBlockModal ? (
@@ -332,7 +332,7 @@ export function ManualBookingModal({
                 }}
                 style={[
                   styles.blockBtn,
-                  { backgroundColor: colors.error + '18', borderColor: colors.error + '40' },
+                  { backgroundColor: colors.errorSurface, borderColor: colors.error },
                 ]}
                 disabled={submitting}
               >
@@ -348,10 +348,10 @@ export function ManualBookingModal({
               disabled={submitting}
             >
               {submitting ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
+                <ActivityIndicator size="small" color={colors.white} />
               ) : (
                 <>
-                  <CheckCircle2 size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                  <CheckCircle2 size={18} color={colors.white} style={{ marginRight: 6 }} />
                   <Text style={styles.submitBtnText}>Confirmar Agendamento</Text>
                 </>
               )}
@@ -374,12 +374,12 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: '96%',
-    maxWidth: 550,
+    maxWidth: 560,
     maxHeight: '92%',
-    borderRadius: theme.radius.lg,
+    borderRadius: theme.radius.xl,
     borderWidth: 1,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.25,
     shadowRadius: 15,
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   modalTitle: {
-    fontSize: theme.typography.sizes.body1,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '800',
   },
   modalSubtitle: {
@@ -402,8 +402,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   closeBtn: {
-    width: 34,
-    height: 34,
+    width: 32,
+    height: 32,
     borderRadius: theme.radius.full,
     borderWidth: 1,
     alignItems: 'center',
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   inputLabel: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
     marginBottom: 6,
   },
@@ -441,7 +441,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
   },
   rowInputs: {
     flexDirection: 'row',
@@ -478,15 +478,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   paymentBtnText: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
   paymentHint: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     marginTop: 6,
   },
   quickLabel: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
     marginBottom: 6,
   },
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   quickTimeText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '600',
   },
   modalFooter: {
@@ -526,7 +526,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   cancelBtnText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -542,7 +542,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   blockBtnText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
     textAlign: 'center',
   },
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
   },
   submitBtnText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
     textAlign: 'center',
   },

@@ -272,11 +272,11 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
     if (isBlockedIndefinitely) {
       return (
         <View style={styles.paddingContainer}>
-          <View style={[styles.blockedCard, { backgroundColor: colors.error + '10', borderColor: colors.error + '40' }]}>
+          <View style={[styles.blockedCard, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}>
             <Text style={[styles.blockedTitle, { color: colors.error }]}>
-              ⛔ Quadra temporariamente indisponível
+              Quadra temporariamente indisponível
             </Text>
-            <Text style={[styles.blockedText, { color: colors.text }]}>
+            <Text style={[styles.blockedText, { color: colors.textSecondary }]}>
               {slotsData?.message ||
                 `Esta quadra está indisponível por tempo indeterminado${slotsData?.block_reason ? ` (${slotsData.block_reason})` : ''}. Tente outra quadra ou data.`}
             </Text>
@@ -354,8 +354,8 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
         />
 
         {whatsappError ? (
-          <View style={[styles.simplifiedBanner, { backgroundColor: colors.error + '12', borderColor: colors.error + '40' }]}>
-            <Text style={{ color: colors.error, fontSize: 12, fontWeight: '700' }}>{whatsappError}</Text>
+          <View style={[styles.simplifiedBanner, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}>
+            <Text style={{ color: colors.error, fontSize: theme.typography.sizes.bodySmall, fontWeight: '700' }}>{whatsappError}</Text>
           </View>
         ) : null}
 
@@ -460,9 +460,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 40,
+    height: 40,
+    borderRadius: theme.radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     width: '100%',
-    maxWidth: 1024,
+    maxWidth: 1280,
     alignSelf: 'center',
   },
   scrollContent: {
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   venueNameText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
     marginBottom: 4,
   },
@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   miniPillText: {
-    fontSize: 10,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
   },
   periodContainer: {
@@ -555,9 +555,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   periodIconBadge: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 28,
+    height: 28,
+    borderRadius: theme.radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -566,13 +566,13 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   periodCountText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '600',
   },
   slotsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    gap: theme.spacing.sm,
   },
   simplifiedBanner: {
     flexDirection: 'row',
@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   blockedText: {
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     lineHeight: 18,
   },
 });

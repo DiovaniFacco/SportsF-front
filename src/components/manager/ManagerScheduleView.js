@@ -247,10 +247,10 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
                 },
               ]}
             >
-              <Text style={[styles.dateChipDay, { color: isSelected ? '#FFFFFF' : colors.textMuted }]}>
+              <Text style={[styles.dateChipDay, { color: isSelected ? colors.white : colors.textMuted }]}>
                 {chip.dayLabel}
               </Text>
-              <Text style={[styles.dateChipNum, { color: isSelected ? '#FFFFFF' : colors.text }]}>
+              <Text style={[styles.dateChipNum, { color: isSelected ? colors.white : colors.textPrimary }]}>
                 {chip.dayNum} {chip.monthStr}
               </Text>
             </TouchableOpacity>
@@ -278,7 +278,7 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
             <Text
               style={[
                 styles.courtFilterText,
-                { color: selectedCourtId === 'ALL' ? '#FFFFFF' : colors.text },
+                { color: selectedCourtId === 'ALL' ? colors.white : colors.textPrimary },
               ]}
             >
               Todas as Quadras
@@ -302,7 +302,7 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
                 <Text
                   style={[
                     styles.courtFilterText,
-                    { color: isSelected ? '#FFFFFF' : colors.text },
+                    { color: isSelected ? colors.white : colors.textPrimary },
                   ]}
                 >
                   {court.name}
@@ -326,14 +326,14 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
             onPress={() => onOpenManualModal?.()}
             style={[styles.primaryActionBtn, { backgroundColor: colors.primary }]}
           >
-            <Plus size={14} color="#FFFFFF" />
+            <Plus size={14} color={colors.white} />
             <Text style={styles.primaryActionBtnText}>Novo Agendamento</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={onOpenBlockModal}
-            style={[styles.blockBtnHeader, { backgroundColor: colors.error + '18', borderColor: colors.error + '40' }]}
+            style={[styles.blockBtnHeader, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}
           >
             <ShieldAlert size={14} color={colors.error} style={{ marginRight: 4 }} />
             <Text style={[styles.blockBtnHeaderText, { color: colors.error }]}>Bloquear Horários</Text>
@@ -350,8 +350,8 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
               },
             ]}
           >
-            <Grid size={15} color="#FFFFFF" />
-            <Text style={[styles.toggleBtnText, { color: '#FFFFFF' }]}>
+            <Grid size={15} color={colors.white} />
+            <Text style={[styles.toggleBtnText, { color: colors.white }]}>
               Grade Matrix
             </Text>
           </View>
@@ -366,17 +366,17 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
         contentContainerStyle={styles.legendScrollContent}
       >
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: '#10B981' }]} />
+          <View style={[styles.legendDot, { backgroundColor: colors.success }]} />
           <Text style={[styles.legendText, { color: colors.textMuted }]}>Livre (Clique p/ agendar)</Text>
         </View>
 
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: '#8B5CF6' }]} />
+          <View style={[styles.legendDot, { backgroundColor: colors.holding }]} />
           <Text style={[styles.legendText, { color: colors.textMuted }]}>Balcão / Presencial</Text>
         </View>
 
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: '#3B82F6' }]} />
+          <View style={[styles.legendDot, { backgroundColor: colors.info }]} />
           <Text style={[styles.legendText, { color: colors.textMuted }]}>Via App</Text>
         </View>
 
@@ -414,7 +414,7 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
         ) : error ? (
           <View style={styles.centerContainer}>
             <AlertCircle size={36} color={colors.error} />
-            <Text style={[styles.errorText, { color: colors.text }]}>{error}</Text>
+            <Text style={[styles.errorText, { color: colors.textPrimary }]}>{error}</Text>
           </View>
         ) : (
           visibleCourts.map((court) => (
@@ -557,10 +557,10 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
     <View style={[styles.matrixCard, { backgroundColor: colors.surface, borderColor: hasIndefinite ? colors.error : colors.border }]}>
       <View style={[styles.matrixCardHeader, { borderBottomColor: colors.border }]}>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.matrixCourtName, { color: colors.text }]}>{court.name}</Text>
+          <Text style={[styles.matrixCourtName, { color: colors.textPrimary }]}>{court.name}</Text>
           {hasIndefinite ? (
             <Text style={[styles.matrixCourtStats, { color: colors.error, fontWeight: '800' }]}>
-              ⛔ Bloqueada por tempo indeterminado{indefiniteBlock?.reason ? ` • ${indefiniteBlock.reason}` : ''}
+              Bloqueada por tempo indeterminado{indefiniteBlock?.reason ? ` • ${indefiniteBlock.reason}` : ''}
             </Text>
           ) : isOperating && slots.length > 0 ? (
             <Text style={[styles.matrixCourtStats, { color: colors.textMuted }]}>
@@ -575,13 +575,13 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
       </View>
 
       {hasIndefinite ? (
-        <View style={[styles.indefiniteBanner, { backgroundColor: colors.error + '12', borderColor: colors.error + '40' }]}>
+        <View style={[styles.indefiniteBanner, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}>
           <ShieldAlert size={16} color={colors.error} style={{ marginRight: 8 }} />
           <View style={{ flex: 1 }}>
             <Text style={[styles.indefiniteBannerTitle, { color: colors.error }]}>
               Quadra indisponível até desbloqueio manual
             </Text>
-            <Text style={[styles.indefiniteBannerText, { color: colors.text }]}>
+            <Text style={[styles.indefiniteBannerText, { color: colors.textPrimary }]}>
               {indefiniteBlock?.reason || courtSlotsData?.block_reason || 'Sem motivo informado'}
               {indefiniteBlock?.start_time ? ` • desde ${String(indefiniteBlock.start_time).substring(0, 16).replace('T', ' ')}` : ''}
             </Text>
@@ -660,18 +660,18 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
                 }
                 style={[
                   styles.matrixSlotTile,
-                  status === 'free' && { backgroundColor: '#10B98112', borderColor: '#10B98150' },
-                  status === 'booked_manual' && { backgroundColor: '#8B5CF620', borderColor: '#8B5CF6' },
-                  status === 'booked_app' && { backgroundColor: '#3B82F620', borderColor: '#3B82F6' },
-                  status === 'cancelled' && { backgroundColor: colors.error + '15', borderColor: colors.error + '40' },
-                  status === 'blocked' && { backgroundColor: colors.error + '25', borderColor: colors.error },
+                  status === 'free' && { backgroundColor: colors.successSurface, borderColor: colors.successSurface },
+                  status === 'booked_manual' && { backgroundColor: colors.holdingSurface, borderColor: colors.holding },
+                  status === 'booked_app' && { backgroundColor: colors.infoSurface, borderColor: colors.info },
+                  status === 'cancelled' && { backgroundColor: colors.errorSurface, borderColor: colors.error },
+                  status === 'blocked' && { backgroundColor: colors.errorSurface, borderColor: colors.error },
                 ]}
               >
                 {/* Linha Superior: Horário + Preço Dinâmico do Slot */}
                 <View style={styles.tileHeaderRow}>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Clock size={11} color={colors.textMuted} style={{ marginRight: 3 }} />
-                    <Text style={[styles.slotTimeText, { color: colors.text }]}>{displayTime}</Text>
+                    <Text style={[styles.slotTimeText, { color: colors.textPrimary }]}>{displayTime}</Text>
                   </View>
 
                   <View
@@ -680,10 +680,10 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
                       {
                         backgroundColor:
                           status === 'free'
-                            ? '#10B98120'
+                            ? colors.successSurface
                             : status === 'blocked'
-                            ? colors.error + '20'
-                            : colors.primary + '20',
+                            ? colors.errorSurface
+                            : colors.primaryLight,
                       },
                     ]}
                   >
@@ -693,7 +693,7 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
                         {
                           color:
                             status === 'free'
-                              ? '#059669'
+                              ? colors.success
                               : status === 'blocked'
                               ? colors.error
                               : colors.primary,
@@ -715,20 +715,20 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
                   </View>
                 ) : status === 'free' ? (
                   <View style={styles.slotFreeContent}>
-                    <PlusCircle size={13} color="#10B981" />
+                    <PlusCircle size={13} color=colors.success />
                     <Text style={styles.slotFreeText}>Livre</Text>
                   </View>
                 ) : status === 'booked_manual' ? (
                   <View style={styles.slotBookedContent}>
-                    <Store size={13} color="#8B5CF6" />
-                    <Text numberOfLines={1} style={[styles.slotClientText, { color: '#8B5CF6' }]}>
+                    <Store size={13} color=colors.holding />
+                    <Text numberOfLines={1} style={[styles.slotClientText, { color: colors.holding }]}>
                       {matchingBooking.customer_name?.split(' ')[0] || 'Balcão'}
                     </Text>
                   </View>
                 ) : status === 'booked_app' ? (
                   <View style={styles.slotBookedContent}>
-                    <Smartphone size={13} color="#3B82F6" />
-                    <Text numberOfLines={1} style={[styles.slotClientText, { color: '#3B82F6' }]}>
+                    <Smartphone size={13} color=colors.info />
+                    <Text numberOfLines={1} style={[styles.slotClientText, { color: colors.info }]}>
                       {(matchingBooking.customer_name || matchingBooking.user?.name)?.split(' ')[0] || 'App'}
                     </Text>
                   </View>
@@ -771,7 +771,7 @@ function BookingScheduleCard({ booking, onCancel }) {
       ]}
     >
       <View style={styles.cardHeader}>
-        <View style={[styles.timeBadge, { backgroundColor: colors.primary + '18' }]}>
+        <View style={[styles.timeBadge, { backgroundColor: colors.primaryLight }]}>
           <Clock size={16} color={colors.primary} style={{ marginRight: 6 }} />
           <Text style={[styles.timeBadgeText, { color: colors.primary }]}>
             {startTimeStr} - {endTimeStr}
@@ -781,18 +781,18 @@ function BookingScheduleCard({ booking, onCancel }) {
         <View
           style={[
             styles.originBadge,
-            { backgroundColor: isManual ? '#8B5CF618' : '#10B98118' },
+            { backgroundColor: isManual ? colors.holdingSurface : colors.successSurface },
           ]}
         >
           {isManual ? (
-            <Store size={14} color="#8B5CF6" style={{ marginRight: 4 }} />
+            <Store size={14} color=colors.holding style={{ marginRight: 4 }} />
           ) : (
-            <Smartphone size={14} color="#10B981" style={{ marginRight: 4 }} />
+            <Smartphone size={14} color=colors.success style={{ marginRight: 4 }} />
           )}
           <Text
             style={[
               styles.originBadgeText,
-              { color: isManual ? '#8B5CF6' : '#10B981' },
+              { color: isManual ? colors.holding : colors.success },
             ]}
           >
             {isManual ? 'BALCÃO' : 'VIA APP'}
@@ -800,26 +800,26 @@ function BookingScheduleCard({ booking, onCancel }) {
         </View>
 
         {isCancelled ? (
-          <View style={[styles.statusBadge, { backgroundColor: colors.error + '18' }]}>
+          <View style={[styles.statusBadge, { backgroundColor: colors.errorSurface }]}>
             <XCircle size={14} color={colors.error} style={{ marginRight: 4 }} />
             <Text style={[styles.statusBadgeText, { color: colors.error }]}>CANCELADO</Text>
           </View>
         ) : (
-          <View style={[styles.statusBadge, { backgroundColor: '#10B98118' }]}>
-            <CheckCircle size={14} color="#10B981" style={{ marginRight: 4 }} />
-            <Text style={[styles.statusBadgeText, { color: '#10B981' }]}>CONFIRMADO</Text>
+          <View style={[styles.statusBadge, { backgroundColor: colors.successSurface }]}>
+            <CheckCircle size={14} color=colors.success style={{ marginRight: 4 }} />
+            <Text style={[styles.statusBadgeText, { color: colors.success }]}>CONFIRMADO</Text>
           </View>
         )}
       </View>
 
       <View style={styles.cardBody}>
-        <Text style={[styles.courtNameText, { color: colors.text }]}>
+        <Text style={[styles.courtNameText, { color: colors.textPrimary }]}>
           {booking.court?.name || 'Quadra Esportiva'}
         </Text>
 
         <View style={styles.infoRow}>
           <User size={15} color={colors.textMuted} style={{ marginRight: 6 }} />
-          <Text style={[styles.infoText, { color: colors.text }]}>{clientName}</Text>
+          <Text style={[styles.infoText, { color: colors.textPrimary }]}>{clientName}</Text>
         </View>
 
         <View style={styles.infoRow}>
@@ -839,14 +839,14 @@ function BookingScheduleCard({ booking, onCancel }) {
 
       {!isCancelled ? (
         <View style={[styles.cardFooter, { borderTopColor: colors.border }]}>
-          <Text style={[styles.priceText, { color: colors.text }]}>
+          <Text style={[styles.priceText, { color: colors.textPrimary }]}>
             R$ {booking.total_price ? parseFloat(booking.total_price).toFixed(2) : '140.00'}
           </Text>
 
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => onCancel(booking)}
-            style={[styles.btnCancel, { backgroundColor: colors.error + '12', borderColor: colors.error + '30' }]}
+            style={[styles.btnCancel, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}
           >
             <XCircle size={14} color={colors.error} style={{ marginRight: 4 }} />
             <Text style={[styles.btnCancelText, { color: colors.error }]}>Cancelar Reserva</Text>
@@ -880,12 +880,12 @@ const styles = StyleSheet.create({
     minWidth: 80,
   },
   dateChipDay: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
     textTransform: 'uppercase',
   },
   dateChipNum: {
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '800',
     marginTop: 2,
   },
@@ -903,7 +903,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   courtFilterText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
   },
   metricsBar: {
@@ -928,7 +928,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: theme.radius.md,
     gap: 5,
-    shadowColor: '#000000',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.15,
     shadowRadius: 2,
@@ -936,7 +936,7 @@ const styles = StyleSheet.create({
   },
   primaryActionBtnText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '800',
   },
   blockBtnHeader: {
@@ -949,7 +949,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   blockBtnHeaderText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '800',
   },
   viewToggleContainer: {
@@ -966,7 +966,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   toggleBtnText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
   },
   legendBar: {
@@ -991,7 +991,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   legendText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '600',
   },
   listContainer: {
@@ -1005,11 +1005,11 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
   },
   errorText: {
     marginTop: 12,
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
     textAlign: 'center',
   },
@@ -1031,16 +1031,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   matrixCourtName: {
-    fontSize: theme.typography.sizes.body1,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '800',
   },
   matrixCourtStats: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '600',
     marginTop: 2,
   },
   matrixCourtPrice: {
-    fontSize: theme.typography.sizes.body1,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '800',
   },
   indefiniteBanner: {
@@ -1054,11 +1054,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   indefiniteBannerTitle: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '800',
   },
   indefiniteBannerText: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
     marginTop: 2,
   },
@@ -1070,7 +1070,7 @@ const styles = StyleSheet.create({
   },
   unblockBtnText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '800',
   },
   closedCourtContainer: {
@@ -1105,7 +1105,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   slotTimeText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '800',
   },
   slotPricePill: {
@@ -1114,7 +1114,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.xs || 4,
   },
   slotPricePillText: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '800',
   },
   slotFreeContent: {
@@ -1123,9 +1123,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   slotFreeText: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '700',
-    color: '#10B981',
+    color: colors.success,
   },
   slotBookedContent: {
     flexDirection: 'row',
@@ -1133,7 +1133,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   slotClientText: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '700',
     flex: 1,
   },
@@ -1161,7 +1161,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.sm,
   },
   timeBadgeText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '800',
   },
   originBadge: {
@@ -1172,7 +1172,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.sm,
   },
   originBadgeText: {
-    fontSize: 10,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '800',
   },
   statusBadge: {
@@ -1183,14 +1183,14 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.sm,
   },
   statusBadgeText: {
-    fontSize: 10,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '800',
   },
   cardBody: {
     gap: 6,
   },
   courtNameText: {
-    fontSize: theme.typography.sizes.body1,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '800',
     marginBottom: 4,
   },
@@ -1199,7 +1199,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   infoText: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
   },
   cardFooter: {
     flexDirection: 'row',
@@ -1210,7 +1210,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   priceText: {
-    fontSize: theme.typography.sizes.body1,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '800',
   },
   btnCancel: {
@@ -1222,7 +1222,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   btnCancelText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
   },
 });

@@ -59,7 +59,7 @@ export function SlotCard({ slot, isSelected, onToggleSelect }) {
 
         {isSelected ? (
           <View style={styles.checkBadge}>
-            <Check size={14} color="#FFFFFF" strokeWidth={3} />
+            <Check size={14} color={colors.white} strokeWidth={3} />
           </View>
         ) : !isAvailable ? (
           <View style={styles.lockedBadge}>
@@ -89,21 +89,17 @@ export function SlotCard({ slot, isSelected, onToggleSelect }) {
 
 const styles = StyleSheet.create({
   card: {
-    width: '48%',
+    flexBasis: '48%',
+    flexGrow: 1,
     borderRadius: theme.radius.md,
-    borderWidth: 1.5,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    marginBottom: 10,
+    borderWidth: 1,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.sm,
     justifyContent: 'space-between',
-    minHeight: 74,
+    minHeight: 56,
   },
   selectedShadow: {
-    shadowColor: '#881337',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 3,
+    ...theme.shadows.md,
   },
   disabledCard: {
     opacity: 0.65,
@@ -117,12 +113,11 @@ const styles = StyleSheet.create({
   timeText: {
     fontSize: theme.typography.sizes.body,
     fontWeight: '700',
-    letterSpacing: -0.2,
   },
   checkBadge: {
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: theme.radius.full,
     backgroundColor: 'rgba(255, 255, 255, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -141,7 +136,7 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
   },
   priceCurrency: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '700',
     marginRight: 2,
   },
@@ -150,7 +145,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   unavailableText: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
     fontStyle: 'italic',
   },

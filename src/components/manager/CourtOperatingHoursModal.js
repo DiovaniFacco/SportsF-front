@@ -135,11 +135,11 @@ export function CourtOperatingHoursModal({ visible, court, onClose, onSuccess })
           {/* Header */}
           <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
             <View style={styles.titleRow}>
-              <View style={[styles.iconBadge, { backgroundColor: colors.primary + '18' }]}>
+              <View style={[styles.iconBadge, { backgroundColor: colors.primaryLight }]}>
                 <Clock size={20} color={colors.primary} />
               </View>
               <View>
-                <Text style={[styles.modalTitle, { color: colors.text }]}>Turnos de Funcionamento</Text>
+                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Turnos de Funcionamento</Text>
                 <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>
                   {court?.name || 'Quadra'}
                 </Text>
@@ -153,21 +153,21 @@ export function CourtOperatingHoursModal({ visible, court, onClose, onSuccess })
           {/* Form Body */}
           <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
             {errorMsg ? (
-              <View style={[styles.alertBox, { backgroundColor: colors.error + '15', borderColor: colors.error + '40' }]}>
+              <View style={[styles.alertBox, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}>
                 <ShieldAlert size={18} color={colors.error} />
                 <Text style={[styles.alertText, { color: colors.error }]}>{errorMsg}</Text>
               </View>
             ) : null}
 
             {successMsg ? (
-              <View style={[styles.alertBox, { backgroundColor: colors.success + '15', borderColor: colors.success + '40' }]}>
+              <View style={[styles.alertBox, { backgroundColor: colors.successSurface, borderColor: colors.success }]}>
                 <CheckCircle2 size={18} color={colors.success} />
                 <Text style={[styles.alertText, { color: colors.success }]}>{successMsg}</Text>
               </View>
             ) : null}
 
             {/* Seletor de Dias da Semana */}
-            <Text style={[styles.label, { color: colors.text }]}>Selecione o Dia da Semana</Text>
+            <Text style={[styles.label, { color: colors.textPrimary }]}>Selecione o Dia da Semana</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.daysScroll}>
               <View style={styles.daysContainer}>
                 {DAYS_OF_WEEK.map((day) => {
@@ -184,7 +184,7 @@ export function CourtOperatingHoursModal({ visible, court, onClose, onSuccess })
                           backgroundColor: isSelected
                             ? colors.primary
                             : dayShiftsCount > 0
-                            ? colors.primary + '15'
+                            ? colors.primaryLight
                             : colors.background,
                           borderColor: isSelected ? colors.primary : colors.border,
                         },
@@ -209,14 +209,14 @@ export function CourtOperatingHoursModal({ visible, court, onClose, onSuccess })
                           style={[
                             styles.badgeCount,
                             {
-                              backgroundColor: isSelected ? '#FFFFFF' : colors.primary,
+                              backgroundColor: isSelected ? colors.white : colors.primary,
                             },
                           ]}
                         >
                           <Text
                             style={[
                               styles.badgeCountText,
-                              { color: isSelected ? colors.primary : '#FFFFFF' },
+                              { color: isSelected ? colors.primary : colors.white },
                             ]}
                           >
                             {dayShiftsCount}
@@ -231,7 +231,7 @@ export function CourtOperatingHoursModal({ visible, court, onClose, onSuccess })
 
             {/* Turnos Existentes do Dia Selecionado */}
             <View style={[styles.sectionBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
                 Turnos de {DAYS_OF_WEEK.find((d) => d.id === selectedDay)?.label}
               </Text>
 
@@ -252,10 +252,10 @@ export function CourtOperatingHoursModal({ visible, court, onClose, onSuccess })
                     >
                       <View style={styles.shiftInfo}>
                         <Clock size={16} color={colors.primary} />
-                        <Text style={[styles.shiftTimeText, { color: colors.text }]}>
+                        <Text style={[styles.shiftTimeText, { color: colors.textPrimary }]}>
                           {shift.start_time.substring(0, 5)} - {shift.end_time.substring(0, 5)}
                         </Text>
-                        <View style={[styles.slotBadge, { backgroundColor: colors.primary + '15' }]}>
+                        <View style={[styles.slotBadge, { backgroundColor: colors.primaryLight }]}>
                           <Text style={[styles.slotBadgeText, { color: colors.primary }]}>
                             {shift.slot_duration_minutes} min/slot
                           </Text>
@@ -266,7 +266,7 @@ export function CourtOperatingHoursModal({ visible, court, onClose, onSuccess })
                         activeOpacity={0.7}
                         onPress={() => handleDeleteShift(shift.id)}
                         disabled={deletingId === shift.id}
-                        style={[styles.btnDeleteShift, { backgroundColor: colors.error + '15' }]}
+                        style={[styles.btnDeleteShift, { backgroundColor: colors.errorSurface }]}
                       >
                         {deletingId === shift.id ? (
                           <ActivityIndicator size="small" color={colors.error} />
@@ -281,7 +281,7 @@ export function CourtOperatingHoursModal({ visible, court, onClose, onSuccess })
 
               {/* Form de Adição de Novo Turno */}
               <View style={[styles.addFormContainer, { borderTopColor: colors.border }]}>
-                <Text style={[styles.addFormTitle, { color: colors.text }]}>
+                <Text style={[styles.addFormTitle, { color: colors.textPrimary }]}>
                   + Adicionar Turno (Manhã, Tarde ou Noite)
                 </Text>
 
@@ -311,7 +311,7 @@ export function CourtOperatingHoursModal({ visible, court, onClose, onSuccess })
                 <View style={{ marginTop: 10 }}>
                   <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Duração do Slot (minutos)</Text>
                   <TextInput
-                    style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+                    style={[styles.input, { backgroundColor: colors.surface, color: colors.textPrimary, borderColor: colors.border }]}
                     placeholder="60"
                     placeholderTextColor={colors.textMuted}
                     keyboardType="numeric"
@@ -327,10 +327,10 @@ export function CourtOperatingHoursModal({ visible, court, onClose, onSuccess })
                   style={[styles.btnAddShift, { backgroundColor: colors.primary }]}
                 >
                   {submitting ? (
-                    <ActivityIndicator color="#FFFFFF" size="small" />
+                    <ActivityIndicator color={colors.white} size="small" />
                   ) : (
                     <>
-                      <Plus size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                      <Plus size={16} color={colors.white} style={{ marginRight: 6 }} />
                       <Text style={styles.btnAddShiftText}>Adicionar Este Turno</Text>
                     </>
                   )}
@@ -342,7 +342,7 @@ export function CourtOperatingHoursModal({ visible, court, onClose, onSuccess })
             <View style={{ marginTop: theme.spacing.md }}>
               <View style={styles.summaryHeader}>
                 <Calendar size={16} color={colors.primary} />
-                <Text style={[styles.summaryTitle, { color: colors.text }]}>Resumo Semanal dos Turnos</Text>
+                <Text style={[styles.summaryTitle, { color: colors.textPrimary }]}>Resumo Semanal dos Turnos</Text>
               </View>
 
               {loading ? (
@@ -361,12 +361,12 @@ export function CourtOperatingHoursModal({ visible, court, onClose, onSuccess })
                         style={[
                           styles.summaryItem,
                           {
-                            backgroundColor: shifts.length > 0 ? colors.primary + '10' : colors.background,
-                            borderColor: shifts.length > 0 ? colors.primary + '30' : colors.border,
+                            backgroundColor: shifts.length > 0 ? colors.primaryLight : colors.background,
+                            borderColor: shifts.length > 0 ? colors.primaryLight : colors.border,
                           },
                         ]}
                       >
-                        <Text style={[styles.summaryDayName, { color: colors.text }]}>{d.short}</Text>
+                        <Text style={[styles.summaryDayName, { color: colors.textPrimary }]}>{d.short}</Text>
                         <Text style={[styles.summaryDayHours, { color: shifts.length > 0 ? colors.primary : colors.textMuted }]}>
                           {shifts.length > 0
                             ? shifts.map((s) => `${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)}`).join('  |  ')
@@ -383,7 +383,7 @@ export function CourtOperatingHoursModal({ visible, court, onClose, onSuccess })
           {/* Footer */}
           <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
             <TouchableOpacity style={[styles.btnClose, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={onClose}>
-              <Text style={[styles.btnCloseText, { color: colors.text }]}>Concluir</Text>
+              <Text style={[styles.btnCloseText, { color: colors.textPrimary }]}>Concluir</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
     maxHeight: '92%',
     borderRadius: theme.radius.xl,
     borderWidth: 1,
-    shadowColor: '#000000',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.25,
     shadowRadius: 20,
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
   iconBadge: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: theme.radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -457,12 +457,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   alertText: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '600',
     flex: 1,
   },
   label: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
     marginBottom: 8,
   },
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   dayChipText: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
   badgeCount: {
@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   badgeCountText: {
-    fontSize: 10,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '800',
   },
   sectionBox: {
@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   sectionTitle: {
-    fontSize: theme.typography.sizes.body1,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
     marginBottom: theme.spacing.sm,
   },
@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   shiftTimeText: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
   slotBadge: {
@@ -540,7 +540,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   slotBadgeText: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
   },
   btnDeleteShift: {
@@ -555,7 +555,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   addFormTitle: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
     marginBottom: theme.spacing.sm,
   },
@@ -572,11 +572,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   input: {
-    height: 42,
+    height: 44,
     borderWidth: 1,
     borderRadius: theme.radius.md,
     paddingHorizontal: theme.spacing.md,
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
   },
   btnAddShift: {
     flexDirection: 'row',
@@ -588,7 +588,7 @@ const styles = StyleSheet.create({
   },
   btnAddShiftText: {
     color: '#FFFFFF',
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
   summaryHeader: {
@@ -598,7 +598,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   summaryTitle: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
   emptySummaryText: {
@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   summaryDayName: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '600',
   },
   summaryDayHours: {
@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   btnCloseText: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
 });

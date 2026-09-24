@@ -54,7 +54,7 @@ export function CourtBlockModal({
     '🛠️ Manutenção do Piso',
     '💡 Manutenção da Iluminação',
     '🏆 Torneio / Evento Privado',
-    '⛔ Quadra Indisponível',
+    'Quadra Indisponível',
   ];
 
   useEffect(() => {
@@ -143,7 +143,7 @@ export function CourtBlockModal({
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <ShieldAlert size={20} color={colors.error} style={{ marginRight: 8 }} />
               <View>
-                <Text style={[styles.modalTitle, { color: colors.text }]}>Bloquear Quadra / Manutenção</Text>
+                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Bloquear Quadra / Manutenção</Text>
                 <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>
                   Impedir agendamentos por chuva, obras ou torneios
                 </Text>
@@ -153,20 +153,20 @@ export function CourtBlockModal({
               onPress={onClose}
               style={[styles.closeBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
             >
-              <X size={20} color={colors.text} />
+              <X size={20} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.formScroll} showsVerticalScrollIndicator={false}>
             {errorMessage ? (
-              <View style={[styles.errorBox, { backgroundColor: colors.error + '15', borderColor: colors.error + '40' }]}>
+              <View style={[styles.errorBox, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}>
                 <Text style={[styles.errorText, { color: colors.error }]}>{errorMessage}</Text>
               </View>
             ) : null}
 
             {/* Seleção de Quadra */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Quadra *</Text>
+              <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Quadra *</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
                 {courts.map((court) => {
                   const isSelected = selectedCourtId === court.id;
@@ -186,7 +186,7 @@ export function CourtBlockModal({
                       <Text
                         style={[
                           styles.chipText,
-                          { color: isSelected ? '#FFFFFF' : colors.text },
+                          { color: isSelected ? colors.white : colors.textPrimary },
                         ]}
                       >
                         {court.name}
@@ -199,7 +199,7 @@ export function CourtBlockModal({
 
             {/* Data */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Data *</Text>
+              <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Data *</Text>
               <DatePickerInput
                 value={date}
                 onChangeDate={setDate}
@@ -218,7 +218,7 @@ export function CourtBlockModal({
               ]}
             >
               <View style={styles.indefiniteRow}>
-                <View style={[styles.indefiniteIcon, { backgroundColor: isIndefinite ? '#FFFFFF' : colors.errorSurface }]}>
+                <View style={[styles.indefiniteIcon, { backgroundColor: isIndefinite ? colors.white : colors.errorSurface }]}>
                   <InfinityIcon size={18} color={colors.error} />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -233,11 +233,11 @@ export function CourtBlockModal({
                   value={isIndefinite}
                   onValueChange={setIsIndefinite}
                   trackColor={{ false: colors.border, true: colors.error }}
-                  thumbColor="#FFFFFF"
+                  thumbColor={colors.white}
                 />
               </View>
               {isIndefinite ? (
-                <View style={[styles.indefiniteAlert, { borderTopColor: colors.error + '30' }]}>
+                <View style={[styles.indefiniteAlert, { borderTopColor: colors.error }]}>
                   <AlertTriangle size={16} color={colors.error} />
                   <Text style={[styles.indefiniteAlertText, { color: colors.error }]}>
                     A quadra ficará indisponível em todos os dias e horários a partir de {dateFormatted} às {startTime} até o desbloqueio manual.
@@ -249,7 +249,7 @@ export function CourtBlockModal({
             {/* Horários */}
             <View style={styles.rowInputs}>
               <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>Início do Bloqueio *</Text>
+                <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Início do Bloqueio *</Text>
                 <TimePickerInput
                   value={startTime}
                   onChangeTime={setStartTime}
@@ -259,7 +259,7 @@ export function CourtBlockModal({
 
               {!isIndefinite ? (
                 <View style={[styles.inputGroup, { flex: 1 }]}>
-                  <Text style={[styles.inputLabel, { color: colors.text }]}>Fim do Bloqueio *</Text>
+                  <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Fim do Bloqueio *</Text>
                   <TimePickerInput
                     value={endTime}
                     onChangeTime={setEndTime}
@@ -271,7 +271,7 @@ export function CourtBlockModal({
 
             {/* Motivo presets */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Motivo do Bloqueio *</Text>
+              <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Motivo do Bloqueio *</Text>
               <View style={styles.presetWrap}>
                 {reasonPresets.map((preset) => {
                   const isSelected = reason === preset;
@@ -282,12 +282,12 @@ export function CourtBlockModal({
                       style={[
                         styles.presetChip,
                         {
-                          backgroundColor: isSelected ? colors.error + '20' : colors.background,
+                          backgroundColor: isSelected ? colors.errorSurface : colors.background,
                           borderColor: isSelected ? colors.error : colors.border,
                         },
                       ]}
                     >
-                      <Text style={[styles.presetText, { color: isSelected ? colors.error : colors.text }]}>
+                      <Text style={[styles.presetText, { color: isSelected ? colors.error : colors.textPrimary }]}>
                         {preset}
                       </Text>
                     </TouchableOpacity>
@@ -298,7 +298,7 @@ export function CourtBlockModal({
               <View style={[styles.inputWrapper, { backgroundColor: colors.background, borderColor: colors.border, marginTop: 8 }]}>
                 <AlertTriangle size={18} color={colors.textMuted} style={{ marginRight: 10 }} />
                 <TextInput
-                  style={[styles.input, { color: colors.text }]}
+                  style={[styles.input, { color: colors.textPrimary }]}
                   value={reason}
                   onChangeText={setReason}
                   placeholder="Ex: Reforma do piso de saibro"
@@ -315,7 +315,7 @@ export function CourtBlockModal({
               style={[styles.cancelBtn, { borderColor: colors.border }]}
               disabled={submitting}
             >
-              <Text style={[styles.cancelBtnText, { color: colors.text }]}>Cancelar</Text>
+              <Text style={[styles.cancelBtnText, { color: colors.textPrimary }]}>Cancelar</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -325,10 +325,10 @@ export function CourtBlockModal({
               disabled={submitting}
             >
               {submitting ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
+                <ActivityIndicator size="small" color={colors.white} />
               ) : (
                 <>
-                  <CheckCircle2 size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                  <CheckCircle2 size={18} color={colors.white} style={{ marginRight: 6 }} />
                   <Text style={styles.submitBtnText}>Confirmar Bloqueio</Text>
                 </>
               )}
@@ -351,12 +351,12 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: '96%',
-    maxWidth: 550,
+    maxWidth: 560,
     maxHeight: '92%',
-    borderRadius: theme.radius.lg,
+    borderRadius: theme.radius.xl,
     borderWidth: 1,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.25,
     shadowRadius: 15,
@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   modalTitle: {
-    fontSize: theme.typography.sizes.body1,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '800',
   },
   modalSubtitle: {
@@ -379,8 +379,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   closeBtn: {
-    width: 34,
-    height: 34,
+    width: 32,
+    height: 32,
     borderRadius: theme.radius.full,
     borderWidth: 1,
     alignItems: 'center',
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   inputLabel: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
     marginBottom: 6,
   },
@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
   },
   rowInputs: {
     flexDirection: 'row',
@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   presetText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
   },
   indefiniteBox: {
@@ -470,16 +470,16 @@ const styles = StyleSheet.create({
   indefiniteIcon: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: theme.radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
   indefiniteTitle: {
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '800',
   },
   indefiniteDesc: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     marginTop: 2,
     lineHeight: 15,
   },
@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
   },
   indefiniteAlertText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '600',
     lineHeight: 16,
   },
@@ -516,7 +516,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   cancelBtnText: {
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
   },
   submitBtnText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '700',
     textAlign: 'center',
   },

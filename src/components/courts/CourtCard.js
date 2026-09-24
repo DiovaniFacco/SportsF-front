@@ -100,15 +100,11 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.lg,
     marginBottom: theme.spacing.lg,
     overflow: 'visible',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
+    ...theme.shadows.sm,
   },
   imageWrapper: {
     position: 'relative',
-    height: 175,
+    height: 200,
     width: '100%',
     borderTopLeftRadius: theme.radius.lg,
     borderTopRightRadius: theme.radius.lg,
@@ -132,7 +128,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     color: '#FFFFFF',
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
   },
   sportsContainer: {
@@ -185,9 +181,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: theme.radius.md,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
+    ...theme.shadows.sm,
     elevation: 3,
   },
   ctaText: {

@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     width: '100%',
-    maxWidth: 1024,
+    maxWidth: 1280,
     alignSelf: 'center',
   },
   paddingContainer: {
@@ -240,12 +240,12 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   countBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
     borderRadius: theme.radius.full,
   },
   countBadgeText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
   },
   sectionSubtitle: {

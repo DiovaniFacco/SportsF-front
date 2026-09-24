@@ -23,8 +23,9 @@ function MainAppContent() {
   const [authScreen, setAuthScreen] = useState(null); // null | 'login' | 'register'
   const [isManagerView, setIsManagerView] = useState(false);
   const [activeTab, setActiveTab] = useState('explorar');
-  // True quando o app foi aberto diretamente pelo link do complexo (/complexo/slug).
-  // Usado para travar o modo Simplificado sem tela inicial nem navegação para outros complexos.
+  // True quando o app foi aberto diretamente pelo link do complexo (/complexo/slug)
+  // ou domínio white-label. Mantido para compatibilidade; o travamento do Simplificado
+  // agora vale sempre que o complexo for simplificado (um único cliente no momento).
   const [enteredViaDirectLink, setEnteredViaDirectLink] = useState(false);
   // Splash de boot: em domínio white-label ou /gestao, segura a tela inicial
   // até resolver o roteamento (evita flash da lista + busca duplicada de venues).
@@ -41,8 +42,11 @@ function MainAppContent() {
   const { colors } = useTheme();
   const { isManager, isAuthenticated, isLoading: authLoading } = useAuth();
 
-  // Modo Simplificado travado: acesso exclusivo via link, somente este complexo.
-  const simplifiedLock = !!selectedVenue && isSimplifiedVenue(selectedVenue) && enteredViaDirectLink && !isManagerView;
+  // Modo Simplificado travado: sempre que o complexo for simplificado, o usuário
+  // fica apenas na tela do complexo (sem volta para a lista inicial).
+  // Vale independente de ter entrado via link direto, subdomínio ou lista —
+  // hoje há um único cliente simplificado e ele não deve navegar para outros complexos.
+  const simplifiedLock = !!selectedVenue && isSimplifiedVenue(selectedVenue) && !isManagerView;
 
   // Ref para uso dentro do listener de popstate (evita closure desatualizada).
   const lockRef = useRef({ locked: false, venue: null });
@@ -60,7 +64,7 @@ function MainAppContent() {
   };
 
   const handleBackFromVenue = () => {
-    // No modo Simplificado com link exclusivo, não há volta para a lista de complexos.
+    // No modo Simplificado, não há volta para a lista de complexos — fica no complexo.
     if (simplifiedLock) return;
     setSelectedVenue(null);
     syncVenueUrlInBrowser(null);
@@ -317,9 +321,10 @@ function MainAppContent() {
         </View>
       );
     }
-    // MODO SIMPLIFICADO (link exclusivo /complexo/slug):
-    // sem tela inicial, sem lista/busca de outros complexos, sem abas de navegação.
-    // Apenas quadras + horários do complexo + Agendar via WhatsApp (sem criar reserva).
+    // MODO SIMPLIFICADO (travado no complexo):
+    // sem tela inicial, sem lista/busca de outros complexos, sem abas de navegação,
+    // sem botão voltar para a lista. Apenas quadras + horários do complexo
+    // + Agendar via WhatsApp (sem criar reserva).
     if (simplifiedLock) {
       if (selectedCourt) {
         return (

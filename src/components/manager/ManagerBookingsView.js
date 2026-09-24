@@ -238,7 +238,7 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
       >
         <View style={styles.cardHeader}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.courtName, { color: colors.text }]} numberOfLines={1}>
+            <Text style={[styles.courtName, { color: colors.textPrimary }]} numberOfLines={1}>
               {item.court?.name || 'Quadra'}
             </Text>
             <View style={styles.dateRow}>
@@ -250,25 +250,25 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
           </View>
           <View style={styles.badgesCol}>
             {isCancelled ? (
-              <View style={[styles.badge, { backgroundColor: colors.error + '15' }]}>
+              <View style={[styles.badge, { backgroundColor: colors.errorSurface }]}>
                 <XCircle size={13} color={colors.error} style={{ marginRight: 4 }} />
                 <Text style={[styles.badgeText, { color: colors.error }]}>CANCELADO</Text>
               </View>
             ) : isPast ? (
-              <View style={[styles.badge, { backgroundColor: '#10B98115' }]}>
-                <CheckCircle size={13} color="#10B981" style={{ marginRight: 4 }} />
-                <Text style={[styles.badgeText, { color: '#10B981' }]}>REALIZADO</Text>
+              <View style={[styles.badge, { backgroundColor: colors.successSurface }]}>
+                <CheckCircle size={13} color=colors.success style={{ marginRight: 4 }} />
+                <Text style={[styles.badgeText, { color: colors.success }]}>REALIZADO</Text>
               </View>
             ) : (
-              <View style={[styles.badge, { backgroundColor: colors.primary + '15' }]}>
+              <View style={[styles.badge, { backgroundColor: colors.primaryLight }]}>
                 <Clock size={13} color={colors.primary} style={{ marginRight: 4 }} />
                 <Text style={[styles.badgeText, { color: colors.primary }]}>AGENDADO</Text>
               </View>
             )}
             {!isCancelled ? (
-              <View style={[styles.badge, { backgroundColor: isPaid ? '#10B98115' : '#F59E0B15' }]}>
-                <Banknote size={13} color={isPaid ? '#10B981' : '#D97706'} style={{ marginRight: 4 }} />
-                <Text style={[styles.badgeText, { color: isPaid ? '#10B981' : '#D97706' }]}>
+              <View style={[styles.badge, { backgroundColor: isPaid ? colors.successSurface : colors.warningSurface }]}>
+                <Banknote size={13} color={isPaid ? colors.success : colors.gold} style={{ marginRight: 4 }} />
+                <Text style={[styles.badgeText, { color: isPaid ? colors.success : colors.gold }]}>
                   {isPaid ? 'PAGO' : 'PENDENTE'}
                 </Text>
               </View>
@@ -278,14 +278,14 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
 
         <View style={styles.infoRow}>
           <User size={14} color={colors.textMuted} style={{ marginRight: 6 }} />
-          <Text style={[styles.infoText, { color: colors.text }]}>{client}</Text>
-          <View style={[styles.originBadge, { backgroundColor: isManual ? '#8B5CF615' : '#3B82F615', marginLeft: 8 }]}>
+          <Text style={[styles.infoText, { color: colors.textPrimary }]}>{client}</Text>
+          <View style={[styles.originBadge, { backgroundColor: isManual ? colors.holdingSurface : colors.infoSurface, marginLeft: 8 }]}>
             {isManual ? (
-              <Store size={12} color="#8B5CF6" style={{ marginRight: 3 }} />
+              <Store size={12} color=colors.holding style={{ marginRight: 3 }} />
             ) : (
-              <Smartphone size={12} color="#3B82F6" style={{ marginRight: 3 }} />
+              <Smartphone size={12} color=colors.info style={{ marginRight: 3 }} />
             )}
-            <Text style={[styles.originText, { color: isManual ? '#8B5CF6' : '#3B82F6' }]}>
+            <Text style={[styles.originText, { color: isManual ? colors.holding : colors.info }]}>
               {isManual ? 'BALCÃO' : 'APP'}
             </Text>
           </View>
@@ -306,7 +306,7 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
         ) : null}
 
         <View style={[styles.cardFooter, { borderTopColor: colors.border }]}>
-          <Text style={[styles.priceText, { color: colors.text }]}>
+          <Text style={[styles.priceText, { color: colors.textPrimary }]}>
             R$ {item.total_price != null ? parseFloat(item.total_price).toFixed(2) : '—'}
           </Text>
           <View style={styles.footerActions}>
@@ -318,14 +318,14 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
                 style={[
                   styles.btnPay,
                   {
-                    backgroundColor: isPaid ? '#10B98112' : '#F59E0B12',
-                    borderColor: isPaid ? '#10B98140' : '#F59E0B40',
+                    backgroundColor: isPaid ? colors.successSurface : colors.warningSurface,
+                    borderColor: isPaid ? colors.successSurface : colors.warningSurface,
                     opacity: isTogglingPayment ? 0.6 : 1,
                   },
                 ]}
               >
-                <Banknote size={13} color={isPaid ? '#10B981' : '#D97706'} style={{ marginRight: 4 }} />
-                <Text style={[styles.btnPayText, { color: isPaid ? '#10B981' : '#D97706' }]}>
+                <Banknote size={13} color={isPaid ? colors.success : colors.gold} style={{ marginRight: 4 }} />
+                <Text style={[styles.btnPayText, { color: isPaid ? colors.success : colors.gold }]}>
                   {isTogglingPayment ? '...' : isPaid ? 'Marcar pendente' : 'Marcar pago'}
                 </Text>
               </TouchableOpacity>
@@ -334,7 +334,7 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() => handleCancel(item)}
-                style={[styles.btnCancel, { backgroundColor: colors.error + '12', borderColor: colors.error + '30' }]}
+                style={[styles.btnCancel, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}
               >
                 <XCircle size={13} color={colors.error} style={{ marginRight: 4 }} />
                 <Text style={[styles.btnCancelText, { color: colors.error }]}>Cancelar</Text>
@@ -352,7 +352,7 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
         <View style={[styles.searchRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
           <Search size={15} color={colors.textMuted} style={{ marginRight: 6 }} />
           <TextInput
-            style={[styles.searchInput, { color: colors.text }]}
+            style={[styles.searchInput, { color: colors.textPrimary }]}
             placeholder="Buscar por cliente, telefone ou quadra..."
             placeholderTextColor={colors.textMuted}
             value={search}
@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
   },
   chipsRow: {
     flexDirection: 'row',
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   dateText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '600',
   },
   badge: {
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.sm,
   },
   badgeText: {
-    fontSize: 10,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '800',
   },
   badgesCol: {
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   infoText: {
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     flexShrink: 1,
   },
   originBadge: {
@@ -526,7 +526,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.xs || 4,
   },
   originText: {
-    fontSize: 10,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '800',
   },
   cardFooter: {
@@ -550,7 +550,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   btnCancelText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
   },
   footerActions: {
@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   btnPayText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
   },
   center: {
@@ -578,6 +578,6 @@ const styles = StyleSheet.create({
   },
   centerText: {
     marginTop: 10,
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
   },
 });

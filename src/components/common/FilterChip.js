@@ -13,7 +13,7 @@ export function FilterChip({ label, icon: IconComponent, isSelected, onPress }) 
       style={[
         styles.chip,
         isSelected
-          ? { backgroundColor: colors.primary, shadowColor: colors.primary }
+          ? { backgroundColor: colors.primary, borderColor: colors.primary, borderWidth: 1, ...theme.shadows.sm }
           : { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, borderWidth: 1 },
       ]}
     >
@@ -40,14 +40,10 @@ const styles = StyleSheet.create({
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: theme.spacing.sm + 4,
+    paddingVertical: theme.spacing.sm,
     borderRadius: theme.radius.full,
-    gap: 6,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.22,
-    shadowRadius: 6,
-    elevation: 3,
+    gap: theme.spacing.xs,
   },
   label: {
     fontSize: theme.typography.sizes.bodySmall,

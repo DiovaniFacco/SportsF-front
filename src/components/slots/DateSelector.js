@@ -73,7 +73,7 @@ export function DateSelector({ selectedDate, onSelectDate, daysCount = 14 }) {
               <Text
                 style={[
                   styles.dayLabel,
-                  { color: isSelected ? '#FFFFFF' : colors.textSecondary },
+                  { color: isSelected ? colors.white : colors.textSecondary },
                   isSelected && styles.boldText,
                 ]}
               >
@@ -83,7 +83,7 @@ export function DateSelector({ selectedDate, onSelectDate, daysCount = 14 }) {
               <Text
                 style={[
                   styles.dayNumber,
-                  { color: isSelected ? '#FFFFFF' : colors.textPrimary },
+                  { color: isSelected ? colors.white : colors.textPrimary },
                 ]}
               >
                 {item.dayNumber}
@@ -131,43 +131,38 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: theme.spacing.md,
-    gap: 10,
-    paddingVertical: 6,
+    gap: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
   },
   dayCard: {
     width: 68,
     height: 82,
     borderRadius: theme.radius.md,
-    borderWidth: 1.5,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
+    paddingVertical: theme.spacing.xs,
     position: 'relative',
   },
   selectedShadow: {
-    shadowColor: '#881337',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
+    ...theme.shadows.md,
   },
   dayLabel: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
     marginBottom: 2,
     textTransform: 'uppercase',
-    letterSpacing: 0.2,
   },
   boldText: {
-    fontWeight: '800',
+    fontWeight: '700',
   },
   dayNumber: {
-    fontSize: 20,
+    fontSize: theme.typography.sizes.h3,
     fontWeight: '800',
     lineHeight: 24,
   },
   monthLabel: {
-    fontSize: 10,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
     marginTop: 1,
   },
@@ -176,6 +171,6 @@ const styles = StyleSheet.create({
     bottom: 5,
     width: 4,
     height: 4,
-    borderRadius: 2,
+    borderRadius: theme.radius.full,
   },
 });

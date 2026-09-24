@@ -74,7 +74,7 @@ export function TimePickerInput({
             background: 'transparent',
             border: 'none',
             outline: 'none',
-            color: colors.text,
+            color: colors.textPrimary,
             fontSize: '14px',
             fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
             fontWeight: '600',
@@ -122,7 +122,7 @@ export function TimePickerInput({
         ]}
       >
         <Clock size={18} color={colors.primary} style={{ marginRight: 8 }} />
-        <Text style={[styles.timeText, { color: value ? colors.text : colors.textMuted }]}>
+        <Text style={[styles.timeText, { color: value ? colors.textPrimary : colors.textMuted }]}>
           {formatTimeVal(value)}
         </Text>
         <ChevronDown size={16} color={colors.textMuted} style={{ marginLeft: 'auto' }} />
@@ -134,7 +134,7 @@ export function TimePickerInput({
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Clock size={20} color={colors.primary} />
-                <Text style={[styles.modalTitle, { color: colors.text }]}>Selecione o Horário</Text>
+                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Selecione o Horário</Text>
               </View>
               <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
                 <X size={20} color={colors.textMuted} />
@@ -162,7 +162,7 @@ export function TimePickerInput({
                         style={[
                           styles.timeChipText,
                           {
-                            color: isSelected ? '#FFFFFF' : colors.text,
+                            color: isSelected ? colors.white : colors.textPrimary,
                             fontWeight: isSelected ? '700' : '500',
                           },
                         ]}
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   timeText: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '600',
   },
   modalOverlay: {
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   modalTitle: {
-    fontSize: theme.typography.sizes.body1,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
   closeBtn: {
@@ -248,6 +248,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timeChipText: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
   },
 });

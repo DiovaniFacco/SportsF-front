@@ -8,7 +8,7 @@ export function ErrorState({ title, message, onRetry }) {
   const { colors } = useTheme();
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.errorSurface, borderColor: 'rgba(239, 68, 68, 0.2)' }]}>
+    <View style={[styles.container, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}>
       <View style={[styles.iconCircle, { backgroundColor: colors.surface }]}>
         <AlertTriangle size={32} color={colors.error} />
       </View>
@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
   },
   button: {
     paddingHorizontal: theme.spacing.lg,
-    paddingVertical: 12,
+    paddingVertical: theme.spacing.sm,
     borderRadius: theme.radius.md,
   },
   buttonText: {

@@ -324,14 +324,14 @@ export function ManagerHomeScreen({ onBackToUserView }) {
             onPress={onBackToUserView}
             style={[styles.iconBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
           >
-            <ArrowLeft size={16} color={colors.text} />
+            <ArrowLeft size={16} color={colors.textPrimary} />
           </TouchableOpacity>
         ) : null}
 
         <View style={styles.compactTitleWrap}>
           <View style={styles.compactTitleRow}>
             <ShieldCheck size={14} color={colors.primary} />
-            <Text numberOfLines={1} style={[styles.managerTitle, { color: colors.text }]}>
+            <Text numberOfLines={1} style={[styles.managerTitle, { color: colors.textPrimary }]}>
               {activeVenue ? activeVenue.name : 'Nenhum Complexo Selecionado'}
             </Text>
           </View>
@@ -352,7 +352,7 @@ export function ManagerHomeScreen({ onBackToUserView }) {
               style={[styles.iconBtn, { backgroundColor: colors.primary, borderColor: colors.primary }]}
               title="Novo Complexo"
             >
-              <Plus size={16} color="#FFFFFF" />
+              <Plus size={16} color={colors.white} />
             </TouchableOpacity>
           ) : null}
 
@@ -362,7 +362,7 @@ export function ManagerHomeScreen({ onBackToUserView }) {
             style={[styles.iconBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
             title="Mais ações"
           >
-            <MoreVertical size={18} color={colors.text} />
+            <MoreVertical size={18} color={colors.textPrimary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -385,8 +385,8 @@ export function ManagerHomeScreen({ onBackToUserView }) {
                   },
                 ]}
               >
-                <Building2 size={13} color={isSelected ? '#FFFFFF' : colors.textMuted} />
-                <Text style={[styles.venuePillText, { color: isSelected ? '#FFFFFF' : colors.text }]}>
+                <Building2 size={13} color={isSelected ? colors.white : colors.textMuted} />
+                <Text style={[styles.venuePillText, { color: isSelected ? colors.white : colors.textPrimary }]}>
                   {v.name}
                 </Text>
               </TouchableOpacity>
@@ -412,13 +412,13 @@ export function ManagerHomeScreen({ onBackToUserView }) {
         >
           <BarChart3
             size={15}
-            color={activeTab === 'metricas' ? '#FFFFFF' : colors.textMuted}
+            color={activeTab === 'metricas' ? colors.white : colors.textMuted}
             style={{ marginRight: 6 }}
           />
           <Text
             style={[
               styles.tabText,
-              { color: activeTab === 'metricas' ? '#FFFFFF' : colors.textMuted },
+              { color: activeTab === 'metricas' ? colors.white : colors.textMuted },
             ]}
           >
             Faturamento & Métricas
@@ -435,13 +435,13 @@ export function ManagerHomeScreen({ onBackToUserView }) {
         >
           <Calendar
             size={15}
-            color={activeTab === 'agenda' ? '#FFFFFF' : colors.textMuted}
+            color={activeTab === 'agenda' ? colors.white : colors.textMuted}
             style={{ marginRight: 6 }}
           />
           <Text
             style={[
               styles.tabText,
-              { color: activeTab === 'agenda' ? '#FFFFFF' : colors.textMuted },
+              { color: activeTab === 'agenda' ? colors.white : colors.textMuted },
             ]}
           >
             Agenda do Dia
@@ -458,13 +458,13 @@ export function ManagerHomeScreen({ onBackToUserView }) {
         >
           <ClipboardList
             size={15}
-            color={activeTab === 'agendamentos' ? '#FFFFFF' : colors.textMuted}
+            color={activeTab === 'agendamentos' ? colors.white : colors.textMuted}
             style={{ marginRight: 6 }}
           />
           <Text
             style={[
               styles.tabText,
-              { color: activeTab === 'agendamentos' ? '#FFFFFF' : colors.textMuted },
+              { color: activeTab === 'agendamentos' ? colors.white : colors.textMuted },
             ]}
           >
             Agendamentos
@@ -481,13 +481,13 @@ export function ManagerHomeScreen({ onBackToUserView }) {
         >
           <Dumbbell
             size={15}
-            color={activeTab === 'quadras' ? '#FFFFFF' : colors.textMuted}
+            color={activeTab === 'quadras' ? colors.white : colors.textMuted}
             style={{ marginRight: 6 }}
           />
           <Text
             style={[
               styles.tabText,
-              { color: activeTab === 'quadras' ? '#FFFFFF' : colors.textMuted },
+              { color: activeTab === 'quadras' ? colors.white : colors.textMuted },
             ]}
           >
             Quadras ({totalCourts})
@@ -576,11 +576,11 @@ export function ManagerHomeScreen({ onBackToUserView }) {
                   onPress={item.onPress}
                   style={styles.menuItem}
                 >
-                  <Icon size={16} color={item.danger ? colors.error : colors.text} />
+                  <Icon size={16} color={item.danger ? colors.error : colors.textPrimary} />
                   <Text
                     style={[
                       styles.menuItemText,
-                      { color: item.danger ? colors.error : colors.text },
+                      { color: item.danger ? colors.error : colors.textPrimary },
                     ]}
                   >
                     {item.label}
@@ -605,7 +605,7 @@ export function ManagerHomeScreen({ onBackToUserView }) {
           onPress={handleOpenAddModal}
           style={[styles.btnAddCourt, { backgroundColor: colors.primary }]}
         >
-          <Plus size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+          <Plus size={16} color={colors.white} style={{ marginRight: 6 }} />
           <Text style={styles.btnAddCourtText}>Nova Quadra</Text>
         </TouchableOpacity>
       ) : null}
@@ -670,7 +670,7 @@ export function ManagerHomeScreen({ onBackToUserView }) {
                     onPress={handleOpenAddVenue}
                     style={[styles.btnAddCourt, { backgroundColor: colors.primary, marginTop: theme.spacing.md }]}
                   >
-                    <Plus size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                    <Plus size={18} color={colors.white} style={{ marginRight: 6 }} />
                     <Text style={styles.btnAddCourtText}>Cadastrar Primeiro Complexo</Text>
                   </TouchableOpacity>
                 ) : null}
@@ -820,7 +820,7 @@ const styles = StyleSheet.create({
   mainWrapper: {
     flex: 1,
     width: '100%',
-    maxWidth: 1024,
+    maxWidth: 1280,
     alignSelf: 'center',
   },
   headerContainer: {
@@ -878,7 +878,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     paddingVertical: theme.spacing.xs,
     elevation: 8,
-    shadowColor: '#000000',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -891,7 +891,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   menuItemText: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '600',
   },
   venuePillScroll: {
@@ -934,7 +934,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   tabText: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
   actionHeader: {
@@ -951,7 +951,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
     paddingVertical: 10,
     borderRadius: theme.radius.md,
-    shadowColor: '#000000',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
@@ -959,7 +959,7 @@ const styles = StyleSheet.create({
   },
   btnAddCourtText: {
     color: '#FFFFFF',
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
   body: {
@@ -977,6 +977,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: theme.spacing.md,
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
   },
 });

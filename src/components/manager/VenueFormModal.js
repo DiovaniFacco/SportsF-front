@@ -400,11 +400,11 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
           {/* Header */}
           <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
             <View style={styles.titleRow}>
-              <View style={[styles.iconBadge, { backgroundColor: colors.primary + '18' }]}>
+              <View style={[styles.iconBadge, { backgroundColor: colors.primaryLight }]}>
                 <Building2 size={20} color={colors.primary} />
               </View>
               <View>
-                <Text style={[styles.modalTitle, { color: colors.text }]}>
+                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
                   {isEditing ? 'Editar Complexo Esportivo' : 'Novo Complexo Esportivo'}
                 </Text>
                 <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>
@@ -420,7 +420,7 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
           {/* Form Body */}
           <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
             {errorMsg ? (
-              <View style={[styles.errorBox, { backgroundColor: colors.error + '15', borderColor: colors.error + '40' }]}>
+              <View style={[styles.errorBox, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}>
                 <ShieldAlert size={18} color={colors.error} />
                 <Text style={[styles.errorText, { color: colors.error }]}>{errorMsg}</Text>
               </View>
@@ -428,7 +428,7 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
 
             {/* Seção de Gestor (Apenas para Admin) */}
             {isAdmin ? (
-              <View style={[styles.fieldGroup, styles.managerSection, { borderColor: colors.primary + '30', backgroundColor: colors.primary + '08' }]}>
+              <View style={[styles.fieldGroup, styles.managerSection, { borderColor: colors.primaryLight, backgroundColor: colors.primaryLight }]}>
                 <View style={styles.managerHeader}>
                   <Users size={18} color={colors.primary} />
                   <Text style={[styles.sectionHeading, { color: colors.primary }]}>Gestor do Complexo</Text>
@@ -446,8 +446,8 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
                       },
                     ]}
                   >
-                    <UserCheck size={14} color={managerMode === 'select' ? '#FFFFFF' : colors.textMuted} style={{ marginRight: 6 }} />
-                    <Text style={[styles.modeBtnText, { color: managerMode === 'select' ? '#FFFFFF' : colors.text }]}>
+                    <UserCheck size={14} color={managerMode === 'select' ? colors.white : colors.textMuted} style={{ marginRight: 6 }} />
+                    <Text style={[styles.modeBtnText, { color: managerMode === 'select' ? colors.white : colors.textPrimary }]}>
                       Selecionar Existente
                     </Text>
                   </TouchableOpacity>
@@ -463,8 +463,8 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
                       },
                     ]}
                   >
-                    <UserPlus size={14} color={managerMode === 'create' ? '#FFFFFF' : colors.textMuted} style={{ marginRight: 6 }} />
-                    <Text style={[styles.modeBtnText, { color: managerMode === 'create' ? '#FFFFFF' : colors.text }]}>
+                    <UserPlus size={14} color={managerMode === 'create' ? colors.white : colors.textMuted} style={{ marginRight: 6 }} />
+                    <Text style={[styles.modeBtnText, { color: managerMode === 'create' ? colors.white : colors.textPrimary }]}>
                       Cadastrar Novo Gestor
                     </Text>
                   </TouchableOpacity>
@@ -472,11 +472,11 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
 
                 {managerMode === 'select' ? (
                   <View style={{ marginTop: 8 }}>
-                    <Text style={[styles.label, { color: colors.text }]}>Selecione o Usuário Gestor *</Text>
+                    <Text style={[styles.label, { color: colors.textPrimary }]}>Selecione o Usuário Gestor *</Text>
                     {loadingUsers ? (
                       <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 8 }} />
                     ) : usersList.length === 0 ? (
-                      <Text style={{ color: colors.textMuted, fontSize: 13 }}>Nenhum usuário encontrado.</Text>
+                      <Text style={{ color: colors.textMuted, fontSize: theme.typography.sizes.label }}>Nenhum usuário encontrado.</Text>
                     ) : (
                       <ScrollView
                         style={styles.usersListContainer}
@@ -494,17 +494,17 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
                               style={[
                                 styles.userOptionCard,
                                 {
-                                  backgroundColor: isSelected ? colors.primary + '18' : colors.background,
+                                  backgroundColor: isSelected ? colors.primaryLight : colors.background,
                                   borderColor: isSelected ? colors.primary : colors.border,
                                 },
                               ]}
                             >
                               <View style={{ flex: 1 }}>
-                                <Text style={[styles.userNameText, { color: colors.text }]}>{u.name}</Text>
+                                <Text style={[styles.userNameText, { color: colors.textPrimary }]}>{u.name}</Text>
                                 <Text style={[styles.userEmailText, { color: colors.textMuted }]}>{u.email}</Text>
                               </View>
-                              <View style={[styles.roleBadge, { backgroundColor: u.role === 'ADMIN' ? '#EF444415' : u.role === 'GESTOR_ESPACO' ? '#3B82F615' : '#10B98115' }]}>
-                                <Text style={[styles.roleBadgeText, { color: u.role === 'ADMIN' ? '#EF4444' : u.role === 'GESTOR_ESPACO' ? '#3B82F6' : '#10B981' }]}>
+                              <View style={[styles.roleBadge, { backgroundColor: u.role === 'ADMIN' ? colors.errorSurface : u.role === 'GESTOR_ESPACO' ? colors.infoSurface : colors.successSurface }]}>
+                                <Text style={[styles.roleBadgeText, { color: u.role === 'ADMIN' ? colors.error : u.role === 'GESTOR_ESPACO' ? colors.info : colors.success }]}>
                                   {u.role === 'GESTOR_ESPACO' ? 'GESTOR' : u.role}
                                 </Text>
                               </View>
@@ -518,9 +518,9 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
                 ) : (
                   <View style={{ marginTop: 8, gap: 10 }}>
                     <View>
-                      <Text style={[styles.label, { color: colors.text }]}>Nome do Gestor *</Text>
+                      <Text style={[styles.label, { color: colors.textPrimary }]}>Nome do Gestor *</Text>
                       <TextInput
-                        style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                        style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
                         placeholder="Ex: Carlos Silva"
                         placeholderTextColor={colors.textMuted}
                         value={newManagerName}
@@ -529,9 +529,9 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
                     </View>
 
                     <View>
-                      <Text style={[styles.label, { color: colors.text }]}>E-mail do Gestor *</Text>
+                      <Text style={[styles.label, { color: colors.textPrimary }]}>E-mail do Gestor *</Text>
                       <TextInput
-                        style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                        style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
                         placeholder="gestor@exemplo.com"
                         placeholderTextColor={colors.textMuted}
                         keyboardType="email-address"
@@ -543,9 +543,9 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
 
                     <View style={styles.rowInputs}>
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.label, { color: colors.text }]}>Senha de Acesso *</Text>
+                        <Text style={[styles.label, { color: colors.textPrimary }]}>Senha de Acesso *</Text>
                         <TextInput
-                          style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                          style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
                           placeholder="Mínimo 8 caracteres"
                           placeholderTextColor={colors.textMuted}
                           secureTextEntry
@@ -555,9 +555,9 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
                       </View>
 
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.label, { color: colors.text }]}>Telefone / WhatsApp</Text>
+                        <Text style={[styles.label, { color: colors.textPrimary }]}>Telefone / WhatsApp</Text>
                         <TextInput
-                          style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                          style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
                           placeholder="(11) 99999-9999"
                           placeholderTextColor={colors.textMuted}
                           keyboardType="phone-pad"
@@ -573,9 +573,9 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
 
             {/* Nome do Complexo */}
             <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Nome do Complexo *</Text>
+              <Text style={[styles.label, { color: colors.textPrimary }]}>Nome do Complexo *</Text>
               <TextInput
-                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
                 placeholder="Ex: Arena Central Esportes"
                 placeholderTextColor={colors.textMuted}
                 value={name}
@@ -585,12 +585,12 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
 
             {/* Descrição */}
             <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Descrição / Apresentação</Text>
+              <Text style={[styles.label, { color: colors.textPrimary }]}>Descrição / Apresentação</Text>
               <TextInput
                 style={[
                   styles.input,
                   styles.textArea,
-                  { backgroundColor: colors.background, color: colors.text, borderColor: colors.border },
+                  { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border },
                 ]}
                 placeholder="Descreva a estrutura, localização e destaques do complexo..."
                 placeholderTextColor={colors.textMuted}
@@ -604,9 +604,9 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
             {/* Endereço & Número */}
             <View style={styles.rowInputs}>
               <View style={[styles.fieldGroup, { flex: 2 }]}>
-                <Text style={[styles.label, { color: colors.text }]}>Endereço *</Text>
+                <Text style={[styles.label, { color: colors.textPrimary }]}>Endereço *</Text>
                 <TextInput
-                  style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                  style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
                   placeholder="Ex: Av. Paulista"
                   placeholderTextColor={colors.textMuted}
                   value={address}
@@ -615,9 +615,9 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
               </View>
 
               <View style={[styles.fieldGroup, { flex: 1 }]}>
-                <Text style={[styles.label, { color: colors.text }]}>Número</Text>
+                <Text style={[styles.label, { color: colors.textPrimary }]}>Número</Text>
                 <TextInput
-                  style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                  style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
                   placeholder="1500"
                   placeholderTextColor={colors.textMuted}
                   value={number}
@@ -629,9 +629,9 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
             {/* Bairro, Cidade & Estado */}
             <View style={styles.rowInputs}>
               <View style={[styles.fieldGroup, { flex: 1.5 }]}>
-                <Text style={[styles.label, { color: colors.text }]}>Bairro</Text>
+                <Text style={[styles.label, { color: colors.textPrimary }]}>Bairro</Text>
                 <TextInput
-                  style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                  style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
                   placeholder="Bela Vista"
                   placeholderTextColor={colors.textMuted}
                   value={neighborhood}
@@ -640,9 +640,9 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
               </View>
 
               <View style={[styles.fieldGroup, { flex: 1.5 }]}>
-                <Text style={[styles.label, { color: colors.text }]}>Cidade *</Text>
+                <Text style={[styles.label, { color: colors.textPrimary }]}>Cidade *</Text>
                 <TextInput
-                  style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                  style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
                   placeholder="São Paulo"
                   placeholderTextColor={colors.textMuted}
                   value={city}
@@ -651,9 +651,9 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
               </View>
 
               <View style={[styles.fieldGroup, { flex: 0.8 }]}>
-                <Text style={[styles.label, { color: colors.text }]}>UF *</Text>
+                <Text style={[styles.label, { color: colors.textPrimary }]}>UF *</Text>
                 <TextInput
-                  style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                  style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
                   placeholder="SP"
                   placeholderTextColor={colors.textMuted}
                   maxLength={2}
@@ -666,9 +666,9 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
 
             {/* Telefone de Contato */}
             <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Telefone / WhatsApp do Complexo</Text>
+              <Text style={[styles.label, { color: colors.textPrimary }]}>Telefone / WhatsApp do Complexo</Text>
               <TextInput
-                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
                 placeholder="(11) 98888-8888"
                 placeholderTextColor={colors.textMuted}
                 keyboardType="phone-pad"
@@ -679,9 +679,9 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
 
             {/* Modo de Funcionamento (por complexo) */}
             {isAdmin ? (
-              <View style={[styles.fieldGroup, styles.managerSection, { borderColor: colors.primary + '30', backgroundColor: colors.primary + '08' }]}>
+              <View style={[styles.fieldGroup, styles.managerSection, { borderColor: colors.primaryLight, backgroundColor: colors.primaryLight }]}>
                 <Text style={[styles.sectionHeading, { color: colors.primary }]}>Modo de funcionamento</Text>
-                <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 4, marginBottom: 10, lineHeight: 17 }}>
+                <Text style={{ color: colors.textMuted, fontSize: theme.typography.sizes.bodySmall, marginTop: 4, marginBottom: 10, lineHeight: 17 }}>
                   Completo: o usuário reserva direto pelo sistema. Simplificado: agenda apenas visual — o botão Agendar abre o WhatsApp do complexo e nenhuma reserva é criada automaticamente.
                 </Text>
 
@@ -697,7 +697,7 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
                       },
                     ]}
                   >
-                    <Text style={[styles.modeBtnText, { color: venueMode === 'completo' ? '#FFFFFF' : colors.text }]}>
+                    <Text style={[styles.modeBtnText, { color: venueMode === 'completo' ? colors.white : colors.textPrimary }]}>
                       Completo
                     </Text>
                   </TouchableOpacity>
@@ -708,19 +708,19 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
                     style={[
                       styles.modeBtn,
                       {
-                        backgroundColor: venueMode === 'simplificado' ? '#10B981' : colors.surface,
-                        borderColor: venueMode === 'simplificado' ? '#10B981' : colors.border,
+                        backgroundColor: venueMode === 'simplificado' ? colors.success : colors.surface,
+                        borderColor: venueMode === 'simplificado' ? colors.success : colors.border,
                       },
                     ]}
                   >
-                    <Text style={[styles.modeBtnText, { color: venueMode === 'simplificado' ? '#FFFFFF' : colors.text }]}>
+                    <Text style={[styles.modeBtnText, { color: venueMode === 'simplificado' ? colors.white : colors.textPrimary }]}>
                       Simplificado
                     </Text>
                   </TouchableOpacity>
                 </View>
 
                 {venueMode === 'simplificado' ? (
-                  <Text style={{ color: colors.textMuted, fontSize: 11, lineHeight: 16 }}>
+                  <Text style={{ color: colors.textMuted, fontSize: theme.typography.sizes.caption, lineHeight: 16 }}>
                     O usuário acessa direto pelo link /complexo/nome-do-complexo, vê quadras e horários, e ao clicar em Agendar é levado ao WhatsApp abaixo. A tela inicial e a navegação para outros complexos ficam indisponíveis nesse acesso.
                   </Text>
                 ) : null}
@@ -729,25 +729,25 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
 
             {/* WhatsApp do modo Simplificado (gestor e admin) */}
             <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>
+              <Text style={[styles.label, { color: colors.textPrimary }]}>
                 WhatsApp para agendamentos {venueMode === 'simplificado' ? '*' : '(modo Simplificado)'}
               </Text>
               <TextInput
-                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
                 placeholder="Ex: 5511988888888"
                 placeholderTextColor={colors.textMuted}
                 keyboardType="phone-pad"
                 value={whatsappNumber}
                 onChangeText={setWhatsappNumber}
               />
-              <Text style={[{ color: colors.textMuted, marginTop: 4, fontSize: 11 }]}>
+              <Text style={[{ color: colors.textMuted, marginTop: 4, fontSize: theme.typography.sizes.caption }]}>
                 Usado no botão Agendar quando o complexo está no modo Simplificado. Se vazio, será usado o telefone acima.
               </Text>
             </View>
 
             {/* Imagem de Capa do Complexo (Upload, Presets HD & URL) */}
             <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Imagem de Capa do Complexo</Text>
+              <Text style={[styles.label, { color: colors.textPrimary }]}>Imagem de Capa do Complexo</Text>
 
               {/* Seletor de Arquivo Local com Compressão */}
               {Platform.OS === 'web' ? (
@@ -789,13 +789,13 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
                         style={[
                           styles.presetChip,
                           {
-                            backgroundColor: isSelected ? colors.primary + '20' : colors.background,
+                            backgroundColor: isSelected ? colors.primaryLight : colors.background,
                             borderColor: isSelected ? colors.primary : colors.border,
                           },
                         ]}
                       >
                         <ImageIcon size={13} color={isSelected ? colors.primary : colors.textMuted} />
-                        <Text style={[styles.presetChipText, { color: isSelected ? colors.primary : colors.text }]}>
+                        <Text style={[styles.presetChipText, { color: isSelected ? colors.primary : colors.textPrimary }]}>
                           {preset.name}
                         </Text>
                       </TouchableOpacity>
@@ -806,7 +806,7 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
 
               {/* Campo de URL Direto */}
               <TextInput
-                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border, marginTop: 4 }]}
+                style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border, marginTop: 4 }]}
                 placeholder="https://images.unsplash.com/photo-..."
                 placeholderTextColor={colors.textMuted}
                 value={coverImageUrl}
@@ -829,26 +829,26 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
 
             {/* Limite de Cancelamento */}
             <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Antecedência para Cancelamento (Horas)</Text>
+              <Text style={[styles.label, { color: colors.textPrimary }]}>Antecedência para Cancelamento (Horas)</Text>
               <TextInput
-                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
                 placeholder="Ex: 2"
                 placeholderTextColor={colors.textMuted}
                 keyboardType="numeric"
                 value={cancelLimitHours}
                 onChangeText={setCancelLimitHours}
               />
-              <Text style={[{ color: colors.textMuted, marginTop: 4, fontSize: 11 }]}>Tempo mínimo antes da partida para o cliente poder cancelar. Deixe 0 para cancelamento livre.</Text>
+              <Text style={[{ color: colors.textMuted, marginTop: 4, fontSize: theme.typography.sizes.caption }]}>Tempo mínimo antes da partida para o cliente poder cancelar. Deixe 0 para cancelamento livre.</Text>
             </View>
 
             {/* Comodidades (Amenities) */}
             <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Comodidades Oferecidas</Text>
+              <Text style={[styles.label, { color: colors.textPrimary }]}>Comodidades Oferecidas</Text>
               
               {/* Adicionar Nova Comodidade Input Row */}
               <View style={styles.addAmenityRow}>
                 <TextInput
-                  style={[styles.input, { flex: 1, backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                  style={[styles.input, { flex: 1, backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
                   placeholder="Cadastrar nova comodidade..."
                   placeholderTextColor={colors.textMuted}
                   value={newAmenityName}
@@ -865,10 +865,10 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
                   ]}
                 >
                   {addingAmenity ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <ActivityIndicator size="small" color={colors.white} />
                   ) : (
                     <>
-                      <Plus size={16} color="#FFFFFF" style={{ marginRight: 4 }} />
+                      <Plus size={16} color={colors.white} style={{ marginRight: 4 }} />
                       <Text style={styles.btnAddAmenityText}>Adicionar</Text>
                     </>
                   )}
@@ -895,24 +895,24 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
                           },
                         ]}
                       >
-                        <Text style={[styles.amenityChipText, { color: isSelected ? '#FFFFFF' : colors.text }]}>
+                        <Text style={[styles.amenityChipText, { color: isSelected ? colors.white : colors.textPrimary }]}>
                           {amenity.name}
                         </Text>
-                        {isSelected ? <Check size={14} color="#FFFFFF" style={{ marginLeft: 4 }} /> : null}
+                        {isSelected ? <Check size={14} color={colors.white} style={{ marginLeft: 4 }} /> : null}
 
                         {/* Botão de Excluir Comodidade */}
                         <TouchableOpacity
                           activeOpacity={0.8}
                           onPress={(e) => handleDeleteAmenity(amenity.id, amenity.name, e)}
-                          style={[styles.deleteAmenityBtn, { backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : colors.error + '18' }]}
+                          style={[styles.deleteAmenityBtn, { backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : colors.errorSurface }]}
                           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                           title="Apagar comodidade"
                           disabled={isDeletingThis}
                         >
                           {isDeletingThis ? (
-                            <ActivityIndicator size="small" color={isSelected ? '#FFFFFF' : colors.error} />
+                            <ActivityIndicator size="small" color={isSelected ? colors.white : colors.error} />
                           ) : (
-                            <Trash2 size={13} color={isSelected ? '#FFFFFF' : colors.error} />
+                            <Trash2 size={13} color={isSelected ? colors.white : colors.error} />
                           )}
                         </TouchableOpacity>
                       </TouchableOpacity>
@@ -939,10 +939,10 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
               disabled={submitting}
             >
               {submitting ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
+                <ActivityIndicator color={colors.white} size="small" />
               ) : (
                 <>
-                  <Sparkles size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                  <Sparkles size={16} color={colors.white} style={{ marginRight: 6 }} />
                   <Text style={styles.btnSaveText}>
                     {isEditing ? 'Salvar Alterações' : 'Criar Complexo'}
                   </Text>
@@ -972,7 +972,7 @@ const styles = StyleSheet.create({
     maxHeight: '92%',
     borderRadius: theme.radius.xl,
     borderWidth: 1,
-    shadowColor: '#000000',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.25,
     shadowRadius: 20,
@@ -996,12 +996,12 @@ const styles = StyleSheet.create({
   iconBadge: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: theme.radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
   modalTitle: {
-    fontSize: theme.typography.sizes.body1,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
   modalSubtitle: {
@@ -1023,7 +1023,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   errorText: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '600',
     flex: 1,
   },
@@ -1088,7 +1088,7 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   roleBadgeText: {
-    fontSize: 10,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '800',
   },
   fieldGroup: {
@@ -1109,7 +1109,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: theme.radius.md,
     paddingHorizontal: theme.spacing.md,
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
   },
   textArea: {
     height: 80,
@@ -1173,11 +1173,11 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
   },
   uploadBtnText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
   },
   subLabel: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
   },
   presetGrid: {
@@ -1195,7 +1195,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   presetChipText: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
   },
   imagePreviewContainer: {
@@ -1220,7 +1220,7 @@ const styles = StyleSheet.create({
   },
   hdBadgeText: {
     color: '#FFFFFF',
-    fontSize: 10,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '700',
   },
   modalFooter: {
@@ -1242,7 +1242,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   btnCancelText: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -1257,7 +1257,7 @@ const styles = StyleSheet.create({
   },
   btnSaveText: {
     color: '#FFFFFF',
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
     textAlign: 'center',
   },

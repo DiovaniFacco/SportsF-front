@@ -293,7 +293,7 @@ export function RegisterScreen({ onNavigateLogin, onBack, onRegisterSuccess }) {
             ]}
           >
             {loading ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
+              <ActivityIndicator size="small" color={colors.white} />
             ) : (
               <Text style={styles.primaryBtnText}>Criar minha conta</Text>
             )}
@@ -399,13 +399,13 @@ const styles = StyleSheet.create({
     letterSpacing: -1,
   },
   title: {
-    fontSize: 24,
+    fontSize: theme.typography.sizes.h2,
     fontWeight: '800',
     textAlign: 'center',
     marginBottom: 6,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: theme.typography.sizes.body,
     textAlign: 'center',
     maxWidth: 300,
     lineHeight: 20,
@@ -413,12 +413,8 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: theme.radius.xl,
     borderWidth: 1,
-    padding: 22,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
+    padding: theme.spacing.lg,
+    ...theme.shadows.sm,
   },
   errorContainer: {
     borderWidth: 1,
@@ -427,7 +423,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   errorText: {
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -435,7 +431,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '600',
     marginBottom: 6,
   },
@@ -452,7 +448,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: 14,
+    fontSize: theme.typography.sizes.body,
     paddingVertical: 8,
   },
   eyeBtn: {
@@ -467,7 +463,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: '#FFFFFF',
-    fontSize: 15,
+    fontSize: theme.typography.sizes.button,
     fontWeight: '700',
   },
   dividerRow: {
@@ -480,7 +476,7 @@ const styles = StyleSheet.create({
     height: 1,
   },
   dividerText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '500',
     paddingHorizontal: 12,
   },
@@ -496,7 +492,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   googleBtnText: {
-    fontSize: 14,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '600',
   },
   footerContainer: {
@@ -506,10 +502,10 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   footerText: {
-    fontSize: 14,
+    fontSize: theme.typography.sizes.body,
   },
   footerLink: {
-    fontSize: 14,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
 });

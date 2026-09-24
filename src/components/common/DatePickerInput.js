@@ -96,7 +96,7 @@ export function DatePickerInput({
             background: 'transparent',
             border: 'none',
             outline: 'none',
-            color: colors.text,
+            color: colors.textPrimary,
             fontSize: '14px',
             fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
             fontWeight: '600',
@@ -159,7 +159,7 @@ export function DatePickerInput({
         ]}
       >
         <Calendar size={18} color={colors.primary} style={{ marginRight: 8 }} />
-        <Text style={[styles.dateText, { color: value ? colors.text : colors.textMuted }]}>
+        <Text style={[styles.dateText, { color: value ? colors.textPrimary : colors.textMuted }]}>
           {formatDisplayDate(value)}
         </Text>
         <ChevronRight size={16} color={colors.textMuted} style={{ marginLeft: 'auto' }} />
@@ -171,7 +171,7 @@ export function DatePickerInput({
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Calendar size={20} color={colors.primary} />
-                <Text style={[styles.modalTitle, { color: colors.text }]}>Selecione a Data</Text>
+                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Selecione a Data</Text>
               </View>
               <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
                 <X size={20} color={colors.textMuted} />
@@ -189,7 +189,7 @@ export function DatePickerInput({
                     style={[
                       styles.dateOption,
                       {
-                        backgroundColor: isSelected ? colors.primary + '18' : 'transparent',
+                        backgroundColor: isSelected ? colors.primaryLight : 'transparent',
                         borderBottomColor: colors.border,
                       },
                     ]}
@@ -198,7 +198,7 @@ export function DatePickerInput({
                       style={[
                         styles.dateOptionText,
                         {
-                          color: isSelected ? colors.primary : colors.text,
+                          color: isSelected ? colors.primary : colors.textPrimary,
                           fontWeight: isSelected ? '700' : '500',
                         },
                       ]}
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   dateText: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '600',
   },
   modalOverlay: {
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   modalTitle: {
-    fontSize: theme.typography.sizes.body1,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
   closeBtn: {
@@ -273,6 +273,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   dateOptionText: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
   },
 });

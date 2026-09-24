@@ -8,7 +8,10 @@ Abaixo está a versão que eu usaria como **fonte oficial do frontend** daqui pa
 
 # FACCO — Design System & UI/UX Guidelines
 
-**Versão 2.0.0 — Documento Oficial de Especificação Visual, UX e Design Tokens**
+**Versão 2.3.1 — Documento Oficial de Especificação Visual, UX e Design Tokens**
+
+> **Status:** Approved Design Foundation — Implementação travada em `src/styles/theme.js v2.3.0` (Vinho Imperial `#881337`, System font, radius md10/lg16/xl20, maxW 1024).
+> **Addendum Auditoria Visual 2026-09-24:** verde `#10B981` / Jakarta+Inter / radius 8-12-16 / maxW 1280 do texto original estão DEPRECATED. Verdade atual = theme.js. Correções aplicadas Fases 0-10.
 
 > **Status:** Approved Design Foundation
 > **Produto:** FACCO

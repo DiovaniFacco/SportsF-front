@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   sportTagText: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '700',
   },
   moreBadgeWrapper: {
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   moreBadgeText: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '700',
   },
   tooltipPopover: {
@@ -105,16 +105,16 @@ const styles = StyleSheet.create({
     minWidth: 150,
     padding: 10,
     borderRadius: theme.radius.md,
-    shadowColor: '#000',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
     borderWidth: 1,
-    zIndex: 999,
+    zIndex: theme.zIndex.modal,
   },
   tooltipTitle: {
-    fontSize: 10,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '700',
     textTransform: 'uppercase',
     marginBottom: 6,
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.sm,
   },
   tooltipSportText: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
   },
 });

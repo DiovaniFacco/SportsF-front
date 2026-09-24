@@ -21,7 +21,7 @@ export function SelectionFooter({ selectedSlots, selectedDate, courtName, confir
       onConfirmSelection(selectedSlots);
     } else {
       Alert.alert(
-        'Horários Selecionados! ⚽',
+        'Horários Selecionados',
         `Quadra: ${courtName}\nData: ${dateFormatted}\nHorários: ${timesText}\nValor Total: R$ ${Math.round(totalPrice)},00\n\n(Nesta etapa do protótipo, os horários foram selecionados e validados).`,
         [{ text: 'Perfeito', style: 'default' }]
       );
@@ -65,7 +65,7 @@ export function SelectionFooter({ selectedSlots, selectedDate, courtName, confir
           style={[styles.confirmButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
         >
           <Text style={styles.confirmText}>{confirmLabel}</Text>
-          <CheckCircle size={16} color="#FFFFFF" style={{ marginLeft: 4 }} />
+          <CheckCircle size={16} color={colors.white} style={{ marginLeft: 4 }} />
         </TouchableOpacity>
       </View>
     </View>
@@ -77,9 +77,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: 12,
-    shadowColor: '#000',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.06,
     shadowRadius: 10,
     elevation: 8,
   },
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.full,
   },
   countBadgeText: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '700',
   },
   clearBtn: {
@@ -113,11 +113,11 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   clearText: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
   },
   timesSummary: {
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '700',
     marginVertical: 1,
   },
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   totalLabel: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
   },
   totalPrice: {
     fontSize: 16,

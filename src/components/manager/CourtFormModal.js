@@ -335,11 +335,11 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
           {/* Modal Header */}
           <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
             <View style={styles.titleRow}>
-              <View style={[styles.iconBadge, { backgroundColor: colors.primary + '18' }]}>
+              <View style={[styles.iconBadge, { backgroundColor: colors.primaryLight }]}>
                 <Dumbbell size={20} color={colors.primary} />
               </View>
               <View>
-                <Text style={[styles.modalTitle, { color: colors.text }]}>
+                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
                   {isEditing ? 'Editar Quadra' : 'Nova Quadra'}
                 </Text>
                 <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>
@@ -359,9 +359,9 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
               style={[styles.stepTab, step === 1 && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}
             >
               <View style={[styles.stepNumber, { backgroundColor: step === 1 ? colors.primary : colors.border }]}>
-                <Text style={[styles.stepNumberText, { color: step === 1 ? '#FFFFFF' : colors.textMuted }]}>1</Text>
+                <Text style={[styles.stepNumberText, { color: step === 1 ? colors.white : colors.textMuted }]}>1</Text>
               </View>
-              <Text style={[styles.stepLabel, { color: step === 1 ? colors.text : colors.textMuted }]}>Dados da Quadra</Text>
+              <Text style={[styles.stepLabel, { color: step === 1 ? colors.textPrimary : colors.textMuted }]}>Dados da Quadra</Text>
             </TouchableOpacity>
 
             <ArrowRight size={16} color={colors.textMuted} />
@@ -373,16 +373,16 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
               style={[styles.stepTab, step === 2 && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}
             >
               <View style={[styles.stepNumber, { backgroundColor: step === 2 ? colors.primary : colors.border }]}>
-                <Text style={[styles.stepNumberText, { color: step === 2 ? '#FFFFFF' : colors.textMuted }]}>2</Text>
+                <Text style={[styles.stepNumberText, { color: step === 2 ? colors.white : colors.textMuted }]}>2</Text>
               </View>
-              <Text style={[styles.stepLabel, { color: step === 2 ? colors.text : colors.textMuted }]}>Horários & Gaps</Text>
+              <Text style={[styles.stepLabel, { color: step === 2 ? colors.textPrimary : colors.textMuted }]}>Horários & Gaps</Text>
             </TouchableOpacity>
           </View>
 
           {/* Form Body */}
           <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
             {errorMsg ? (
-              <View style={[styles.errorBox, { backgroundColor: colors.error + '15', borderColor: colors.error + '40' }]}>
+              <View style={[styles.errorBox, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}>
                 <ShieldAlert size={18} color={colors.error} />
                 <Text style={[styles.errorText, { color: colors.error }]}>{errorMsg}</Text>
               </View>
@@ -393,9 +393,9 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
               <View>
                 {/* Nome da Quadra */}
                 <View style={styles.fieldGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>Nome da Quadra *</Text>
+                  <Text style={[styles.label, { color: colors.textPrimary }]}>Nome da Quadra *</Text>
                   <TextInput
-                    style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                    style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
                     placeholder="Ex: Quadra Society 1 - Coberta"
                     placeholderTextColor={colors.textMuted}
                     value={name}
@@ -405,9 +405,9 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
 
                 {/* Valor Hora */}
                 <View style={styles.fieldGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>Valor por Hora (R$) *</Text>
+                  <Text style={[styles.label, { color: colors.textPrimary }]}>Valor por Hora (R$) *</Text>
                   <TextInput
-                    style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                    style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
                     placeholder="150,00"
                     placeholderTextColor={colors.textMuted}
                     keyboardType="numeric"
@@ -418,7 +418,7 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
 
                 {/* Imagem da Quadra (Upload, Presets HD & URL) */}
                 <View style={styles.fieldGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>Imagem da Quadra</Text>
+                  <Text style={[styles.label, { color: colors.textPrimary }]}>Imagem da Quadra</Text>
 
                   {/* Seletor de Arquivo Local com Compressão */}
                   {Platform.OS === 'web' ? (
@@ -460,13 +460,13 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
                             style={[
                               styles.presetChip,
                               {
-                                backgroundColor: isSelected ? colors.primary + '20' : colors.background,
+                                backgroundColor: isSelected ? colors.primaryLight : colors.background,
                                 borderColor: isSelected ? colors.primary : colors.border,
                               },
                             ]}
                           >
                             <ImageIcon size={13} color={isSelected ? colors.primary : colors.textMuted} />
-                            <Text style={[styles.presetChipText, { color: isSelected ? colors.primary : colors.text }]}>
+                            <Text style={[styles.presetChipText, { color: isSelected ? colors.primary : colors.textPrimary }]}>
                               {preset.name}
                             </Text>
                           </TouchableOpacity>
@@ -477,7 +477,7 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
 
                   {/* Campo de URL Direto */}
                   <TextInput
-                    style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border, marginTop: 4 }]}
+                    style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border, marginTop: 4 }]}
                     placeholder="https://exemplo.com/imagem-da-quadra.jpg"
                     placeholderTextColor={colors.textMuted}
                     value={imageUrl}
@@ -500,7 +500,7 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
 
                 {/* Modalidades / Esportes */}
                 <View style={styles.fieldGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>Modalidades / Esportes Suportados *</Text>
+                  <Text style={[styles.label, { color: colors.textPrimary }]}>Modalidades / Esportes Suportados *</Text>
                   {loadingSports ? (
                     <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 10 }} />
                   ) : (
@@ -520,10 +520,10 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
                               },
                             ]}
                           >
-                            <Text style={[styles.sportChipText, { color: isSelected ? '#FFFFFF' : colors.text }]}>
+                            <Text style={[styles.sportChipText, { color: isSelected ? colors.white : colors.textPrimary }]}>
                               {sport.name}
                             </Text>
-                            {isSelected ? <Check size={14} color="#FFFFFF" style={{ marginLeft: 4 }} /> : null}
+                            {isSelected ? <Check size={14} color={colors.white} style={{ marginLeft: 4 }} /> : null}
                           </TouchableOpacity>
                         );
                       })}
@@ -533,9 +533,9 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
 
                 {/* Tipo de Superfície / Piso */}
                 <View style={styles.fieldGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>Superfície / Piso</Text>
+                  <Text style={[styles.label, { color: colors.textPrimary }]}>Superfície / Piso</Text>
                   <TextInput
-                    style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                    style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
                     placeholder="Ex: Grama Sintética Pro, Saibro, Piso Flutuante"
                     placeholderTextColor={colors.textMuted}
                     value={surface}
@@ -545,9 +545,9 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
 
                 {/* Capacidade Recomendada */}
                 <View style={styles.fieldGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>Capacidade Recomendada</Text>
+                  <Text style={[styles.label, { color: colors.textPrimary }]}>Capacidade Recomendada</Text>
                   <TextInput
-                    style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                    style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
                     placeholder="Ex: 10 a 12 Jogadores (5x5)"
                     placeholderTextColor={colors.textMuted}
                     value={capacity}
@@ -558,7 +558,7 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
                 {/* Quadra Coberta */}
                 <View style={[styles.switchRow, { borderColor: colors.border }]}>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.switchTitle, { color: colors.text }]}>Quadra Coberta</Text>
+                    <Text style={[styles.switchTitle, { color: colors.textPrimary }]}>Quadra Coberta</Text>
                     <Text style={[styles.switchSubtitle, { color: colors.textMuted }]}>
                       Proteção contra chuva e luz solar direta
                     </Text>
@@ -567,7 +567,7 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
                     value={isCovered}
                     onValueChange={setIsCovered}
                     trackColor={{ false: colors.border, true: colors.primary }}
-                    thumbColor="#FFFFFF"
+                    thumbColor={colors.white}
                     activeThumbColor="#FFFFFF"
                     activeTrackColor={colors.primary}
                   />
@@ -576,10 +576,10 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
             ) : (
               /* STEP 2: HORÁRIOS, TURNOS E GAPS */
               <View>
-                <View style={[styles.infoBanner, { backgroundColor: colors.primary + '12', borderColor: colors.primary + '30' }]}>
+                <View style={[styles.infoBanner, { backgroundColor: colors.primaryLight, borderColor: colors.primaryLight }]}>
                   <Clock size={20} color={colors.primary} />
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.infoBannerTitle, { color: colors.text }]}>Defina os Horários e Turnos da Quadra</Text>
+                    <Text style={[styles.infoBannerTitle, { color: colors.textPrimary }]}>Defina os Horários e Turnos da Quadra</Text>
                     <Text style={[styles.infoBannerSub, { color: colors.textMuted }]}>
                       Escolha a duração de cada slot/gap (ex: 60 min) e os horários em que a quadra fica aberta para agendamentos.
                     </Text>
@@ -593,7 +593,7 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
                     style={[styles.presetBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
                   >
                     <Sparkles size={14} color={colors.primary} />
-                    <Text style={[styles.presetBtnText, { color: colors.text }]}>Aplicar Grade Padrão (08h às 22h)</Text>
+                    <Text style={[styles.presetBtnText, { color: colors.textPrimary }]}>Aplicar Grade Padrão (08h às 22h)</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -606,7 +606,7 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
                 </View>
 
                 {/* Seletor de Dia da Semana */}
-                <Text style={[styles.label, { color: colors.text, marginTop: 12 }]}>Selecione o Dia da Semana</Text>
+                <Text style={[styles.label, { color: colors.textPrimary, marginTop: 12 }]}>Selecione o Dia da Semana</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.daysScroll}>
                   <View style={styles.daysContainer}>
                     {DAYS_OF_WEEK.map((day) => {
@@ -623,7 +623,7 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
                               backgroundColor: isSelected
                                 ? colors.primary
                                 : dayShiftsCount > 0
-                                ? colors.primary + '15'
+                                ? colors.primaryLight
                                 : colors.background,
                               borderColor: isSelected ? colors.primary : colors.border,
                             },
@@ -648,14 +648,14 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
                               style={[
                                 styles.badgeCount,
                                 {
-                                  backgroundColor: isSelected ? '#FFFFFF' : colors.primary,
+                                  backgroundColor: isSelected ? colors.white : colors.primary,
                                 },
                               ]}
                             >
                               <Text
                                 style={[
                                   styles.badgeCountText,
-                                  { color: isSelected ? colors.primary : '#FFFFFF' },
+                                  { color: isSelected ? colors.primary : colors.white },
                                 ]}
                               >
                                 {dayShiftsCount}
@@ -670,7 +670,7 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
 
                 {/* Turnos do Dia Selecionado */}
                 <View style={[styles.sectionBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
                     Turnos de {DAYS_OF_WEEK.find((d) => d.id === selectedDay)?.label}
                   </Text>
 
@@ -689,10 +689,10 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
                         >
                           <View style={styles.shiftInfo}>
                             <Clock size={16} color={colors.primary} />
-                            <Text style={[styles.shiftTimeText, { color: colors.text }]}>
+                            <Text style={[styles.shiftTimeText, { color: colors.textPrimary }]}>
                               {shift.start_time} - {shift.end_time}
                             </Text>
-                            <View style={[styles.slotBadge, { backgroundColor: colors.primary + '15' }]}>
+                            <View style={[styles.slotBadge, { backgroundColor: colors.primaryLight }]}>
                               <Text style={[styles.slotBadgeText, { color: colors.primary }]}>
                                 {shift.slot_duration_minutes} min/gap
                               </Text>
@@ -702,7 +702,7 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
                           <TouchableOpacity
                             activeOpacity={0.7}
                             onPress={() => handleRemoveShift(idx)}
-                            style={[styles.btnDeleteShift, { backgroundColor: colors.error + '15' }]}
+                            style={[styles.btnDeleteShift, { backgroundColor: colors.errorSurface }]}
                           >
                             <Trash2 size={16} color={colors.error} />
                           </TouchableOpacity>
@@ -713,7 +713,7 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
 
                   {/* Adicionar Novo Turno */}
                   <View style={[styles.addFormContainer, { borderTopColor: colors.border }]}>
-                    <Text style={[styles.addFormTitle, { color: colors.text }]}>
+                    <Text style={[styles.addFormTitle, { color: colors.textPrimary }]}>
                       + Adicionar Turno (Manhã, Tarde ou Noite)
                     </Text>
 
@@ -739,7 +739,7 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
                       <View style={styles.inputFlex}>
                         <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Dur. Gap (min)</Text>
                         <TextInput
-                          style={[styles.inputSmall, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+                          style={[styles.inputSmall, { backgroundColor: colors.surface, color: colors.textPrimary, borderColor: colors.border }]}
                           placeholder="60"
                           placeholderTextColor={colors.textMuted}
                           keyboardType="numeric"
@@ -754,7 +754,7 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
                       onPress={handleAddShift}
                       style={[styles.btnAddShift, { backgroundColor: colors.primary }]}
                     >
-                      <Plus size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                      <Plus size={16} color={colors.white} style={{ marginRight: 6 }} />
                       <Text style={styles.btnAddShiftText}>Adicionar Este Turno</Text>
                     </TouchableOpacity>
                   </View>
@@ -780,7 +780,7 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
                   onPress={handleNextStep}
                 >
                   <Text style={styles.btnSaveText}>Próximo: Horários & Turnos</Text>
-                  <ArrowRight size={16} color="#FFFFFF" style={{ marginLeft: 6 }} />
+                  <ArrowRight size={16} color={colors.white} style={{ marginLeft: 6 }} />
                 </TouchableOpacity>
               </>
             ) : (
@@ -800,10 +800,10 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
                   disabled={submitting}
                 >
                   {submitting ? (
-                    <ActivityIndicator color="#FFFFFF" size="small" />
+                    <ActivityIndicator color={colors.white} size="small" />
                   ) : (
                     <>
-                      <Sparkles size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                      <Sparkles size={16} color={colors.white} style={{ marginRight: 6 }} />
                       <Text style={styles.btnSaveText}>
                         {isEditing ? 'Salvar Alterações' : 'Criar Quadra Definitivamente'}
                       </Text>
@@ -831,11 +831,11 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     width: '96%',
-    maxWidth: 580,
+    maxWidth: 560,
     maxHeight: '92%',
     borderRadius: theme.radius.xl,
     borderWidth: 1,
-    shadowColor: '#000000',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.25,
     shadowRadius: 20,
@@ -864,7 +864,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalTitle: {
-    fontSize: theme.typography.sizes.body1,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
   modalSubtitle: {
@@ -897,11 +897,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepNumberText: {
-    fontSize: 10,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '800',
   },
   stepLabel: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
   },
   modalBody: {
@@ -917,7 +917,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   errorText: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '600',
     flex: 1,
   },
@@ -931,7 +931,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   infoBannerTitle: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
   infoBannerSub: {
@@ -942,7 +942,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   label: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '600',
     marginBottom: 6,
   },
@@ -951,14 +951,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: theme.radius.md,
     paddingHorizontal: theme.spacing.md,
-    fontSize: theme.typography.sizes.body1,
+    fontSize: theme.typography.sizes.body,
   },
   inputSmall: {
-    height: 40,
+    height: 44,
     borderWidth: 1,
     borderRadius: theme.radius.md,
     paddingHorizontal: 8,
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
   },
   sportsGrid: {
     flexDirection: 'row',
@@ -987,7 +987,7 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.sm,
   },
   switchTitle: {
-    fontSize: theme.typography.sizes.body1,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '600',
   },
   switchSubtitle: {
@@ -1030,7 +1030,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   dayChipText: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
   badgeCount: {
@@ -1039,7 +1039,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   badgeCountText: {
-    fontSize: 10,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '800',
   },
   sectionBox: {
@@ -1048,7 +1048,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   sectionTitle: {
-    fontSize: theme.typography.sizes.body1,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
     marginBottom: theme.spacing.sm,
   },
@@ -1078,7 +1078,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   shiftTimeText: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
   slotBadge: {
@@ -1087,7 +1087,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   slotBadgeText: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
   },
   btnDeleteShift: {
@@ -1102,7 +1102,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   addFormTitle: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
     marginBottom: theme.spacing.sm,
   },
@@ -1116,7 +1116,7 @@ const styles = StyleSheet.create({
     minWidth: 80,
   },
   inputLabel: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
     marginBottom: 4,
   },
@@ -1130,7 +1130,7 @@ const styles = StyleSheet.create({
   },
   btnAddShiftText: {
     color: '#FFFFFF',
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
   modalFooter: {
@@ -1152,7 +1152,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   btnCancelText: {
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -1183,11 +1183,11 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
   },
   uploadBtnText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
   },
   subLabel: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
   },
   presetGrid: {
@@ -1205,7 +1205,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   presetChipText: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
   },
   hdBadge: {
@@ -1218,7 +1218,7 @@ const styles = StyleSheet.create({
   },
   hdBadgeText: {
     color: '#FFFFFF',
-    fontSize: 10,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '700',
   },
   btnSave: {
@@ -1232,7 +1232,7 @@ const styles = StyleSheet.create({
   },
   btnSaveText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '700',
     textAlign: 'center',
   },

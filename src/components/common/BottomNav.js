@@ -11,7 +11,7 @@ export function BottomNav({ activeTab = 'explorar', onTabChange }) {
 
   const navItems = [
     { id: 'explorar', label: 'Explorar', icon: Compass },
-    { id: 'agendamentos', label: 'Meus Agendamentos', icon: Calendar },
+    { id: 'agendamentos', label: 'Agendamentos', icon: Calendar },
   ];
 
   if (isManager) {
@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === 'ios' ? 22 : 10,
     justifyContent: 'space-around',
     alignItems: 'center',
-    shadowColor: '#000000',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   label: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     textAlign: 'center',
   },
   activeDot: {

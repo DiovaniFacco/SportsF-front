@@ -39,7 +39,7 @@ export function AmenityChip({ label }) {
 
   return (
     <View style={styles.row}>
-      <IconComponent size={13} color={colors.textMuted} strokeWidth={1.75} />
+      <IconComponent size={14} color={colors.textMuted} strokeWidth={1.75} />
       <Text style={[styles.text, { color: colors.textSecondary }]} numberOfLines={1}>
         {label}
       </Text>
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: theme.spacing.xs,
     maxWidth: '100%',
   },
   text: {

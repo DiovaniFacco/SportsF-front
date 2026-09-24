@@ -48,10 +48,10 @@ export function ManagerCourtCard({ court, onEdit, onDelete, onOpenHours, onOpenP
         <View
           style={[
             styles.coverageBadge,
-            { backgroundColor: court.is_covered ? colors.primary : '#EAB308' },
+            { backgroundColor: court.is_covered ? colors.primary : colors.gold },
           ]}
         >
-          {court.is_covered ? <Umbrella size={12} color="#FFFFFF" /> : <Sun size={12} color="#FFFFFF" />}
+          {court.is_covered ? <Umbrella size={12} color={colors.white} /> : <Sun size={12} color={colors.white} />}
           <Text style={styles.coverageText}>{court.is_covered ? 'Coberta' : 'Descoberta'}</Text>
         </View>
 
@@ -64,14 +64,14 @@ export function ManagerCourtCard({ court, onEdit, onDelete, onOpenHours, onOpenP
 
       {/* Conteúdo Principal */}
       <View style={styles.cardContent}>
-        <Text style={[styles.courtName, { color: colors.text }]} numberOfLines={2}>
+        <Text style={[styles.courtName, { color: colors.textPrimary }]} numberOfLines={2}>
           {court.name}
         </Text>
 
         {isBlockedIndefinitely ? (
-          <View style={[styles.blockedBanner, { backgroundColor: colors.error + '12', borderColor: colors.error + '40' }]}>
+          <View style={[styles.blockedBanner, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}>
             <Text style={[styles.blockedBannerText, { color: colors.error }]}>
-              ⛔ Bloqueada por tempo indeterminado{indefiniteReason ? ` • ${indefiniteReason}` : ' • toque em Desbloquear na agenda para liberar'}
+              Bloqueada por tempo indeterminado{indefiniteReason ? ` • ${indefiniteReason}` : ' • toque em Desbloquear na agenda para liberar'}
             </Text>
           </View>
         ) : null}
@@ -83,7 +83,7 @@ export function ManagerCourtCard({ court, onEdit, onDelete, onOpenHours, onOpenP
               key={idx}
               style={[
                 styles.sportChip,
-                { backgroundColor: colors.primary + '14', borderColor: colors.primary + '30' },
+                { backgroundColor: colors.primaryLight, borderColor: colors.primaryLight },
               ]}
             >
               <Text style={[styles.sportChipText, { color: colors.primary }]}>{sportName}</Text>
@@ -94,11 +94,11 @@ export function ManagerCourtCard({ court, onEdit, onDelete, onOpenHours, onOpenP
             <View
               style={[
                 styles.sportChip,
-                { backgroundColor: '#EAB30818', borderColor: '#EAB30850', flexDirection: 'row', alignItems: 'center', gap: 3 },
+                { backgroundColor: colors.goldSurface, borderColor: colors.goldSurface, flexDirection: 'row', alignItems: 'center', gap: 3 },
               ]}
             >
-              <Zap size={11} color="#EAB308" />
-              <Text style={[styles.sportChipText, { color: colors.text }]}>
+              <Zap size={11} color=colors.gold />
+              <Text style={[styles.sportChipText, { color: colors.textPrimary }]}>
                 Tarifa Flexível ({rulesCount + specialCount})
               </Text>
             </View>
@@ -127,7 +127,7 @@ export function ManagerCourtCard({ court, onEdit, onDelete, onOpenHours, onOpenP
           <TouchableOpacity
             activeOpacity={0.75}
             onPress={() => onEdit && onEdit(court)}
-            style={[styles.btnAction, { backgroundColor: colors.primary + '15' }]}
+            style={[styles.btnAction, { backgroundColor: colors.primaryLight }]}
           >
             <Edit3 size={15} color={colors.primary} />
             <Text style={[styles.btnActionText, { color: colors.primary }]}>Editar</Text>
@@ -136,7 +136,7 @@ export function ManagerCourtCard({ court, onEdit, onDelete, onOpenHours, onOpenP
           <TouchableOpacity
             activeOpacity={0.75}
             onPress={() => onOpenHours && onOpenHours(court)}
-            style={[styles.btnAction, { backgroundColor: colors.primary + '15' }]}
+            style={[styles.btnAction, { backgroundColor: colors.primaryLight }]}
           >
             <Clock size={15} color={colors.primary} />
             <Text style={[styles.btnActionText, { color: colors.primary }]}>Horários</Text>
@@ -145,7 +145,7 @@ export function ManagerCourtCard({ court, onEdit, onDelete, onOpenHours, onOpenP
           <TouchableOpacity
             activeOpacity={0.75}
             onPress={() => onOpenPricing && onOpenPricing(court)}
-            style={[styles.btnAction, { backgroundColor: colors.primary + '15' }]}
+            style={[styles.btnAction, { backgroundColor: colors.primaryLight }]}
           >
             <DollarSign size={15} color={colors.primary} />
             <Text style={[styles.btnActionText, { color: colors.primary }]}>Preços</Text>
@@ -154,7 +154,7 @@ export function ManagerCourtCard({ court, onEdit, onDelete, onOpenHours, onOpenP
           <TouchableOpacity
             activeOpacity={0.75}
             onPress={() => onDelete && onDelete(court)}
-            style={[styles.btnDelete, { backgroundColor: colors.error + '15' }]}
+            style={[styles.btnDelete, { backgroundColor: colors.errorSurface }]}
           >
             <Trash2 size={15} color={colors.error} />
           </TouchableOpacity>
@@ -170,14 +170,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     overflow: 'hidden',
     marginBottom: theme.spacing.md,
-    shadowColor: '#000000',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 10,
     elevation: 4,
   },
   imageContainer: {
-    height: 140,
+    height: 200,
     width: '100%',
     position: 'relative',
   },
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.md,
   },
   priceLabel: {
-    fontSize: theme.typography.sizes.body1,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
   priceUnit: {
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   blockedBannerText: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '800',
   },
   courtName: {
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   btnActionText: {
-    fontSize: theme.typography.sizes.body2,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '700',
   },
   btnDelete: {

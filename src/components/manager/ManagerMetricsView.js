@@ -128,7 +128,7 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
       <View style={[styles.periodSelector, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={styles.periodTitleRow}>
           <BarChart3 size={18} color={colors.primary} style={{ marginRight: 6 }} />
-          <Text style={[styles.periodTitle, { color: colors.text }]}>Faturamento & Métricas do Complexo</Text>
+          <Text style={[styles.periodTitle, { color: colors.textPrimary }]}>Faturamento & Métricas do Complexo</Text>
         </View>
 
         <ScrollView
@@ -147,7 +147,7 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
               },
             ]}
           >
-            <Text style={[styles.periodChipText, { color: period === 'today' ? '#FFFFFF' : colors.textMuted }]}>
+            <Text style={[styles.periodChipText, { color: period === 'today' ? colors.white : colors.textMuted }]}>
               Hoje
             </Text>
           </TouchableOpacity>
@@ -163,7 +163,7 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
               },
             ]}
           >
-            <Text style={[styles.periodChipText, { color: period === 'week' ? '#FFFFFF' : colors.textMuted }]}>
+            <Text style={[styles.periodChipText, { color: period === 'week' ? colors.white : colors.textMuted }]}>
               Próximos 7 Dias
             </Text>
           </TouchableOpacity>
@@ -179,7 +179,7 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
               },
             ]}
           >
-            <Text style={[styles.periodChipText, { color: period === 'month' ? '#FFFFFF' : colors.textMuted }]}>
+            <Text style={[styles.periodChipText, { color: period === 'month' ? colors.white : colors.textMuted }]}>
               Este Mês
             </Text>
           </TouchableOpacity>
@@ -199,16 +199,16 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
             <View style={[styles.kpiCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={styles.kpiHeader}>
                 <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>Faturamento Estimado</Text>
-                <View style={[styles.iconBox, { backgroundColor: '#10B98118' }]}>
-                  <DollarSign size={18} color="#10B981" />
+                <View style={[styles.iconBox, { backgroundColor: colors.successSurface }]}>
+                  <DollarSign size={18} color=colors.success />
                 </View>
               </View>
-              <Text style={[styles.kpiValue, { color: colors.text }]}>
+              <Text style={[styles.kpiValue, { color: colors.textPrimary }]}>
                 R$ {totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Text>
               <View style={styles.kpiFooter}>
-                <TrendingUp size={14} color="#10B981" style={{ marginRight: 4 }} />
-                <Text style={[styles.kpiSubtext, { color: '#10B981' }]}>
+                <TrendingUp size={14} color=colors.success style={{ marginRight: 4 }} />
+                <Text style={[styles.kpiSubtext, { color: colors.success }]}>
                   {totalBookingsCount} agendamento{totalBookingsCount !== 1 ? 's' : ''} confirmado{totalBookingsCount !== 1 ? 's' : ''}
                 </Text>
               </View>
@@ -218,13 +218,13 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
             <View style={[styles.kpiCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={styles.kpiHeader}>
                 <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>Quadras no Complexo</Text>
-                <View style={[styles.iconBox, { backgroundColor: colors.primary + '18' }]}>
+                <View style={[styles.iconBox, { backgroundColor: colors.primaryLight }]}>
                   <Layers size={18} color={colors.primary} />
                 </View>
               </View>
-              <Text style={[styles.kpiValue, { color: colors.text }]}>{totalCourts}</Text>
+              <Text style={[styles.kpiValue, { color: colors.textPrimary }]}>{totalCourts}</Text>
               <View style={styles.kpiFooter}>
-                <CheckCircle2 size={14} color="#10B981" style={{ marginRight: 4 }} />
+                <CheckCircle2 size={14} color=colors.success style={{ marginRight: 4 }} />
                 <Text style={[styles.kpiSubtext, { color: colors.textMuted }]}>
                   Todas em operação normal
                 </Text>
@@ -235,11 +235,11 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
             <View style={[styles.kpiCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={styles.kpiHeader}>
                 <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>Preço Médio / Hora</Text>
-                <View style={[styles.iconBox, { backgroundColor: '#6366F118' }]}>
-                  <Clock size={18} color="#6366F1" />
+                <View style={[styles.iconBox, { backgroundColor: colors.holdingSurface }]}>
+                  <Clock size={18} color=colors.holding />
                 </View>
               </View>
-              <Text style={[styles.kpiValue, { color: colors.text }]}>
+              <Text style={[styles.kpiValue, { color: colors.textPrimary }]}>
                 R$ {avgHourlyRate.toFixed(0)}
               </Text>
               <View style={styles.kpiFooter}>
@@ -253,11 +253,11 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
             <View style={[styles.kpiCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={styles.kpiHeader}>
                 <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>Taxa de Ocupação</Text>
-                <View style={[styles.iconBox, { backgroundColor: '#F59E0B18' }]}>
+                <View style={[styles.iconBox, { backgroundColor: colors.warningSurface }]}>
                   <TrendingUp size={18} color="#F59E0B" />
                 </View>
               </View>
-              <Text style={[styles.kpiValue, { color: colors.text }]}>{occupancyRate}%</Text>
+              <Text style={[styles.kpiValue, { color: colors.textPrimary }]}>{occupancyRate}%</Text>
               <View style={styles.kpiFooter}>
                 <Text style={[styles.kpiSubtext, { color: '#F59E0B' }]}>
                   {totalBookingsCount} de {estimatedSlotsPerDay} horários
@@ -271,7 +271,7 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
             <View style={styles.cardHeaderRow}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Users size={18} color={colors.primary} style={{ marginRight: 8 }} />
-                <Text style={[styles.cardTitle, { color: colors.text }]}>Origem dos Agendamentos</Text>
+                <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Origem dos Agendamentos</Text>
               </View>
               <Text style={[styles.cardBadgeText, { color: colors.textMuted }]}>Canais de Venda</Text>
             </View>
@@ -281,13 +281,13 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
               <View
                 style={[
                   styles.progressBarFill,
-                  { width: `${manualPct}%`, backgroundColor: '#8B5CF6' },
+                  { width: `${manualPct}%`, backgroundColor: colors.holding },
                 ]}
               />
               <View
                 style={[
                   styles.progressBarFill,
-                  { width: `${appPct}%`, backgroundColor: '#3B82F6' },
+                  { width: `${appPct}%`, backgroundColor: colors.info },
                 ]}
               />
             </View>
@@ -295,10 +295,10 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
             <View style={styles.channelDetailsRow}>
               <View style={[styles.channelCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <View style={styles.channelTitleRow}>
-                  <Store size={16} color="#8B5CF6" style={{ marginRight: 6 }} />
-                  <Text style={[styles.channelTitle, { color: colors.text }]}>Balcão / Presencial</Text>
+                  <Store size={16} color=colors.holding style={{ marginRight: 6 }} />
+                  <Text style={[styles.channelTitle, { color: colors.textPrimary }]}>Balcão / Presencial</Text>
                 </View>
-                <Text style={[styles.channelCount, { color: '#8B5CF6' }]}>{manualCount} reservas ({manualPct}%)</Text>
+                <Text style={[styles.channelCount, { color: colors.holding }]}>{manualCount} reservas ({manualPct}%)</Text>
                 <Text style={[styles.channelSubtext, { color: colors.textMuted }]}>
                   Inseridos manualmente pelo gestor
                 </Text>
@@ -306,10 +306,10 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
 
               <View style={[styles.channelCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <View style={styles.channelTitleRow}>
-                  <Smartphone size={16} color="#3B82F6" style={{ marginRight: 6 }} />
-                  <Text style={[styles.channelTitle, { color: colors.text }]}>Aplicativo SFACCO</Text>
+                  <Smartphone size={16} color=colors.info style={{ marginRight: 6 }} />
+                  <Text style={[styles.channelTitle, { color: colors.textPrimary }]}>Aplicativo SFACCO</Text>
                 </View>
-                <Text style={[styles.channelCount, { color: '#3B82F6' }]}>{appCount} reservas ({appPct}%)</Text>
+                <Text style={[styles.channelCount, { color: colors.info }]}>{appCount} reservas ({appPct}%)</Text>
                 <Text style={[styles.channelSubtext, { color: colors.textMuted }]}>
                   Reservas online feitas pelos atletas
                 </Text>
@@ -322,7 +322,7 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
             <View style={styles.cardHeaderRow}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Award size={18} color={colors.primary} style={{ marginRight: 8 }} />
-                <Text style={[styles.cardTitle, { color: colors.text }]}>Desempenho por Quadra</Text>
+                <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Desempenho por Quadra</Text>
               </View>
               <Text style={[styles.cardBadgeText, { color: colors.textMuted }]}>Receita & Ocupação</Text>
             </View>
@@ -335,14 +335,14 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
               courtsPerformance.map((c) => (
                 <View key={c.id} style={[styles.courtPerfRow, { borderBottomColor: colors.border }]}>
                   <View style={styles.courtPerfInfo}>
-                    <Text style={[styles.courtPerfName, { color: colors.text }]}>{c.name}</Text>
+                    <Text style={[styles.courtPerfName, { color: colors.textPrimary }]}>{c.name}</Text>
                     <Text style={[styles.courtPerfMeta, { color: colors.textMuted }]}>
                       Valor da hora: R$ {parseFloat(c.hourly_rate).toFixed(0)} • {c.bookingsCount} reservas
                     </Text>
                   </View>
 
                   <View style={styles.courtPerfValues}>
-                    <Text style={[styles.courtPerfRevenue, { color: '#10B981' }]}>
+                    <Text style={[styles.courtPerfRevenue, { color: colors.success }]}>
                       R$ {c.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </Text>
                     <Text style={[styles.courtPerfOccupancy, { color: colors.textMuted }]}>
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.sm,
   },
   periodTitle: {
-    fontSize: theme.typography.sizes.body1,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '800',
   },
   periodChipsScrollContent: {
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   periodChipText: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
   },
   loadingContainer: {
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   kpiLabel: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '700',
   },
   iconBox: {
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   kpiSubtext: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
   },
   card: {
@@ -461,11 +461,11 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   cardTitle: {
-    fontSize: theme.typography.sizes.body1,
+    fontSize: theme.typography.sizes.body,
     fontWeight: '800',
   },
   cardBadgeText: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     fontWeight: '600',
   },
   progressBarContainer: {
@@ -498,16 +498,16 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   channelTitle: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
   },
   channelCount: {
-    fontSize: 15,
+    fontSize: theme.typography.sizes.h4,
     fontWeight: '800',
     marginBottom: 2,
   },
   channelSubtext: {
-    fontSize: 10,
+    fontSize: theme.typography.sizes.caption,
   },
   courtPerfRow: {
     flexDirection: 'row',
@@ -524,22 +524,22 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   courtPerfMeta: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     marginTop: 2,
   },
   courtPerfValues: {
     alignItems: 'flex-end',
   },
   courtPerfRevenue: {
-    fontSize: 15,
+    fontSize: theme.typography.sizes.h4,
     fontWeight: '800',
   },
   courtPerfOccupancy: {
-    fontSize: 11,
+    fontSize: theme.typography.sizes.caption,
     marginTop: 2,
   },
   emptyText: {
-    fontSize: 13,
+    fontSize: theme.typography.sizes.label,
     fontStyle: 'italic',
     paddingVertical: theme.spacing.sm,
   },

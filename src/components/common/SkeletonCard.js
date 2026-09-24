@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   imagePlaceholder: {
-    height: 180,
+    height: 200,
     width: '100%',
   },
   content: {
