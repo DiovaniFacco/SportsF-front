@@ -130,6 +130,10 @@ export function CourtBlockModal({
 
   if (!visible) return null;
 
+  const dateParts = date ? date.split('-') : [];
+  const dateFormatted =
+    dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : date;
+
   return (
     <Modal animationType="slide" transparent visible={visible} onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
@@ -208,20 +212,20 @@ export function CourtBlockModal({
               style={[
                 styles.indefiniteBox,
                 {
-                  backgroundColor: isIndefinite ? colors.error + '12' : colors.background,
-                  borderColor: isIndefinite ? colors.error + '50' : colors.border,
+                  backgroundColor: isIndefinite ? colors.errorSurface : colors.background,
+                  borderColor: isIndefinite ? colors.error : colors.border,
                 },
               ]}
             >
               <View style={styles.indefiniteRow}>
-                <View style={[styles.indefiniteIcon, { backgroundColor: colors.error + '18' }]}>
+                <View style={[styles.indefiniteIcon, { backgroundColor: isIndefinite ? '#FFFFFF' : colors.errorSurface }]}>
                   <InfinityIcon size={18} color={colors.error} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.indefiniteTitle, { color: colors.text }]}>
+                  <Text style={[styles.indefiniteTitle, { color: colors.textPrimary }]}>
                     Bloquear por tempo indeterminado
                   </Text>
-                  <Text style={[styles.indefiniteDesc, { color: colors.textMuted }]}>
+                  <Text style={[styles.indefiniteDesc, { color: colors.textSecondary }]}>
                     Sem data de término. A quadra fica indisponível até você desbloquear.
                   </Text>
                 </View>
@@ -233,10 +237,10 @@ export function CourtBlockModal({
                 />
               </View>
               {isIndefinite ? (
-                <View style={[styles.indefiniteAlert, { backgroundColor: colors.error + '12' }]}>
-                  <AlertTriangle size={14} color={colors.error} style={{ marginRight: 6 }} />
+                <View style={[styles.indefiniteAlert, { borderTopColor: colors.error + '30' }]}>
+                  <AlertTriangle size={16} color={colors.error} />
                   <Text style={[styles.indefiniteAlertText, { color: colors.error }]}>
-                    A quadra ficará indisponível em todos os dias e horários a partir de {date} às {startTime} até o desbloqueio manual.
+                    A quadra ficará indisponível em todos os dias e horários a partir de {dateFormatted} às {startTime} até o desbloqueio manual.
                   </Text>
                 </View>
               ) : null}
@@ -455,7 +459,7 @@ const styles = StyleSheet.create({
   indefiniteBox: {
     borderWidth: 1,
     borderRadius: theme.radius.md,
-    padding: theme.spacing.sm,
+    padding: 12,
     marginBottom: theme.spacing.md,
   },
   indefiniteRow: {
@@ -482,15 +486,16 @@ const styles = StyleSheet.create({
   indefiniteAlert: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginTop: 10,
-    padding: 8,
-    borderRadius: theme.radius.sm,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    gap: 8,
   },
   indefiniteAlertText: {
     flex: 1,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
-    lineHeight: 15,
+    lineHeight: 16,
   },
   modalFooter: {
     flexDirection: 'row',
