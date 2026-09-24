@@ -13,7 +13,7 @@ import { RegisterScreen } from './src/screens/RegisterScreen';
 import { ManagerHomeScreen } from './src/screens/manager/ManagerHomeScreen';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
-import { getVenueIdFromUrl, syncVenueUrlInBrowser, getDefaultVenueSlug, isGestaoRoute, syncGestaoUrlInBrowser } from './src/utils/linking';
+import { getVenueIdFromUrl, syncVenueUrlInBrowser, getDefaultVenueSlug, getDefaultVenueCandidates, isGestaoRoute, syncGestaoUrlInBrowser } from './src/utils/linking';
 import { getVenueDetails } from './src/api/venues';
 import { isSimplifiedVenue } from './src/utils/whatsapp';
 
@@ -97,6 +97,17 @@ function MainAppContent() {
       }
     };
 
+    // Tenta os candidatos em sequência (subdomínio curto pode não ser o slug real).
+    // Ex: ["recanto", "recanto-beach-sports-e-lazer"] — o primeiro que existir vence.
+    const loadDefaultVenue = async () => {
+      const candidates = getDefaultVenueCandidates();
+      for (const candidate of candidates) {
+        const venue = await loadVenueByIdentifier(candidate);
+        if (venue) return venue;
+      }
+      return null;
+    };
+
     const handleUrl = async (url, isInitial = false) => {
       const gestao = isGestaoRoute(url);
       const venueId = getVenueIdFromUrl(url);
@@ -119,10 +130,13 @@ function MainAppContent() {
           } else if (isInitial) {
             // Em domínio white-label, carrega o complexo em background (para o "voltar"
             // da gestão cair nele) mas permanece em /gestao.
-            const defaultSlug = getDefaultVenueSlug();
-            if (defaultSlug) {
+            const candidates = getDefaultVenueCandidates();
+            if (candidates.length > 0) {
               setEnteredViaDirectLink(true);
-              await loadVenueByIdentifier(defaultSlug);
+              for (const candidate of candidates) {
+                const venue = await loadVenueByIdentifier(candidate);
+                if (venue) break;
+              }
               if (isMounted) {
                 setIsManagerView(true);
                 setAuthScreen(null);
@@ -147,12 +161,13 @@ function MainAppContent() {
 
       // 3. Domínio white-label (recanto.sfacco.com.br/ ou EXPO_PUBLIC_VENUE_SLUG):
       // entra direto no complexo sem precisar de /complexo/slug na URL.
-      const defaultSlug = getDefaultVenueSlug();
-      if (defaultSlug) {
+      // Tenta subdomínio e env em sequência — o slug real pode ser maior que o subdomínio
+      // (ex: sub "recanto" vs slug "recanto-beach-sports-e-lazer").
+      if (getDefaultVenueSlug()) {
         if (isInitial && isMounted) {
           setEnteredViaDirectLink(true);
         }
-        await loadVenueByIdentifier(defaultSlug);
+        await loadDefaultVenue();
         return;
       }
 

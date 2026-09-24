@@ -163,6 +163,21 @@ export function getDefaultVenueSlug() {
 }
 
 /**
+ * Lista de candidatos a complexo padrão, na ordem de tentativa.
+ * Ex em recanto.sfacco.com.br com EXPO_PUBLIC_VENUE_SLUG=recanto-beach-sports-e-lazer:
+ * ["recanto", "recanto-beach-sports-e-lazer"].
+ * Serve para quando o subdomínio curto não é igual ao slug real do complexo.
+ */
+export function getDefaultVenueCandidates() {
+  const out = [];
+  const sub = getSubdomainSlug();
+  if (sub) out.push(sub);
+  const env = getDefaultVenueSlugFromEnv();
+  if (env && !out.includes(env)) out.push(env);
+  return out;
+}
+
+/**
  * Retorna true quando a URL é a rota de gestão (/gestao ou /gestao/...).
  */
 export function isGestaoRoute(urlStr) {
