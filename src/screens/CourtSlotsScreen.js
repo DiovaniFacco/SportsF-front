@@ -258,6 +258,53 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
     );
   };
 
+  const renderCourtHeader = () => (
+    <>
+      {/* Court Summary Card */}
+      <View style={[styles.courtInfoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View style={styles.courtInfoRow}>
+          {court.image_url ? (
+            <Image source={{ uri: optimizeImageUrl(court.image_url, { width: 1400, quality: 90 }) }} style={styles.courtThumb} />
+          ) : null}
+
+          <View style={styles.courtDetailsCol}>
+            <Text style={[styles.courtNameText, { color: colors.textPrimary }]} numberOfLines={1}>
+              {court.name}
+            </Text>
+
+            {venue?.name ? (
+              <Text style={[styles.venueNameText, { color: colors.primary }]} numberOfLines={1}>
+                {venue.name}
+              </Text>
+            ) : null}
+
+            <View style={styles.pillsRow}>
+              {court.surface ? (
+                <View style={[styles.miniPill, { backgroundColor: colors.backgroundSecondary }]}>
+                  <Layers size={11} color={colors.textMuted} />
+                  <Text style={[styles.miniPillText, { color: colors.textSecondary }]}>{court.surface}</Text>
+                </View>
+              ) : null}
+
+              {court.capacity ? (
+                <View style={[styles.miniPill, { backgroundColor: colors.backgroundSecondary }]}>
+                  <Users size={11} color={colors.textMuted} />
+                  <Text style={[styles.miniPillText, { color: colors.textSecondary }]}>{court.capacity}</Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {/* Date Selector — sempre visível para permitir navegar entre dias */}
+      <DateSelector
+        selectedDate={selectedDate}
+        onSelectDate={(date) => setSelectedDate(date)}
+      />
+    </>
+  );
+
   const renderContent = () => {
     if (loading && !refreshing) {
       return (
@@ -282,17 +329,31 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
 
     if (isBlockedIndefinitely) {
       return (
-        <View style={styles.paddingContainer}>
-          <View style={[styles.blockedCard, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}>
-            <Text style={[styles.blockedTitle, { color: colors.error }]}>
-              Quadra temporariamente indisponível
-            </Text>
-            <Text style={[styles.blockedText, { color: colors.textSecondary }]}>
-              {slotsData?.message ||
-                `Esta quadra está indisponível por tempo indeterminado${slotsData?.block_reason ? ` (${slotsData.block_reason})` : ''}. Tente outra quadra ou data.`}
-            </Text>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
+            />
+          }
+        >
+          {renderCourtHeader()}
+          <View style={styles.paddingContainer}>
+            <View style={[styles.blockedCard, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}>
+              <Text style={[styles.blockedTitle, { color: colors.error }]}>
+                Quadra temporariamente indisponível
+              </Text>
+              <Text style={[styles.blockedText, { color: colors.textSecondary }]}>
+                {slotsData?.message ||
+                  `Esta quadra está indisponível por tempo indeterminado${slotsData?.block_reason ? ` (${slotsData.block_reason})` : ''}. Tente outra quadra ou data.`}
+              </Text>
+            </View>
           </View>
-        </View>
+        </ScrollView>
       );
     }
 
@@ -308,26 +369,54 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
         (slotsData?.message && slotsData.slots?.length === 0 ? slotsData.message : null) ||
         'Todos os horários desta data já passaram ou foram ocupados. Tente outra data.';
       return (
-        <View style={styles.paddingContainer}>
-          <EmptyState
-            title={title}
-            message={message}
-            onResetFilters={() => fetchSlots()}
-          />
-        </View>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
+            />
+          }
+        >
+          {renderCourtHeader()}
+          <View style={styles.paddingContainer}>
+            <EmptyState
+              title={title}
+              message={`${message} Selecione outro dia acima para ver a disponibilidade.`}
+              onResetFilters={() => fetchSlots()}
+            />
+          </View>
+        </ScrollView>
       );
     }
 
     if (slotsList.length === 0) {
       // Grade existe, mas nada futuro a exibir (ex.: resto do dia esgotado).
       return (
-        <View style={styles.paddingContainer}>
-          <EmptyState
-            title="Horários esgotados"
-            message="Todos os horários desta data já passaram ou foram ocupados. Tente outra data."
-            onResetFilters={() => fetchSlots()}
-          />
-        </View>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
+            />
+          }
+        >
+          {renderCourtHeader()}
+          <View style={styles.paddingContainer}>
+            <EmptyState
+              title="Horários esgotados"
+              message="Todos os horários desta data já passaram ou foram ocupados. Selecione outro dia acima para ver a disponibilidade."
+              onResetFilters={() => fetchSlots()}
+            />
+          </View>
+        </ScrollView>
       );
     }
 
@@ -344,48 +433,7 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
           />
         }
       >
-        {/* Court Summary Card */}
-        <View style={[styles.courtInfoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.courtInfoRow}>
-            {court.image_url ? (
-              <Image source={{ uri: optimizeImageUrl(court.image_url, { width: 1400, quality: 90 }) }} style={styles.courtThumb} />
-            ) : null}
-
-            <View style={styles.courtDetailsCol}>
-              <Text style={[styles.courtNameText, { color: colors.textPrimary }]} numberOfLines={1}>
-                {court.name}
-              </Text>
-              
-              {venue?.name ? (
-                <Text style={[styles.venueNameText, { color: colors.primary }]} numberOfLines={1}>
-                  {venue.name}
-                </Text>
-              ) : null}
-
-              <View style={styles.pillsRow}>
-                {court.surface ? (
-                  <View style={[styles.miniPill, { backgroundColor: colors.backgroundSecondary }]}>
-                    <Layers size={11} color={colors.textMuted} />
-                    <Text style={[styles.miniPillText, { color: colors.textSecondary }]}>{court.surface}</Text>
-                  </View>
-                ) : null}
-
-                {court.capacity ? (
-                  <View style={[styles.miniPill, { backgroundColor: colors.backgroundSecondary }]}>
-                    <Users size={11} color={colors.textMuted} />
-                    <Text style={[styles.miniPillText, { color: colors.textSecondary }]}>{court.capacity}</Text>
-                  </View>
-                ) : null}
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Date Selector */}
-        <DateSelector
-          selectedDate={selectedDate}
-          onSelectDate={(date) => setSelectedDate(date)}
-        />
+        {renderCourtHeader()}
 
         {whatsappError ? (
           <View style={[styles.simplifiedBanner, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}>
