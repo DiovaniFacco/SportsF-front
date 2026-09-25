@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -11,12 +11,12 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import { X, Calendar, Clock, User, Phone, FileText, CheckCircle2, ShieldAlert, Banknote } from 'lucide-react-native';
+import { X, User, Phone, FileText, CheckCircle2, ShieldAlert, Banknote } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { createBooking } from '../../api/bookings';
 import { getTodayStrInSaoPaulo } from '../../utils/datetime';
-import { formatBRL, parseBRLInput, resolvePaymentStatus, PAYMENT_PAGO, PAYMENT_PENDENTE, PAYMENT_NAO_PAGO } from '../../utils/payment';
+import { formatBRL, parseBRLInput } from '../../utils/payment';
 import { DatePickerInput } from '../common/DatePickerInput';
 import { TimePickerInput } from '../common/TimePickerInput';
 
@@ -46,6 +46,15 @@ export function ManualBookingModal({
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const formScrollRef = useRef(null);
+
+  // Erro sempre visível: ao falhar, rola o formulário até o topo, onde está
+  // a mensagem (telas pequenas escondiam o erro).
+  useEffect(() => {
+    if (errorMessage && formScrollRef.current?.scrollTo) {
+      formScrollRef.current.scrollTo({ y: 0, animated: true });
+    }
+  }, [errorMessage]);
 
   useEffect(() => {
     if (visible) {
@@ -122,7 +131,13 @@ export function ManualBookingModal({
       onClose();
     } catch (err) {
       console.error('Erro ao criar agendamento manual:', err);
-      const apiMsg = err.response?.data?.message || 'Não foi possível salvar o agendamento. Verifique os dados.';
+      // 422 de validação traz o detalhe em errors.* — mostra a 1ª mensagem útil.
+      const errors = err.response?.data?.errors;
+      const firstDetail = errors ? Object.values(errors).flat()[0] : null;
+      const apiMsg =
+        firstDetail ||
+        err.response?.data?.message ||
+        'Não foi possível salvar o agendamento. Verifique os dados.';
       setErrorMessage(apiMsg);
     } finally {
       setSubmitting(false);
@@ -151,7 +166,7 @@ export function ManualBookingModal({
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.formScroll} showsVerticalScrollIndicator={false}>
+          <ScrollView ref={formScrollRef} style={styles.formScroll} showsVerticalScrollIndicator={false}>
             {errorMessage ? (
               <View style={[styles.errorBox, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}>
                 <Text style={[styles.errorText, { color: colors.error }]}>{errorMessage}</Text>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -40,6 +40,15 @@ export function BookingConfirmationModal({
 }) {
   const { colors } = useTheme();
   const [notes, setNotes] = useState('');
+  const scrollRef = useRef(null);
+
+  // Erro sempre visível: ao falhar, rola até o banner de erro (telas pequenas
+  // escondiam a mensagem no fim do conteúdo rolável).
+  useEffect(() => {
+    if (error && scrollRef.current?.scrollToEnd) {
+      scrollRef.current.scrollToEnd({ animated: true });
+    }
+  }, [error]);
 
   if (!visible) return null;
 
@@ -93,6 +102,7 @@ export function BookingConfirmationModal({
           </View>
 
           <ScrollView
+            ref={scrollRef}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
