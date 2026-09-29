@@ -23,6 +23,7 @@ import {
   Calendar,
   ClipboardList,
   Dumbbell,
+  Repeat,
   ShieldCheck,
   ArrowLeft,
   BarChart3,
@@ -43,6 +44,8 @@ import { ManagerMetricsView } from '../../components/manager/ManagerMetricsView'
 import { ManagerBookingsView } from '../../components/manager/ManagerBookingsView';
 import { ManualBookingModal } from '../../components/manager/ManualBookingModal';
 import { CourtBlockModal } from '../../components/manager/CourtBlockModal';
+import { FixedScheduleModal } from '../../components/manager/FixedScheduleModal';
+import { FixedSchedulesList } from '../../components/manager/FixedSchedulesList';
 import { CourtOperatingHoursModal } from '../../components/manager/CourtOperatingHoursModal';
 import { CourtPricingModal } from '../../components/manager/CourtPricingModal';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -66,7 +69,7 @@ export function ManagerHomeScreen({ onBackToUserView }) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  const [activeTab, setActiveTab] = useState('metricas'); // 'quadras' | 'agenda' | 'agendamentos' | 'metricas'
+  const [activeTab, setActiveTab] = useState('metricas'); // 'quadras' | 'agenda' | 'agendamentos' | 'fixos' | 'metricas'
   const [managerMenuOpen, setManagerMenuOpen] = useState(false);
   const menuBtnRef = useRef(null);
   const [menuAnchor, setMenuAnchor] = useState({ x: 0, y: 0, width: 0, height: 0 });
@@ -98,6 +101,9 @@ export function ManagerHomeScreen({ onBackToUserView }) {
   const [isHoursModalOpen, setIsHoursModalOpen] = useState(false);
   const [pricingCourt, setPricingCourt] = useState(null);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
+  // Horário fixo (aba + modal de criação/edição)
+  const [isFixedFormOpen, setIsFixedFormOpen] = useState(false);
+  const [editingFixed, setEditingFixed] = useState(null);
 
   const [scheduleRefreshKey, setScheduleRefreshKey] = useState(0);
 
@@ -477,6 +483,29 @@ export function ManagerHomeScreen({ onBackToUserView }) {
 
         <TouchableOpacity
           activeOpacity={0.7}
+          onPress={() => setActiveTab('fixos')}
+          style={[
+            styles.tabBtn,
+            activeTab === 'fixos' && [styles.activeTabBtn, { backgroundColor: colors.primary }],
+          ]}
+        >
+          <Repeat
+            size={15}
+            color={activeTab === 'fixos' ? colors.white : colors.textMuted}
+            style={{ marginRight: 6 }}
+          />
+          <Text
+            style={[
+              styles.tabText,
+              { color: activeTab === 'fixos' ? colors.white : colors.textMuted },
+            ]}
+          >
+            Horários Fixos
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.7}
           onPress={() => setActiveTab('quadras')}
           style={[
             styles.tabBtn,
@@ -647,6 +676,36 @@ export function ManagerHomeScreen({ onBackToUserView }) {
                 fetchManagerData(true);
               }}
             />
+          ) : activeTab === 'fixos' ? (
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.listPadding}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={handleRefresh}
+                  colors={[colors.primary]}
+                  tintColor={colors.primary}
+                />
+              }
+            >
+              <FixedSchedulesList
+                courts={courts}
+                onOpenCreate={() => {
+                  setEditingFixed(null);
+                  setIsFixedFormOpen(true);
+                }}
+                onOpenEdit={(fixed) => {
+                  setEditingFixed(fixed);
+                  setIsFixedFormOpen(true);
+                }}
+                onChanged={() => {
+                  handleScheduleRefresh();
+                  fetchManagerData(true);
+                }}
+                active={activeTab === 'fixos'}
+              />
+            </ScrollView>
           ) : loading && !refreshing ? (
             <ScrollView showsVerticalScrollIndicator={false}>
               {renderListExtras()}
@@ -779,6 +838,21 @@ export function ManagerHomeScreen({ onBackToUserView }) {
         onClose={() => {
           setIsBlockModalOpen(false);
           setBlockModalParams(null);
+        }}
+        onSuccess={() => {
+          fetchManagerData(true);
+          handleScheduleRefresh();
+        }}
+      />
+
+      {/* Modal de Horários Fixos (criação/edição via aba) */}
+      <FixedScheduleModal
+        visible={isFixedFormOpen}
+        courts={courts}
+        fixedSchedule={editingFixed}
+        onClose={() => {
+          setIsFixedFormOpen(false);
+          setEditingFixed(null);
         }}
         onSuccess={() => {
           fetchManagerData(true);

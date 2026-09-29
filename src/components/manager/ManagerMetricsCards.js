@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { DollarSign, TrendingUp, Users, Store, Smartphone, ChevronDown, ChevronUp, BarChart3 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
+import { getPaidAmount, getTotalPrice } from '../../utils/payment';
 
 export function ManagerMetricsCards({ bookings = [], totalSlotsCount = 32, defaultExpanded = false }) {
   const { colors } = useTheme();
@@ -11,11 +12,9 @@ export function ManagerMetricsCards({ bookings = [], totalSlotsCount = 32, defau
   // Filtrar apenas reservas confirmadas
   const activeBookings = bookings.filter((b) => b.status !== 'cancelled');
 
-  // Faturamento total do dia
-  const totalRevenue = activeBookings.reduce((sum, b) => {
-    const val = parseFloat(b.total_price || 140);
-    return sum + (isNaN(val) ? 140 : val);
-  }, 0);
+  // Faturamento validado pelo VALOR PAGO (paid_amount) — mesma regra da aba Métricas.
+  const totalRevenue = activeBookings.reduce((sum, b) => sum + getPaidAmount(b), 0);
+  const totalExpected = activeBookings.reduce((sum, b) => sum + getTotalPrice(b), 0);
 
   // Contagem Balcão vs App
   const manualCount = activeBookings.filter((b) => b.is_manual).length;
@@ -65,7 +64,7 @@ export function ManagerMetricsCards({ bookings = [], totalSlotsCount = 32, defau
           {/* Card 1: Faturamento do Dia */}
           <View style={[styles.metricCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
             <View style={styles.metricHeaderRow}>
-              <Text style={[styles.metricTitle, { color: colors.textMuted }]}>Faturamento Estimado</Text>
+              <Text style={[styles.metricTitle, { color: colors.textMuted }]}>Valor Recebido</Text>
               <View style={[styles.iconCircle, { backgroundColor: colors.successSurface }]}>
                 <DollarSign size={15} color={colors.success} />
               </View>
@@ -75,6 +74,9 @@ export function ManagerMetricsCards({ bookings = [], totalSlotsCount = 32, defau
             </Text>
             <Text style={[styles.metricSubtext, { color: colors.success }]}>
               {activeBookings.length} reservas ativas
+            </Text>
+            <Text style={[styles.metricSubtext, { color: colors.textMuted }]}>
+              Previsto R$ {totalExpected.toFixed(0)}
             </Text>
           </View>
 

@@ -582,8 +582,9 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
                     const parsed = parseBRLInput(paymentInput);
                     const total = getTotalPrice(paymentModalBooking);
                     const preview = Number.isFinite(parsed) ? resolvePaymentStatus(parsed, total) : null;
-                    const label = preview === PAYMENT_PAGO ? 'PAGO (valor integral)' : preview === PAYMENT_PENDENTE ? `PENDENTE (falta ${formatBRL(Math.max(0, total - parsed))})` : preview === PAYMENT_NAO_PAGO ? 'NÃO PAGO' : '—';
-                    const fg = preview === PAYMENT_PAGO ? colors.success : preview === PAYMENT_PENDENTE ? colors.gold : colors.error;
+                    const over = Number.isFinite(parsed) && parsed > total;
+                    const label = over ? `ACIMA DO TOTAL (${formatBRL(total)}) — será recusado` : preview === PAYMENT_PAGO ? 'PAGO (valor integral)' : preview === PAYMENT_PENDENTE ? `PENDENTE (falta ${formatBRL(Math.max(0, total - parsed))})` : preview === PAYMENT_NAO_PAGO ? 'NÃO PAGO' : '—';
+                    const fg = over ? colors.error : preview === PAYMENT_PAGO ? colors.success : preview === PAYMENT_PENDENTE ? colors.gold : colors.error;
                     return (
                       <Text style={[styles.previewText, { color: colors.textSecondary }]}>
                         O sistema vai marcar como: <Text style={{ fontWeight: '800', color: fg }}>{label}</Text>

@@ -11,10 +11,11 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import { X, User, Phone, FileText, CheckCircle2, ShieldAlert, Banknote } from 'lucide-react-native';
+import { X, User, Phone, FileText, CheckCircle2, ShieldAlert, Banknote, Repeat } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { createBooking } from '../../api/bookings';
+import { createFixedSchedule, weekdayLabel, extractApiError } from '../../api/fixedSchedules';
 import { getTodayStrInSaoPaulo } from '../../utils/datetime';
 import { formatBRL, parseBRLInput } from '../../utils/payment';
 import { DatePickerInput } from '../common/DatePickerInput';
@@ -43,6 +44,8 @@ export function ManualBookingModal({
   const [customerPhone, setCustomerPhone] = useState('');
   const [notes, setNotes] = useState('');
   const [paidInput, setPaidInput] = useState('0');
+  // Modo horário fixo: em vez de 1 reserva avulsa, cria série semanal.
+  const [isFixed, setIsFixed] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -66,6 +69,7 @@ export function ManualBookingModal({
       setCustomerPhone('');
       setNotes('');
       setPaidInput('0');
+      setIsFixed(false);
       setErrorMessage('');
     }
   }, [visible, courts, initialCourtId, initialStartTime, initialEndTime, initialDate]);
@@ -75,6 +79,14 @@ export function ManualBookingModal({
     '13:00', '14:00', '15:00', '16:00', '17:00', '18:00',
     '19:00', '20:00', '21:00', '22:00', '23:00'
   ];
+
+  // Dia da semana da data escolhida (0=dom .. 6=sáb) p/ o modo fixo.
+  const weekdayOfDate = (iso) => {
+    const parts = String(iso || '').substring(0, 10).split('-');
+    if (parts.length !== 3) return null;
+    const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    return Number.isNaN(d.getTime()) ? null : d.getDay();
+  };
 
   const handleSubmit = async () => {
     if (!selectedCourtId) {
@@ -99,6 +111,38 @@ export function ManualBookingModal({
     setErrorMessage('');
 
     try {
+      // Modo horário fixo: cria a série semanal (sem data final).
+      if (isFixed) {
+        const dow = weekdayOfDate(date);
+        if (dow == null) {
+          setErrorMessage('Data inválida para o horário fixo.');
+          setSubmitting(false);
+          return;
+        }
+        await createFixedSchedule({
+          courtId: selectedCourtId,
+          dayOfWeek: dow,
+          startTime,
+          endTime,
+          customerName: customerName.trim(),
+          customerPhone: customerPhone.trim() || null,
+          validFrom: date.substring(0, 10),
+          validUntil: null,
+          notes: notes.trim() || null,
+        });
+
+        const msg = `Horário fixo criado: toda ${weekdayLabel(dow, true)} ${startTime} às ${endTime}.`;
+        if (Platform.OS === 'web') {
+          window.alert(msg);
+        } else {
+          Alert.alert('Sucesso', msg);
+        }
+
+        onSuccess?.();
+        onClose();
+        return;
+      }
+
       const fullStartTime = `${date} ${startTime.length === 5 ? startTime + ':00' : startTime}`;
       const fullEndTime = `${date} ${endTime.length === 5 ? endTime + ':00' : endTime}`;
 
@@ -137,7 +181,7 @@ export function ManualBookingModal({
       const apiMsg =
         firstDetail ||
         err.response?.data?.message ||
-        'Não foi possível salvar o agendamento. Verifique os dados.';
+        'Não foi possível salvar. Verifique os dados.';
       setErrorMessage(apiMsg);
     } finally {
       setSubmitting(false);
@@ -146,6 +190,8 @@ export function ManualBookingModal({
 
   if (!visible) return null;
 
+  const fixedDow = isFixed ? weekdayOfDate(date) : null;
+
   return (
     <Modal animationType="slide" transparent visible={visible} onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
@@ -153,9 +199,11 @@ export function ManualBookingModal({
           {/* Top Bar */}
           <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
             <View>
-              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Novo Agendamento Balcão</Text>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
+                {isFixed ? 'Novo Horário Fixo' : 'Novo Agendamento Balcão'}
+              </Text>
               <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>
-                Reserva presencial ou via WhatsApp
+                {isFixed ? 'Repete toda semana até você excluir' : 'Reserva presencial ou via WhatsApp'}
               </Text>
             </View>
             <TouchableOpacity
@@ -208,7 +256,9 @@ export function ManualBookingModal({
 
             {/* Data */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Data *</Text>
+              <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>
+                {isFixed ? 'Vale a partir de *' : 'Data *'}
+              </Text>
               <DatePickerInput
                 value={date}
                 onChangeDate={setDate}
@@ -234,6 +284,53 @@ export function ManualBookingModal({
                   onChangeTime={setEndTime}
                   colors={colors}
                 />
+              </View>
+            </View>
+
+            {/* Repetir toda semana (horário fixo) */}
+            <View
+              style={[
+                styles.fixedBox,
+                {
+                  backgroundColor: isFixed ? colors.primaryLight : colors.background,
+                  borderColor: isFixed ? colors.primary : colors.border,
+                },
+              ]}
+            >
+              <View style={styles.fixedRow}>
+                <View style={[styles.fixedIcon, { backgroundColor: isFixed ? colors.white : colors.primaryLight }]}>
+                  <Repeat size={18} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.fixedTitle, { color: colors.textPrimary }]}>
+                    Repetir toda semana
+                  </Text>
+                  <Text style={[styles.fixedDesc, { color: colors.textSecondary }]}>
+                    {isFixed && fixedDow != null
+                      ? `Toda ${weekdayLabel(fixedDow, true)} ${startTime} às ${endTime}, sem data final.`
+                      : 'Cria um horário fixo em vez de uma reserva única.'}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: isFixed }}
+                  onPress={() => setIsFixed((prev) => !prev)}
+                  style={[
+                    styles.toggleTrack,
+                    {
+                      backgroundColor: isFixed ? colors.primary : colors.border,
+                      borderColor: isFixed ? colors.primary : colors.borderStrong,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.toggleThumb,
+                      { backgroundColor: colors.white, alignSelf: isFixed ? 'flex-end' : 'flex-start' },
+                    ]}
+                  />
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -283,7 +380,8 @@ export function ManualBookingModal({
               </View>
             </View>
 
-            {/* Pagamento: quanto já foi recebido */}
+            {/* Pagamento: quanto já foi recebido (só reserva avulsa) */}
+            {!isFixed ? (
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Valor já recebido (R$) *</Text>
               <View style={[styles.inputWrapper, { backgroundColor: colors.background, borderColor: colors.border }]}>
@@ -301,13 +399,25 @@ export function ManualBookingModal({
                 const selectedCourt = courts.find((c) => String(c.id) === String(selectedCourtId));
                 const rate = selectedCourt?.hourly_rate != null ? Number(selectedCourt.hourly_rate) : null;
                 const paid = parseBRLInput(paidInput);
+                // Valor estimado = tarifa/hora × duração (base; o total exato com
+                // preço de pico/feriado é calculado no servidor, que recusa paid > total).
+                const toMin = (t) => {
+                  const m = String(t || '').match(/^(\d{1,2}):(\d{2})/);
+                  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+                };
+                const sMin = toMin(startTime);
+                const eMin = toMin(endTime);
+                const hours = sMin != null && eMin != null && eMin > sMin ? (eMin - sMin) / 60 : 1;
+                const expected = rate != null ? Math.round(rate * hours * 100) / 100 : null;
+                const over = Number.isFinite(paid) && expected != null && paid > expected;
                 const preview = Number.isFinite(paid) ? ' • ' : '';
                 return (
                   <Text style={[styles.paymentHint, { color: colors.textMuted }]}>
-                    {rate != null ? `Valor da quadra/hora: ${formatBRL(rate)}.` : 'Informe quanto o cliente já pagou.'}
+                    {expected != null ? `Valor estimado: ${formatBRL(expected)} (${formatBRL(rate)} × ${hours}h).` : 'Informe quanto o cliente já pagou.'}
                     {Number.isFinite(paid) && paid === 0 ? ' Ficará como NÃO PAGO.' : ''}
-                    {Number.isFinite(paid) && paid > 0 && (rate == null || paid < rate) ? ' Ficará como PENDENTE (pagamento parcial).' : ''}
-                    {Number.isFinite(paid) && rate != null && paid >= rate ? ' Ficará como PAGO (valor integral).' : ''}
+                    {Number.isFinite(paid) && paid > 0 && (expected == null || paid < expected) ? ' Ficará como PENDENTE (pagamento parcial).' : ''}
+                    {Number.isFinite(paid) && expected != null && paid === expected ? ' Ficará como PAGO (valor integral).' : ''}
+                    {over ? ` Valor acima do estimado — o sistema não aceita valor maior que o total.` : ''}
                     {preview === '' && !Number.isFinite(paid) ? ' Valor inválido.' : ''}
                   </Text>
                 );
@@ -325,7 +435,15 @@ export function ManualBookingModal({
                   onPress={() => {
                     const selectedCourt = courts.find((c) => String(c.id) === String(selectedCourtId));
                     const rate = selectedCourt?.hourly_rate != null ? Number(selectedCourt.hourly_rate) : null;
-                    if (rate != null) setPaidInput(String(rate));
+                    if (rate == null) return;
+                    const toMin = (t) => {
+                      const m = String(t || '').match(/^(\d{1,2}):(\d{2})/);
+                      return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+                    };
+                    const sMin = toMin(startTime);
+                    const eMin = toMin(endTime);
+                    const hours = sMin != null && eMin != null && eMin > sMin ? (eMin - sMin) / 60 : 1;
+                    setPaidInput(String(Math.round(rate * hours * 100) / 100));
                   }}
                   style={[styles.paymentBtn, { backgroundColor: colors.successSurface, borderColor: colors.success }]}
                 >
@@ -334,6 +452,7 @@ export function ManualBookingModal({
                 </TouchableOpacity>
               </View>
             </View>
+            ) : null}
           </ScrollView>
 
           {/* Footer Buttons */}
@@ -379,8 +498,14 @@ export function ManualBookingModal({
                 <ActivityIndicator size="small" color={colors.white} />
               ) : (
                 <>
-                  <CheckCircle2 size={18} color={colors.white} style={{ marginRight: 6 }} />
-                  <Text style={styles.submitBtnText}>Confirmar Agendamento</Text>
+                  {isFixed ? (
+                    <Repeat size={18} color={colors.white} style={{ marginRight: 6 }} />
+                  ) : (
+                    <CheckCircle2 size={18} color={colors.white} style={{ marginRight: 6 }} />
+                  )}
+                  <Text style={styles.submitBtnText}>
+                    {isFixed ? 'Criar Horário Fixo' : 'Confirmar Agendamento'}
+                  </Text>
                 </>
               )}
             </TouchableOpacity>
@@ -512,6 +637,51 @@ const styles = StyleSheet.create({
   paymentHint: {
     fontSize: theme.typography.sizes.caption,
     marginTop: 6,
+  },
+  fixedBox: {
+    borderWidth: 1,
+    borderRadius: theme.radius.md,
+    padding: 12,
+    marginBottom: theme.spacing.md,
+  },
+  fixedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  fixedIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: theme.radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fixedTitle: {
+    fontSize: theme.typography.sizes.label,
+    fontWeight: '800',
+  },
+  fixedDesc: {
+    fontSize: theme.typography.sizes.caption,
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  toggleTrack: {
+    width: 50,
+    height: 30,
+    borderRadius: theme.radius.full,
+    borderWidth: 1,
+    padding: 3,
+    justifyContent: 'center',
+  },
+  toggleThumb: {
+    width: 22,
+    height: 22,
+    borderRadius: theme.radius.full,
+    elevation: 2,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.25,
+    shadowRadius: 2,
   },
   quickLabel: {
     fontSize: theme.typography.sizes.caption,

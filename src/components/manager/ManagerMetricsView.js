@@ -25,6 +25,8 @@ import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { getUserBookings } from '../../api/bookings';
 import { ScrollableRow } from '../common/ScrollableRow';
+import { getPaidAmount, getTotalPrice, getPaymentStatus, PAYMENT_PAGO, PAYMENT_PENDENTE } from '../../utils/payment';
+import { parseServerDateTime, getTodayStrInSaoPaulo } from '../../utils/datetime';
 
 export function ManagerMetricsView({ courts = [], headerComponent }) {
   const { colors } = useTheme();
@@ -37,8 +39,9 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
   const fetchMetricsData = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
     try {
-      // Busca reservas
-      const res = await getUserBookings();
+      // Busca TODAS as reservas (sem paginação): o backend pagina em 15
+      // por padrão quando chamado sem ?all=1, o que cortava as métricas.
+      const res = await getUserBookings({ all: true });
       const list = res?.data || (Array.isArray(res) ? res : []);
       setBookings(list);
     } catch (err) {
@@ -59,18 +62,60 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
   };
 
   // Filtragem e cálculos baseados no período selecionado
-  const activeBookings = bookings.filter((b) => b.status !== 'cancelled');
+  // Escopo: apenas quadras do complexo ativo + não cancelados
+  const courtIds = new Set((courts || []).map((c) => String(c.id)));
+  const scopedBookings = bookings.filter((b) => {
+    if (b.status === 'cancelled') return false;
+    if (courtIds.size > 0 && b.court_id != null && !courtIds.has(String(b.court_id))) return false;
+    return true;
+  });
+
+  const getBookingDateStr = (b) => {
+    const d = parseServerDateTime(b.start_time);
+    if (!d) return null;
+    // Normaliza para YYYY-MM-DD no fuso de SP usando o próprio valor do servidor
+    const raw = String(b.start_time).slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const todayStr = getTodayStrInSaoPaulo();
+  const filterByPeriod = (b) => {
+    const ds = getBookingDateStr(b);
+    if (!ds) return false;
+    if (period === 'today') return ds === todayStr;
+    if (period === 'week') {
+      // Próximos 7 dias incluindo hoje (comparação lexicográfica funciona em YYYY-MM-DD)
+      const [y, m, d] = todayStr.split('-').map(Number);
+      const base = new Date(y, m - 1, d);
+      const end = new Date(base);
+      end.setDate(base.getDate() + 6);
+      const endStr = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
+      return ds >= todayStr && ds <= endStr;
+    }
+    if (period === 'month') return ds.slice(0, 7) === todayStr.slice(0, 7);
+    return true;
+  };
+
+  const activeBookings = scopedBookings.filter(filterByPeriod);
 
   const totalCourts = courts.length;
   const avgHourlyRate = totalCourts > 0
     ? (courts.reduce((acc, c) => acc + (parseFloat(c.hourly_rate) || 0), 0) / totalCourts)
     : 0;
 
-  // Faturamento Total Estimado
-  const totalRevenue = activeBookings.reduce((sum, b) => {
-    const val = parseFloat(b.total_price || 140);
-    return sum + (isNaN(val) ? 140 : val);
-  }, 0);
+  // Faturamento validado pelo VALOR PAGO (paid_amount) informado na agenda.
+  // total_price = valor previsto/tabela; paid_amount = quanto realmente entrou.
+  const totalReceived = activeBookings.reduce((sum, b) => sum + getPaidAmount(b), 0);
+  const totalExpected = activeBookings.reduce((sum, b) => sum + getTotalPrice(b), 0);
+  const totalPending = Math.max(0, Math.round((totalExpected - totalReceived) * 100) / 100);
+  const paidCount = activeBookings.filter((b) => getPaymentStatus(b) === PAYMENT_PAGO).length;
+  const pendingCount = activeBookings.filter((b) => getPaymentStatus(b) === PAYMENT_PENDENTE).length;
+  // Mantém nome legado para o KPI principal = valor realmente recebido
+  const totalRevenue = totalReceived;
 
   // Divisão Balcão vs App
   const manualBookings = activeBookings.filter((b) => b.is_manual);
@@ -82,22 +127,24 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
   const manualPct = totalBookingsCount > 0 ? Math.round((manualCount / totalBookingsCount) * 100) : 0;
   const appPct = totalBookingsCount > 0 ? Math.round((appCount / totalBookingsCount) * 100) : 0;
 
-  // Estimativa de slots e ocupação
+  // Estimativa de slots e ocupação (proporcional ao período)
+  const daysInPeriod = period === 'today' ? 1 : period === 'week' ? 7 : 30;
   const estimatedSlotsPerDay = (totalCourts > 0 ? totalCourts : 2) * 16; // 16h/dia operacionais
-  const occupancyRate = estimatedSlotsPerDay > 0
-    ? Math.min(100, Math.round((totalBookingsCount / estimatedSlotsPerDay) * 100))
+  const estimatedSlots = estimatedSlotsPerDay * daysInPeriod;
+  const occupancyRate = estimatedSlots > 0
+    ? Math.min(100, Math.round((totalBookingsCount / estimatedSlots) * 100))
     : 0;
 
-  // Ticket Médio
-  const ticketMedio = totalBookingsCount > 0 ? totalRevenue / totalBookingsCount : avgHourlyRate;
+  // Ticket Médio (sobre valor recebido; fallback para valor previsto)
+  const ticketMedio = totalBookingsCount > 0
+    ? (totalReceived > 0 ? totalReceived / totalBookingsCount : totalExpected / totalBookingsCount)
+    : avgHourlyRate;
 
-  // Métricas individuais por quadra
+  // Métricas individuais por quadra (receita = valor pago)
   const courtsPerformance = courts.map((court) => {
     const courtBookings = activeBookings.filter((b) => String(b.court_id) === String(court.id));
-    const revenue = courtBookings.reduce((sum, b) => {
-      const val = parseFloat(b.total_price || court.hourly_rate || 140);
-      return sum + (isNaN(val) ? 140 : val);
-    }, 0);
+    const revenue = courtBookings.reduce((sum, b) => sum + getPaidAmount(b), 0);
+    const expected = courtBookings.reduce((sum, b) => sum + getTotalPrice(b), 0);
 
     return {
       id: court.id,
@@ -105,7 +152,8 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
       hourly_rate: court.hourly_rate || 140,
       bookingsCount: courtBookings.length,
       revenue,
-      occupancy: Math.min(100, Math.round((courtBookings.length / 16) * 100)),
+      expected,
+      occupancy: Math.min(100, Math.round((courtBookings.length / (16 * daysInPeriod)) * 100)),
     };
   });
 
@@ -196,10 +244,10 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
         <>
           {/* Grade de KPIs Principais (Métricas & Faturamento) */}
           <View style={styles.kpiGrid}>
-            {/* KPI 1: Faturamento Estimado */}
+            {/* KPI 1: Valor Recebido (validado pelo paid_amount da agenda) */}
             <View style={[styles.kpiCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={styles.kpiHeader}>
-                <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>Faturamento Estimado</Text>
+                <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>Valor Recebido</Text>
                 <View style={[styles.iconBox, { backgroundColor: colors.successSurface }]}>
                   <DollarSign size={18} color={colors.success} />
                 </View>
@@ -210,9 +258,12 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
               <View style={styles.kpiFooter}>
                 <TrendingUp size={14} color={colors.success} style={{ marginRight: 4 }} />
                 <Text style={[styles.kpiSubtext, { color: colors.success }]}>
-                  {totalBookingsCount} agendamento{totalBookingsCount !== 1 ? 's' : ''} confirmado{totalBookingsCount !== 1 ? 's' : ''}
+                  {totalBookingsCount} agendamento{totalBookingsCount !== 1 ? 's' : ''} • Previsto R$ {totalExpected.toFixed(0)}
                 </Text>
               </View>
+              <Text style={[styles.kpiSubtext, { color: colors.textMuted }]}>
+                A receber: R$ {totalPending.toFixed(2)} • {paidCount} pago(s), {pendingCount} pendente(s)
+              </Text>
             </View>
 
             {/* KPI 2: Quadras Ativas */}
@@ -261,7 +312,7 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
               <Text style={[styles.kpiValue, { color: colors.textPrimary }]}>{occupancyRate}%</Text>
               <View style={styles.kpiFooter}>
                 <Text style={[styles.kpiSubtext, { color: '#F59E0B' }]}>
-                  {totalBookingsCount} de {estimatedSlotsPerDay} horários
+                  {totalBookingsCount} de {estimatedSlots} horários ({period === 'today' ? 'hoje' : period === 'week' ? '7 dias' : 'mês'})
                 </Text>
               </View>
             </View>
@@ -339,6 +390,9 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
                     <Text style={[styles.courtPerfName, { color: colors.textPrimary }]}>{c.name}</Text>
                     <Text style={[styles.courtPerfMeta, { color: colors.textMuted }]}>
                       Valor da hora: R$ {parseFloat(c.hourly_rate).toFixed(0)} • {c.bookingsCount} reservas
+                    </Text>
+                    <Text style={[styles.courtPerfMeta, { color: colors.textMuted }]}>
+                      Recebido R$ {c.revenue.toFixed(0)} de R$ {c.expected.toFixed(0)} previsto
                     </Text>
                   </View>
 
