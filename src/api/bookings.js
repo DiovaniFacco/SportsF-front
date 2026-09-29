@@ -13,6 +13,7 @@ export async function createBooking({
   customerPhone = null,
   isPaid = false,
   paidAmount = null,
+  fixedScheduleId = null,
 }) {
   const payload = {
     court_id: courtId,
@@ -27,6 +28,10 @@ export async function createBooking({
   // Novo fluxo: gestor informa quanto foi pago; o backend define pago/pendente/nao_pago.
   if (paidAmount !== null && paidAmount !== undefined) {
     payload.paid_amount = paidAmount;
+  }
+  // Lançar o dia de um horário fixo (só gestor via is_manual).
+  if (fixedScheduleId !== null && fixedScheduleId !== undefined) {
+    payload.fixed_schedule_id = fixedScheduleId;
   }
 
   const response = await apiClient.post('/bookings', payload);

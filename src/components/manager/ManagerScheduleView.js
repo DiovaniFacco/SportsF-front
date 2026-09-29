@@ -37,11 +37,13 @@ import { getAvailableSlots } from '../../api/slots';
 import {
   skipFixedScheduleDate,
   deleteFixedSchedule,
+  getFixedSchedule,
   formatDateBR,
   extractApiError,
 } from '../../api/fixedSchedules';
 import { FixedScheduleModal } from './FixedScheduleModal';
 import { FixedSchedulesListModal } from './FixedSchedulesListModal';
+import { FixedOccurrenceLaunchModal } from './FixedOccurrenceLaunchModal';
 import { EmptyState } from '../common/EmptyState';
 import { ManagerMetricsCards } from './ManagerMetricsCards';
 import { ScrollableRow } from '../common/ScrollableRow';
@@ -65,6 +67,7 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
   const [isFixedListOpen, setIsFixedListOpen] = useState(false);
   const [isFixedFormOpen, setIsFixedFormOpen] = useState(false);
   const [editingFixed, setEditingFixed] = useState(null);
+  const [launchCtx, setLaunchCtx] = useState(null); // { fixed, date }
 
   // Lista de quadras ativas
   const activeCourtsList = courts.length > 0 ? courts : [
@@ -303,19 +306,32 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
     };
 
     const title = 'Horário Fixo';
-    const message = `"${customer}" • ${timeLabel} • ${dateBR}\n\nDesmarcar SÓ este dia (a série continua) ou excluir a série toda?`;
+    const message = `"${customer}" • ${timeLabel} • ${dateBR}\n\nLançar o dia (com pagamento), desmarcar SÓ este dia (a série continua) ou excluir a série toda?`;
+
+    const doLaunchDay = async () => {
+      try {
+        const full = await getFixedSchedule(fixedId);
+        if (!full) throw new Error('Série não encontrada.');
+        setLaunchCtx({ fixed: full, date: selectedDate });
+      } catch (err) {
+        const msg = extractApiError(err, 'Não foi possível abrir o lançamento do dia.');
+        if (Platform.OS === 'web') window.alert(msg);
+        else Alert.alert('Erro', msg);
+      }
+    };
 
     if (Platform.OS === 'web') {
       const choice = window.prompt(
-        `${title}\n\n${message}\n\nDigite: 1 = Desmarcar só este dia | 2 = Excluir série toda | 3 = Gerenciar`,
+        `${title}\n\n${message}\n\nDigite: 1 = Lançar dia (pagamento) | 2 = Desmarcar só este dia | 3 = Excluir série toda | 4 = Gerenciar`,
         '1',
       );
-      if (choice === '1') doSkipDay();
-      else if (choice === '2') {
+      if (choice === '1') doLaunchDay();
+      else if (choice === '2') doSkipDay();
+      else if (choice === '3') {
         if (window.confirm('Excluir a série fixa inteira? Todas as ocorrências futuras serão liberadas.')) {
           doDeleteSeries();
         }
-      } else if (choice === '3') setIsFixedListOpen(true);
+      } else if (choice === '4') setIsFixedListOpen(true);
       return;
     }
 
@@ -323,7 +339,8 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
       { text: 'Fechar', style: 'cancel' },
       { text: 'Gerenciar', onPress: () => setIsFixedListOpen(true) },
       { text: 'Excluir série', style: 'destructive', onPress: doDeleteSeries },
-      { text: 'Desmarcar só este dia', onPress: doSkipDay },
+      { text: 'Desmarcar dia', onPress: doSkipDay },
+      { text: 'Lançar dia', onPress: doLaunchDay },
     ]);
   };
 
@@ -615,6 +632,14 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
           setIsFixedListOpen(false);
           fetchScheduleData(true);
         }}
+      />
+      <FixedOccurrenceLaunchModal
+        visible={Boolean(launchCtx)}
+        courts={activeCourtsList}
+        fixed={launchCtx?.fixed || null}
+        date={launchCtx?.date || null}
+        onClose={() => setLaunchCtx(null)}
+        onSuccess={() => fetchScheduleData(true)}
       />
     </View>
   );

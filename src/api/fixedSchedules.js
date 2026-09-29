@@ -49,6 +49,11 @@ export async function getFixedSchedules({ courtId = null, includeInactive = true
   return Array.isArray(list) ? list : [];
 }
 
+export async function getFixedSchedule(fixedId) {
+  const response = await api.get(`/fixed-schedules/${fixedId}`);
+  return response.data?.data || null;
+}
+
 export async function createFixedSchedule({
   courtId,
   dayOfWeek,
@@ -108,6 +113,75 @@ export async function getFixedScheduleOccurrences(fixedId, { from = null, to = n
   if (to) params.to = to;
   const response = await api.get(`/fixed-schedules/${fixedId}/occurrences`, { params });
   return response.data?.data || [];
+}
+
+/**
+ * Lança o dia como agendamento normal (com pagamento), sem remover a série.
+ * Cria um booking manual vinculado ao fixo.
+ */
+export async function launchFixedScheduleDay(fixedId, {
+  courtId,
+  date,
+  startTime,
+  endTime,
+  customerName,
+  customerPhone = null,
+  paidAmount = 0,
+  notes = null,
+}) {
+  const { createBooking } = await import('./bookings');
+  const res = await createBooking({
+    courtId,
+    startTime: `${date} ${startTime.length === 5 ? startTime + ':00' : startTime}`,
+    endTime: `${date} ${endTime.length === 5 ? endTime + ':00' : endTime}`,
+    notes: notes || `Dia lançado do horário fixo`,
+    isManual: true,
+    customerName,
+    customerPhone,
+    paidAmount,
+    fixedScheduleId: fixedId,
+  });
+  return res.booking || res;
+}
+
+/**
+ * Próxima ocorrência válida da série a partir de hoje
+ * (respeitando dia da semana e início da vigência).
+ * Usada para pré-preencher o "desmarcar dia" e evitar o erro de
+ * dia da semana (ex: série de quarta com o campo em hoje=terça).
+ */
+export function nextOccurrence(fixed, todayStr = null) {
+  if (!fixed) return null;
+  const dow = Number(fixed.day_of_week);
+  const pad = (n) => String(n).padStart(2, '0');
+  const now = new Date();
+  const todayIso = todayStr
+    || `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  let base = String(fixed.valid_from || todayIso).substring(0, 10);
+  if (base < todayIso) base = todayIso;
+  const [y, m, d] = base.split('-').map(Number);
+  const cursor = new Date(y, m - 1, d);
+  for (let i = 0; i < 8; i++) {
+    if (cursor.getDay() === dow) break;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  if (fixed.valid_until && formatDateOnly(cursor) > String(fixed.valid_until).substring(0, 10)) {
+    return null;
+  }
+  return formatDateOnly(cursor);
+}
+
+function formatDateOnly(d) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/** Dia da semana (0=dom..6=sáb) de uma data YYYY-MM-DD no fuso local. */
+export function weekdayOfDate(iso) {
+  const parts = String(iso || '').substring(0, 10).split('-');
+  if (parts.length !== 3) return null;
+  const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  return Number.isNaN(d.getTime()) ? null : d.getDay();
 }
 
 export function extractApiError(err, fallback) {
