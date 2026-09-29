@@ -26,6 +26,7 @@ import {
   Grid,
   PlusCircle,
   ShieldAlert,
+  Repeat,
 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
@@ -33,6 +34,14 @@ import { getUserBookings, cancelBooking } from '../../api/bookings';
 import { getTodayStrInSaoPaulo } from '../../utils/datetime';
 import { getCourtBlocks, deleteCourtBlock } from '../../api/courtBlocks';
 import { getAvailableSlots } from '../../api/slots';
+import {
+  skipFixedScheduleDate,
+  deleteFixedSchedule,
+  formatDateBR,
+  extractApiError,
+} from '../../api/fixedSchedules';
+import { FixedScheduleModal } from './FixedScheduleModal';
+import { FixedSchedulesListModal } from './FixedSchedulesListModal';
 import { EmptyState } from '../common/EmptyState';
 import { ManagerMetricsCards } from './ManagerMetricsCards';
 import { ScrollableRow } from '../common/ScrollableRow';
@@ -51,6 +60,11 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+
+  // Horários fixos (séries semanais)
+  const [isFixedListOpen, setIsFixedListOpen] = useState(false);
+  const [isFixedFormOpen, setIsFixedFormOpen] = useState(false);
+  const [editingFixed, setEditingFixed] = useState(null);
 
   // Lista de quadras ativas
   const activeCourtsList = courts.length > 0 ? courts : [
@@ -251,6 +265,68 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
     ? activeCourtsList
     : activeCourtsList.filter((c) => String(c.id) === String(selectedCourtId));
 
+  // Clique num slot de horário fixo: desmarcar só o dia, editar ou excluir a série.
+  const handleFixedSlotClick = (slotInfo, court) => {
+    const fixedId = slotInfo?.fixed?.id ?? slotInfo?.slot?.fixed_schedule_id ?? null;
+    const customer = slotInfo?.fixed?.customer_name ?? slotInfo?.slot?.fixed_customer_name ?? 'Horário fixo';
+    const timeLabel = slotInfo?.startTime && slotInfo?.endTime
+      ? `${slotInfo.startTime} às ${slotInfo.endTime}`
+      : 'neste horário';
+    const dateBR = formatDateBR(selectedDate);
+
+    const doSkipDay = async () => {
+      try {
+        await skipFixedScheduleDate(fixedId, selectedDate);
+        const msg = `Horário desmarcado só para ${dateBR}. A série continua nos demais dias.`;
+        if (Platform.OS === 'web') window.alert(msg);
+        else Alert.alert('Desmarcado', msg);
+        fetchScheduleData(true);
+      } catch (err) {
+        const msg = extractApiError(err, 'Não foi possível desmarcar este dia.');
+        if (Platform.OS === 'web') window.alert(msg);
+        else Alert.alert('Erro', msg);
+      }
+    };
+
+    const doDeleteSeries = async () => {
+      try {
+        await deleteFixedSchedule(fixedId);
+        const msg = 'Série fixa excluída. Todas as ocorrências futuras foram liberadas.';
+        if (Platform.OS === 'web') window.alert(msg);
+        else Alert.alert('Excluído', msg);
+        fetchScheduleData(true);
+      } catch (err) {
+        const msg = extractApiError(err, 'Não foi possível excluir a série.');
+        if (Platform.OS === 'web') window.alert(msg);
+        else Alert.alert('Erro', msg);
+      }
+    };
+
+    const title = 'Horário Fixo';
+    const message = `"${customer}" • ${timeLabel} • ${dateBR}\n\nDesmarcar SÓ este dia (a série continua) ou excluir a série toda?`;
+
+    if (Platform.OS === 'web') {
+      const choice = window.prompt(
+        `${title}\n\n${message}\n\nDigite: 1 = Desmarcar só este dia | 2 = Excluir série toda | 3 = Gerenciar`,
+        '1',
+      );
+      if (choice === '1') doSkipDay();
+      else if (choice === '2') {
+        if (window.confirm('Excluir a série fixa inteira? Todas as ocorrências futuras serão liberadas.')) {
+          doDeleteSeries();
+        }
+      } else if (choice === '3') setIsFixedListOpen(true);
+      return;
+    }
+
+    Alert.alert(title, message, [
+      { text: 'Fechar', style: 'cancel' },
+      { text: 'Gerenciar', onPress: () => setIsFixedListOpen(true) },
+      { text: 'Excluir série', style: 'destructive', onPress: doDeleteSeries },
+      { text: 'Desmarcar só este dia', onPress: doSkipDay },
+    ]);
+  };
+
   // Controles FIXOS: seletor de datas e filtro por quadra ficam sempre visíveis,
   // fora da rolagem, para manter o contexto da agenda em telas pequenas.
   const renderFixedControls = () => (
@@ -367,6 +443,15 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
             <ShieldAlert size={14} color={colors.error} style={{ marginRight: 4 }} />
             <Text style={[styles.blockBtnHeaderText, { color: colors.error }]}>Bloquear Horários</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setIsFixedListOpen(true)}
+            style={[styles.blockBtnHeader, { backgroundColor: colors.primaryLight, borderColor: colors.primary }]}
+          >
+            <Repeat size={14} color={colors.primary} style={{ marginRight: 4 }} />
+            <Text style={[styles.blockBtnHeaderText, { color: colors.primary }]}>Horários Fixos</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.viewToggleContainer}>
@@ -407,6 +492,11 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: colors.info }]} />
           <Text style={[styles.legendText, { color: colors.textMuted }]}>Via App</Text>
+        </View>
+
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: colors.primary }]} />
+          <Text style={[styles.legendText, { color: colors.textMuted }]}>Horário Fixo (toque p/ desmarcar)</Text>
         </View>
 
         <View style={styles.legendItem}>
@@ -458,6 +548,8 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
               onSlotClick={(slotInfo) => {
                 if (slotInfo.block) {
                   handleRemoveBlock(slotInfo.block, slotInfo);
+                } else if (slotInfo.fixed) {
+                  handleFixedSlotClick(slotInfo, court);
                 } else if (slotInfo.booking) {
                   const b = slotInfo.booking;
                   const client = b.customer_name || b.user?.name || 'Cliente';
@@ -494,6 +586,36 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
           ))
         )}
       </ScrollView>
+
+      {/* Gestão de horários fixos (séries semanais) */}
+      <FixedSchedulesListModal
+        visible={isFixedListOpen}
+        courts={activeCourtsList}
+        onClose={() => setIsFixedListOpen(false)}
+        onOpenCreate={() => {
+          setEditingFixed(null);
+          setIsFixedFormOpen(true);
+        }}
+        onOpenEdit={(fixed) => {
+          setEditingFixed(fixed);
+          setIsFixedFormOpen(true);
+        }}
+        onChanged={() => fetchScheduleData(true)}
+      />
+      <FixedScheduleModal
+        visible={isFixedFormOpen}
+        courts={activeCourtsList}
+        fixedSchedule={editingFixed}
+        initialCourtId={selectedCourtId !== 'ALL' ? selectedCourtId : null}
+        onClose={() => {
+          setIsFixedFormOpen(false);
+          setEditingFixed(null);
+        }}
+        onSuccess={() => {
+          setIsFixedListOpen(false);
+          fetchScheduleData(true);
+        }}
+      />
     </View>
   );
 }
@@ -618,6 +740,7 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
   let freeCount = 0;
   let bookedCount = 0;
   let blockedCount = 0;
+  let fixedCount = 0;
 
   slots.forEach((slot) => {
     const slotStartStr = extractTimeStr(slot.start_time);
@@ -637,11 +760,14 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
         return isSameDate(cb.start_time, selectedDate) && extractTimeStr(cb.start_time) === slotStartStr;
       });
     const b = bookings.find((bk) => isSameDate(bk.start_time, selectedDate) && extractTimeStr(bk.start_time) === slotStartStr);
+    const isFixed = Boolean(slot.is_fixed);
 
     if (isBlocked) {
       blockedCount++;
     } else if (b && b.status !== 'cancelled') {
       bookedCount++;
+    } else if (isFixed) {
+      fixedCount++;
     } else {
       freeCount++;
     }
@@ -658,7 +784,7 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
             </Text>
           ) : isOperating && slots.length > 0 ? (
             <Text style={[styles.matrixCourtStats, { color: colors.textMuted }]}>
-              {freeCount} livres • {bookedCount} ocupados {blockedCount > 0 ? `• ${blockedCount} bloqueados` : ''}
+              {freeCount} livres • {bookedCount} ocupados{fixedCount > 0 ? ` • ${fixedCount} fixos` : ''} {blockedCount > 0 ? `• ${blockedCount} bloqueados` : ''}
             </Text>
           ) : (
             <Text style={[styles.matrixCourtStats, { color: colors.error }]}>
@@ -731,6 +857,12 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
               ? (indefiniteBlock || exactBlock)
               : (exactBlock || slotFallbackBlock);
             const matchingBooking = bookings.find((b) => isSameDate(b.start_time, selectedDate) && extractTimeStr(b.start_time) === slotStartStr && b.status !== 'cancelled');
+            const matchingFixed = slot.is_fixed
+              ? {
+                  id: slot.fixed_schedule_id ?? null,
+                  customer_name: slot.fixed_customer_name || 'Horário fixo',
+                }
+              : null;
 
             let status = 'free';
             if (hasIndefinite || matchingBlock || slot.blocked) {
@@ -741,6 +873,8 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
               } else {
                 status = 'booked_app';
               }
+            } else if (matchingFixed) {
+              status = 'fixed';
             }
 
             // Determina o preço específico deste horário (slot)
@@ -761,6 +895,7 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
                     endTime: slotEndStr,
                     booking: matchingBooking,
                     block: matchingBlock,
+                    fixed: matchingFixed,
                     slot: slot,
                   })
                 }
@@ -769,6 +904,7 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
                   status === 'free' && { backgroundColor: colors.successSurface, borderColor: colors.successSurface },
                   status === 'booked_manual' && { backgroundColor: colors.holdingSurface, borderColor: colors.holding },
                   status === 'booked_app' && { backgroundColor: colors.infoSurface, borderColor: colors.info },
+                  status === 'fixed' && { backgroundColor: colors.primaryLight, borderColor: colors.primary },
                   status === 'cancelled' && { backgroundColor: colors.errorSurface, borderColor: colors.error },
                   status === 'blocked' && { backgroundColor: colors.errorSurface, borderColor: colors.error },
                 ]}
@@ -802,6 +938,8 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
                               ? colors.success
                               : status === 'blocked'
                               ? colors.error
+                              : status === 'fixed'
+                              ? colors.primary
                               : colors.primary,
                         },
                       ]}
@@ -817,6 +955,13 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
                     <ShieldAlert size={13} color={colors.error} />
                     <Text numberOfLines={1} style={[styles.slotClientText, { color: colors.error }]}>
                       {slot.block_reason || matchingBlock?.reason || 'Bloqueado'}
+                    </Text>
+                  </View>
+                ) : status === 'fixed' ? (
+                  <View style={styles.slotBookedContent}>
+                    <Repeat size={13} color={colors.primary} />
+                    <Text numberOfLines={1} style={[styles.slotClientText, { color: colors.primary }]}>
+                      {(matchingFixed?.customer_name || 'Fixo').split(' ')[0]} • Fixo
                     </Text>
                   </View>
                 ) : status === 'free' ? (
