@@ -75,7 +75,7 @@ export function VenueHeroHeader({ venue, onBack, hideBack = false }) {
         {/* Marca SportsF flutuante no modo link exclusivo (sem a barra branca vazia) */}
         {hideBack ? (
           <View style={styles.brandOverlay}>
-            <SportsFLogo height={22} color={colors.primary} />
+            <SportsFLogo height={18} color={colors.primary} />
           </View>
         ) : null}
 
@@ -290,14 +290,16 @@ const styles = StyleSheet.create({
   },
   brandOverlay: {
     position: 'absolute',
-    top: 12,
-    left: 12,
+    top: 10,
+    left: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: theme.radius.full,
+    borderWidth: 1,
+    borderColor: 'rgba(15, 23, 42, 0.08)',
     zIndex: 2,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
