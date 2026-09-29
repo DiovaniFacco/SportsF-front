@@ -15,7 +15,7 @@ import { X, User, Phone, FileText, CheckCircle2, ShieldAlert, Banknote, Repeat }
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { createBooking } from '../../api/bookings';
-import { createFixedSchedule, weekdayLabel, extractApiError } from '../../api/fixedSchedules';
+import { createFixedSchedule, launchFixedScheduleDay, weekdayLabel, extractApiError } from '../../api/fixedSchedules';
 import { getTodayStrInSaoPaulo } from '../../utils/datetime';
 import { formatBRL, parseBRLInput } from '../../utils/payment';
 import { DatePickerInput } from '../common/DatePickerInput';
@@ -111,7 +111,8 @@ export function ManualBookingModal({
     setErrorMessage('');
 
     try {
-      // Modo horário fixo: cria a série semanal (sem data final).
+      // Modo horário fixo: cria a série semanal e já lança o dia escolhido
+      // com o valor recebido (igual a um agendamento normal).
       if (isFixed) {
         const dow = weekdayOfDate(date);
         if (dow == null) {
@@ -119,7 +120,13 @@ export function ManualBookingModal({
           setSubmitting(false);
           return;
         }
-        await createFixedSchedule({
+        const paidAmount = parseBRLInput(paidInput);
+        if (!Number.isFinite(paidAmount)) {
+          setErrorMessage('Informe um valor pago válido (ex: 0, 40 ou 80).');
+          setSubmitting(false);
+          return;
+        }
+        const created = await createFixedSchedule({
           courtId: selectedCourtId,
           dayOfWeek: dow,
           startTime,
@@ -130,8 +137,33 @@ export function ManualBookingModal({
           validUntil: null,
           notes: notes.trim() || null,
         });
+        const createdId = created?.id;
+        if (createdId) {
+          try {
+            await launchFixedScheduleDay(createdId, {
+              courtId: selectedCourtId,
+              date: date.substring(0, 10),
+              startTime,
+              endTime,
+              customerName: customerName.trim(),
+              customerPhone: customerPhone.trim() || null,
+              paidAmount,
+              notes: notes.trim() || `Primeiro dia do horário fixo`,
+            });
+          } catch (launchErr) {
+            console.warn('Série fixa criada, falha ao lançar o dia:', launchErr);
+            const detail = extractApiError?.(launchErr, 'não foi possível lançar o dia.') || 'não foi possível lançar o dia.';
+            const msg = `Horário fixo criado: toda ${weekdayLabel(dow, true)} ${startTime} às ${endTime}. Porém o dia ${date.substring(0, 10)} ${detail} Lance manualmente na agenda.`;
+            if (Platform.OS === 'web') window.alert(msg);
+            else Alert.alert('Série criada', msg);
+            onSuccess?.();
+            onClose();
+            return;
+          }
+        }
 
-        const msg = `Horário fixo criado: toda ${weekdayLabel(dow, true)} ${startTime} às ${endTime}.`;
+        const statusHint = paidAmount > 0 ? ' Dia lançado com pagamento.' : ' Dia lançado como NÃO PAGO.';
+        const msg = `Horário fixo criado: toda ${weekdayLabel(dow, true)} ${startTime} às ${endTime}.${statusHint}`;
         if (Platform.OS === 'web') {
           window.alert(msg);
         } else {
@@ -307,8 +339,8 @@ export function ManualBookingModal({
                   </Text>
                   <Text style={[styles.fixedDesc, { color: colors.textSecondary }]}>
                     {isFixed && fixedDow != null
-                      ? `Toda ${weekdayLabel(fixedDow, true)} ${startTime} às ${endTime}, sem data final.`
-                      : 'Cria um horário fixo em vez de uma reserva única.'}
+                      ? `Toda ${weekdayLabel(fixedDow, true)} ${startTime} às ${endTime}, sem data final. O dia ${date.substring(0, 10)} já entra lançado com o valor abaixo.`
+                      : 'Cria um horário fixo em vez de uma reserva única (o dia escolhido já entra lançado com pagamento).'}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -380,10 +412,11 @@ export function ManualBookingModal({
               </View>
             </View>
 
-            {/* Pagamento: quanto já foi recebido (só reserva avulsa) */}
-            {!isFixed ? (
+            {/* Pagamento: quanto já foi recebido (vale para avulsa e p/ o 1º dia do fixo) */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Valor já recebido (R$) *</Text>
+              <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>
+                {isFixed ? 'Valor recebido neste dia (R$) *' : 'Valor já recebido (R$) *'}
+              </Text>
               <View style={[styles.inputWrapper, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <Banknote size={18} color={colors.textMuted} style={{ marginRight: 10 }} />
                 <TextInput
@@ -452,7 +485,6 @@ export function ManualBookingModal({
                 </TouchableOpacity>
               </View>
             </View>
-            ) : null}
           </ScrollView>
 
           {/* Footer Buttons */}

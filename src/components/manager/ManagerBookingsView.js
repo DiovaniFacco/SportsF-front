@@ -24,6 +24,7 @@ import {
   FileText,
   Banknote,
   X,
+  Repeat,
 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
@@ -289,6 +290,9 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
     const client = item.customer_name || item.user?.name || 'Cliente';
     const phone = item.customer_phone || item.user?.phone || '—';
     const isTogglingPayment = togglingPaymentId === item.id;
+    const isFixedDay = Boolean(
+      item.court_fixed_schedule_id ?? item.fixed_schedule_id ?? item.fixedSchedule?.id,
+    );
 
     return (
       <View
@@ -332,6 +336,12 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
                 {payBadge.label}
               </Text>
             </View>
+            {isFixedDay ? (
+              <View style={[styles.badge, { backgroundColor: colors.primaryLight }]}>
+                <Repeat size={13} color={colors.primary} style={{ marginRight: 4 }} />
+                <Text style={[styles.badgeText, { color: colors.primary }]}>FIXO</Text>
+              </View>
+            ) : null}
           </View>
         </View>
 

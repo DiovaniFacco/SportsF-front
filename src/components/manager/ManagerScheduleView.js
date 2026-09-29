@@ -35,15 +35,12 @@ import { getTodayStrInSaoPaulo } from '../../utils/datetime';
 import { getCourtBlocks, deleteCourtBlock } from '../../api/courtBlocks';
 import { getAvailableSlots } from '../../api/slots';
 import {
-  skipFixedScheduleDate,
-  deleteFixedSchedule,
   getFixedSchedule,
-  formatDateBR,
   extractApiError,
 } from '../../api/fixedSchedules';
 import { FixedScheduleModal } from './FixedScheduleModal';
 import { FixedSchedulesListModal } from './FixedSchedulesListModal';
-import { FixedOccurrenceLaunchModal } from './FixedOccurrenceLaunchModal';
+import { FixedDayModal } from './FixedDayModal';
 import { EmptyState } from '../common/EmptyState';
 import { ManagerMetricsCards } from './ManagerMetricsCards';
 import { ScrollableRow } from '../common/ScrollableRow';
@@ -67,7 +64,7 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
   const [isFixedListOpen, setIsFixedListOpen] = useState(false);
   const [isFixedFormOpen, setIsFixedFormOpen] = useState(false);
   const [editingFixed, setEditingFixed] = useState(null);
-  const [launchCtx, setLaunchCtx] = useState(null); // { fixed, date }
+  const [dayCtx, setDayCtx] = useState(null); // { fixed, date, initialBooking }
 
   // Lista de quadras ativas
   const activeCourtsList = courts.length > 0 ? courts : [
@@ -268,80 +265,36 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
     ? activeCourtsList
     : activeCourtsList.filter((c) => String(c.id) === String(selectedCourtId));
 
-  // Clique num slot de horário fixo: desmarcar só o dia, editar ou excluir a série.
-  const handleFixedSlotClick = (slotInfo, court) => {
-    const fixedId = slotInfo?.fixed?.id ?? slotInfo?.slot?.fixed_schedule_id ?? null;
-    const customer = slotInfo?.fixed?.customer_name ?? slotInfo?.slot?.fixed_customer_name ?? 'Horário fixo';
-    const timeLabel = slotInfo?.startTime && slotInfo?.endTime
-      ? `${slotInfo.startTime} às ${slotInfo.endTime}`
-      : 'neste horário';
-    const dateBR = formatDateBR(selectedDate);
-
-    const doSkipDay = async () => {
-      try {
-        await skipFixedScheduleDate(fixedId, selectedDate);
-        const msg = `Horário desmarcado só para ${dateBR}. A série continua nos demais dias.`;
-        if (Platform.OS === 'web') window.alert(msg);
-        else Alert.alert('Desmarcado', msg);
-        fetchScheduleData(true);
-      } catch (err) {
-        const msg = extractApiError(err, 'Não foi possível desmarcar este dia.');
-        if (Platform.OS === 'web') window.alert(msg);
-        else Alert.alert('Erro', msg);
-      }
-    };
-
-    const doDeleteSeries = async () => {
-      try {
-        await deleteFixedSchedule(fixedId);
-        const msg = 'Série fixa excluída. Todas as ocorrências futuras foram liberadas.';
-        if (Platform.OS === 'web') window.alert(msg);
-        else Alert.alert('Excluído', msg);
-        fetchScheduleData(true);
-      } catch (err) {
-        const msg = extractApiError(err, 'Não foi possível excluir a série.');
-        if (Platform.OS === 'web') window.alert(msg);
-        else Alert.alert('Erro', msg);
-      }
-    };
-
-    const title = 'Horário Fixo';
-    const message = `"${customer}" • ${timeLabel} • ${dateBR}\n\nLançar o dia (com pagamento), desmarcar SÓ este dia (a série continua) ou excluir a série toda?`;
-
-    const doLaunchDay = async () => {
-      try {
-        const full = await getFixedSchedule(fixedId);
-        if (!full) throw new Error('Série não encontrada.');
-        setLaunchCtx({ fixed: full, date: selectedDate });
-      } catch (err) {
-        const msg = extractApiError(err, 'Não foi possível abrir o lançamento do dia.');
-        if (Platform.OS === 'web') window.alert(msg);
-        else Alert.alert('Erro', msg);
-      }
-    };
-
-    if (Platform.OS === 'web') {
-      const choice = window.prompt(
-        `${title}\n\n${message}\n\nDigite: 1 = Lançar dia (pagamento) | 2 = Desmarcar só este dia | 3 = Excluir série toda | 4 = Gerenciar`,
-        '1',
-      );
-      if (choice === '1') doLaunchDay();
-      else if (choice === '2') doSkipDay();
-      else if (choice === '3') {
-        if (window.confirm('Excluir a série fixa inteira? Todas as ocorrências futuras serão liberadas.')) {
-          doDeleteSeries();
-        }
-      } else if (choice === '4') setIsFixedListOpen(true);
-      return;
+  // Clique num slot de horário fixo: abre o gerenciamento do dia
+  // (lançar com pagamento, desmarcar só o dia, excluir a série).
+  const openFixedDay = async (fixedId, initialBooking = null) => {
+    if (fixedId == null) return;
+    try {
+      const full = await getFixedSchedule(fixedId);
+      if (!full) throw new Error('Série não encontrada.');
+      setDayCtx({ fixed: full, date: selectedDate, initialBooking });
+    } catch (err) {
+      const msg = extractApiError(err, 'Não foi possível abrir o gerenciamento do dia.');
+      if (Platform.OS === 'web') window.alert(msg);
+      else Alert.alert('Erro', msg);
     }
+  };
 
-    Alert.alert(title, message, [
-      { text: 'Fechar', style: 'cancel' },
-      { text: 'Gerenciar', onPress: () => setIsFixedListOpen(true) },
-      { text: 'Excluir série', style: 'destructive', onPress: doDeleteSeries },
-      { text: 'Desmarcar dia', onPress: doSkipDay },
-      { text: 'Lançar dia', onPress: doLaunchDay },
-    ]);
+  const handleFixedSlotClick = (slotInfo) => {
+    const fixedId = slotInfo?.fixed?.id ?? slotInfo?.slot?.fixed_schedule_id ?? null;
+    openFixedDay(fixedId);
+  };
+
+  // Agendamento vinculado a um fixo: gerencia o dia (pagamento/lançamento)
+  // em vez do fluxo avulso de cancelar.
+  const handleFixedBookingClick = (booking) => {
+    const fixedId = booking?.court_fixed_schedule_id
+      ?? booking?.fixed_schedule_id
+      ?? booking?.fixedSchedule?.id
+      ?? null;
+    if (fixedId == null) return false;
+    openFixedDay(fixedId, booking);
+    return true;
   };
 
   // Controles FIXOS: seletor de datas e filtro por quadra ficam sempre visíveis,
@@ -513,7 +466,7 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
 
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: colors.primary }]} />
-          <Text style={[styles.legendText, { color: colors.textMuted }]}>Horário Fixo (toque p/ desmarcar)</Text>
+          <Text style={[styles.legendText, { color: colors.textMuted }]}>Horário Fixo (toque p/ gerenciar o dia)</Text>
         </View>
 
         <View style={styles.legendItem}>
@@ -566,9 +519,13 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
                 if (slotInfo.block) {
                   handleRemoveBlock(slotInfo.block, slotInfo);
                 } else if (slotInfo.fixed) {
-                  handleFixedSlotClick(slotInfo, court);
+                  handleFixedSlotClick(slotInfo);
                 } else if (slotInfo.booking) {
                   const b = slotInfo.booking;
+                  // Dia de fixo já lançado: abre o gerenciamento do dia
+                  // (pagamento, cancelar lançamento, desmarcar) em vez do
+                  // cancelar avulso — mantém o vínculo com a série.
+                  if (handleFixedBookingClick(b)) return;
                   const client = b.customer_name || b.user?.name || 'Cliente';
                   const origin = b.is_manual ? 'Balcão / Presencial' : 'Aplicativo';
                   const startStr = extractTimeStr(b.start_time);
@@ -633,13 +590,19 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
           fetchScheduleData(true);
         }}
       />
-      <FixedOccurrenceLaunchModal
-        visible={Boolean(launchCtx)}
+      <FixedDayModal
+        visible={Boolean(dayCtx)}
         courts={activeCourtsList}
-        fixed={launchCtx?.fixed || null}
-        date={launchCtx?.date || null}
-        onClose={() => setLaunchCtx(null)}
-        onSuccess={() => fetchScheduleData(true)}
+        fixed={dayCtx?.fixed || null}
+        date={dayCtx?.date || null}
+        initialBooking={dayCtx?.initialBooking || null}
+        onClose={() => setDayCtx(null)}
+        onChanged={() => fetchScheduleData(true)}
+        onOpenEdit={(fixed) => {
+          setDayCtx(null);
+          setEditingFixed(fixed);
+          setIsFixedFormOpen(true);
+        }}
       />
     </View>
   );

@@ -11,16 +11,19 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import { X, Repeat, CheckCircle2, User, Phone } from 'lucide-react-native';
+import { X, Repeat, CheckCircle2, User, Phone, Banknote } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import {
   createFixedSchedule,
   updateFixedSchedule,
+  launchFixedScheduleDay,
   weekdayLabel,
+  weekdayOfDate,
   formatDateBR,
   extractApiError,
 } from '../../api/fixedSchedules';
+import { formatBRL, parseBRLInput } from '../../utils/payment';
 import { getTodayStrInSaoPaulo } from '../../utils/datetime';
 import { DatePickerInput } from '../common/DatePickerInput';
 import { TimePickerInput } from '../common/TimePickerInput';
@@ -50,6 +53,10 @@ export function FixedScheduleModal({
   const [hasEnd, setHasEnd] = useState(false);
   const [validUntil, setValidUntil] = useState(getTodayStrInSaoPaulo());
   const [notes, setNotes] = useState('');
+  // Baixa do primeiro dia (igual a um agendamento normal): cria a série e
+  // já lança a primeira data com o valor recebido.
+  const [launchFirstDay, setLaunchFirstDay] = useState(true);
+  const [firstDayPaid, setFirstDayPaid] = useState('0');
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -67,8 +74,11 @@ export function FixedScheduleModal({
       setHasEnd(Boolean(fixedSchedule.valid_until));
       setValidUntil(String(fixedSchedule.valid_until || getTodayStrInSaoPaulo()).substring(0, 10));
       setNotes(fixedSchedule.notes || '');
+      setLaunchFirstDay(false);
+      setFirstDayPaid('0');
     } else {
-      setSelectedCourtId(initialCourtId || fixedSchedule?.court_id || (courts.length > 0 ? courts[0].id : null));
+      const initialCourt = initialCourtId || fixedSchedule?.court_id || (courts.length > 0 ? courts[0].id : null);
+      setSelectedCourtId(initialCourt);
       setDayOfWeek(1);
       setStartTime('19:00');
       setEndTime('20:00');
@@ -78,9 +88,57 @@ export function FixedScheduleModal({
       setHasEnd(false);
       setValidUntil(getTodayStrInSaoPaulo());
       setNotes('');
+      setLaunchFirstDay(true);
+      setFirstDayPaid('0');
     }
     setErrorMessage('');
   }, [visible]);
+
+  // Valor estimado do horário (tarifa da quadra × duração)
+  const selectedCourt = courts.find((c) => String(c?.id) === String(selectedCourtId));
+  const toMin = (t) => {
+    const m = String(t || '').match(/^(\d{1,2}):(\d{2})/);
+    return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+  };
+  const sMin = toMin(startTime);
+  const eMin = toMin(endTime);
+  const durationH = sMin != null && eMin != null && eMin > sMin ? (eMin - sMin) / 60 : 1;
+  const courtRate = selectedCourt?.hourly_rate != null ? Number(selectedCourt.hourly_rate) : null;
+  const expected = courtRate != null && Number.isFinite(courtRate)
+    ? Math.round(courtRate * durationH * 100) / 100
+    : null;
+
+  // Primeira data da série: a partir de validFrom, no dia da semana escolhido.
+  const firstDate = (() => {
+    const base = String(validFrom || '').substring(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(base)) return null;
+    const [y, m, d] = base.split('-').map(Number);
+    const cursor = new Date(y, m - 1, d);
+    if (Number.isNaN(cursor.getTime())) return null;
+    for (let i = 0; i < 8; i++) {
+      if (cursor.getDay() === Number(dayOfWeek)) break;
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${cursor.getFullYear()}-${pad(cursor.getMonth() + 1)}-${pad(cursor.getDate())}`;
+  })();
+
+  // Trocar o dia da semana ajusta o início para a próxima data válida,
+  // evitando o erro "data não cai no dia da série".
+  const handleDayChange = (d) => {
+    setDayOfWeek(d);
+    const base = String(validFrom || '').substring(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(base)) return;
+    if (weekdayOfDate(base) === Number(d)) return;
+    const [y, m, day] = base.split('-').map(Number);
+    const cursor = new Date(y, m - 1, day);
+    for (let i = 0; i < 8; i++) {
+      if (cursor.getDay() === Number(d)) break;
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    const pad = (n) => String(n).padStart(2, '0');
+    setValidFrom(`${cursor.getFullYear()}-${pad(cursor.getMonth() + 1)}-${pad(cursor.getDate())}`);
+  };
 
   const handleSubmit = async () => {
     if (!selectedCourtId) {
@@ -93,6 +151,11 @@ export function FixedScheduleModal({
     }
     if (!startTime || !endTime) {
       setErrorMessage('Informe início e término.');
+      return;
+    }
+    const paidFirst = parseBRLInput(firstDayPaid);
+    if (!isEditing && launchFirstDay && !Number.isFinite(paidFirst)) {
+      setErrorMessage('Informe um valor válido para o primeiro dia (ex: 0, 40 ou 80).');
       return;
     }
 
@@ -111,8 +174,11 @@ export function FixedScheduleModal({
           valid_until: hasEnd ? validUntil : null,
           notes: notes.trim() || null,
         });
+        const msg = 'Horário fixo atualizado!';
+        if (Platform.OS === 'web') window.alert(msg);
+        else Alert.alert('Sucesso', msg);
       } else {
-        await createFixedSchedule({
+        const created = await createFixedSchedule({
           courtId: selectedCourtId,
           dayOfWeek: Number(dayOfWeek),
           startTime,
@@ -123,13 +189,41 @@ export function FixedScheduleModal({
           validUntil: hasEnd ? validUntil : null,
           notes: notes.trim() || null,
         });
-      }
+        const createdId = created?.id;
+        // Baixa do primeiro dia com pagamento (igual a um agendamento normal).
+        // O dia lançado entra em Agendamentos, Faturamento e Métricas.
+        if (launchFirstDay && createdId && firstDate) {
+          try {
+            await launchFixedScheduleDay(createdId, {
+              courtId: selectedCourtId,
+              date: firstDate,
+              startTime,
+              endTime,
+              customerName: customerName.trim(),
+              customerPhone: customerPhone.trim() || null,
+              paidAmount: paidFirst,
+              notes: `Primeiro dia do horário fixo (${formatDateBR(firstDate)})`,
+            });
+          } catch (launchErr) {
+            const detail = extractApiError(launchErr, 'não foi possível lançar o primeiro dia.');
+            onSuccess?.();
+            setErrorMessage(
+              `Série criada, mas o dia ${formatDateBR(firstDate)} não pôde ser lançado: ${detail} Lance manualmente na agenda.`,
+            );
+            setSubmitting(false);
+            return;
+          }
+        }
 
-      const msg = isEditing
-        ? 'Horário fixo atualizado!'
-        : `Horário fixo criado: toda ${weekdayLabel(dayOfWeek, true)} ${startTime} às ${endTime}.`;
-      if (Platform.OS === 'web') window.alert(msg);
-      else Alert.alert('Sucesso', msg);
+        const statusHint = !launchFirstDay
+          ? ' Lance os dias na agenda para dar baixa com pagamento.'
+          : paidFirst > 0
+            ? ` Primeiro dia (${firstDate ? formatDateBR(firstDate) : ''}) lançado com ${formatBRL(paidFirst)}.`
+            : ` Primeiro dia (${firstDate ? formatDateBR(firstDate) : ''}) lançado como NÃO PAGO.`;
+        const msg = `Horário fixo criado: toda ${weekdayLabel(dayOfWeek, true)} ${startTime} às ${endTime}.${statusHint}`;
+        if (Platform.OS === 'web') window.alert(msg);
+        else Alert.alert('Sucesso', msg);
+      }
 
       onSuccess?.();
       onClose();
@@ -218,7 +312,7 @@ export function FixedScheduleModal({
                     <TouchableOpacity
                       key={d}
                       activeOpacity={0.7}
-                      onPress={() => setDayOfWeek(d)}
+                      onPress={() => handleDayChange(d)}
                       style={[
                         styles.weekChip,
                         {
@@ -343,6 +437,100 @@ export function FixedScheduleModal({
                 />
               </View>
             </View>
+
+            {/* Baixa do primeiro dia com pagamento (igual a um agendamento normal) */}
+            {!isEditing ? (
+              <View
+                style={[
+                  styles.firstDayBox,
+                  {
+                    backgroundColor: launchFirstDay ? colors.primaryLight : colors.background,
+                    borderColor: launchFirstDay ? colors.primary : colors.border,
+                  },
+                ]}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.endTitle, { color: colors.textPrimary }]}>
+                      Dar baixa do primeiro dia{firstDate ? ` (${formatDateBR(firstDate)})` : ''}
+                    </Text>
+                    <Text style={[styles.endDesc, { color: colors.textSecondary }]}>
+                      Igual a um agendamento normal: o dia entra em Agendamentos, Faturamento e Métricas. Os próximos dias você lança tocando na data, na agenda ou em Horários Fixos.
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    accessibilityRole="switch"
+                    accessibilityState={{ checked: launchFirstDay }}
+                    onPress={() => setLaunchFirstDay((prev) => !prev)}
+                    style={[
+                      styles.toggleTrack,
+                      {
+                        backgroundColor: launchFirstDay ? colors.primary : colors.border,
+                        borderColor: launchFirstDay ? colors.primary : colors.borderStrong,
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.toggleThumb,
+                        {
+                          backgroundColor: colors.white,
+                          alignSelf: launchFirstDay ? 'flex-end' : 'flex-start',
+                        },
+                      ]}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                {launchFirstDay ? (
+                  <View style={{ marginTop: 10 }}>
+                    <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Valor recebido neste dia (R$)</Text>
+                    <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                      <Banknote size={18} color={colors.textMuted} style={{ marginRight: 10 }} />
+                      <TextInput
+                        style={[styles.input, { color: colors.textPrimary }]}
+                        value={firstDayPaid}
+                        onChangeText={setFirstDayPaid}
+                        placeholder="Ex: 0, 40 ou 80"
+                        keyboardType="decimal-pad"
+                        placeholderTextColor={colors.textMuted}
+                      />
+                    </View>
+                    <Text style={[styles.endDesc, { color: colors.textSecondary, marginTop: 6 }]}>
+                      {expected != null ? `Valor do horário: ${formatBRL(expected)}. ` : ''}
+                      {(() => {
+                        const paid = parseBRLInput(firstDayPaid);
+                        if (!Number.isFinite(paid) || paid <= 0) return 'Ficará como NÃO PAGO.';
+                        if (expected != null && paid >= expected) return 'Ficará como PAGO.';
+                        return 'Ficará como PENDENTE (pagamento parcial).';
+                      })()}
+                    </Text>
+                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+                      <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() => setFirstDayPaid('0')}
+                        style={[styles.miniBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                      >
+                        <Text style={[styles.miniBtnText, { color: colors.textSecondary }]}>Não pago</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() => { if (expected != null) setFirstDayPaid(String(expected)); }}
+                        style={[styles.miniBtn, { backgroundColor: colors.successSurface, borderColor: colors.success }]}
+                      >
+                        <Banknote size={14} color={colors.success} style={{ marginRight: 6 }} />
+                        <Text style={[styles.miniBtnText, { color: colors.success }]}>Valor total</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ) : null}
+              </View>
+            ) : (
+              <Text style={[styles.endDesc, { color: colors.textMuted, marginBottom: 12 }]}>
+                O pagamento é lançado por dia: toque na data (na agenda ou em Horários Fixos) para dar baixa. Dias lançados entram nas estatísticas como agendamento normal.
+              </Text>
+            )}
           </ScrollView>
 
           <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
@@ -446,6 +634,15 @@ const styles = StyleSheet.create({
   },
   endTitle: { fontSize: theme.typography.sizes.label, fontWeight: '800' },
   endDesc: { fontSize: theme.typography.sizes.caption, marginTop: 2, lineHeight: 15 },
+  firstDayBox: {
+    borderWidth: 1, borderRadius: theme.radius.md,
+    padding: 12, marginBottom: theme.spacing.md,
+  },
+  miniBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 10, borderRadius: theme.radius.md, borderWidth: 1,
+  },
+  miniBtnText: { fontSize: theme.typography.sizes.bodySmall, fontWeight: '700' },
   toggleTrack: {
     width: 50,
     height: 30,

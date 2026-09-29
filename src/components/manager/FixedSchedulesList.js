@@ -8,30 +8,29 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import { Repeat, Plus, Trash2, Edit3, CalendarOff, CalendarCheck, CalendarDays, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { Repeat, Plus, Trash2, Edit3, CalendarDays, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import {
   getFixedSchedules,
   getFixedScheduleOccurrences,
   deleteFixedSchedule,
-  skipFixedScheduleDate,
   unskipFixedScheduleDate,
   weekdayLabel,
-  weekdayOfDate,
-  nextOccurrence,
   formatTime,
   formatDateBR,
   extractApiError,
 } from '../../api/fixedSchedules';
 import { getTodayStrInSaoPaulo } from '../../utils/datetime';
-import { DatePickerInput } from '../common/DatePickerInput';
-import { FixedOccurrenceLaunchModal } from './FixedOccurrenceLaunchModal';
+import { FixedDayModal } from './FixedDayModal';
 
 /**
- * Conteúdo reutilizável da gestão de horários fixos (sem Modal):
- * filtro por quadra, séries, próximas ocorrências, desmarcar/reativar dia,
- * editar e excluir série. Usado na aba "Horários Fixos" e no modal da agenda.
+ * Gestão de horários fixos (séries semanais).
+ *
+ * Fluxo simples: cada série mostra as próximas datas como botões.
+ * Tocar numa data abre o gerenciamento do dia (lançar com pagamento,
+ * desmarcar só o dia, reativar, excluir a série) — sem prompts nem
+ * campos avulsos de data.
  */
 export function FixedSchedulesList({
   courts = [],
@@ -47,12 +46,8 @@ export function FixedSchedulesList({
   const [courtFilter, setCourtFilter] = useState('ALL');
   const [error, setError] = useState(null);
   const [actingId, setActingId] = useState(null);
-  // Data escolhida por série para "desmarcar dia": { [fixedId]: 'YYYY-MM-DD' }
-  // (default = próxima ocorrência válida, nunca "hoje" fora do dia da série)
-  const [skipDates, setSkipDates] = useState({});
-  const [skipErrors, setSkipErrors] = useState({});
-  // Lançar dia como agendamento normal: { fixed, date }
-  const [launchCtx, setLaunchCtx] = useState(null);
+  // Dia em gerenciamento: { fixed, date, skipped, exception }
+  const [dayCtx, setDayCtx] = useState(null);
   // Ocorrências expandidas: { [fixedId]: [{date, date_br, skipped}] }
   const [expandedId, setExpandedId] = useState(null);
   const [occMap, setOccMap] = useState({});
@@ -112,44 +107,6 @@ export function FixedSchedulesList({
     );
   };
 
-  const handleSkip = async (fixed, presetDate = null) => {
-    const date = (presetDate || skipDates[fixed.id] || nextOccurrence(fixed) || getTodayStrInSaoPaulo()).substring(0, 10);
-    // Trava local: impede o erro confuso do backend quando a data não cai
-    // no dia da semana da série (ex: série de quarta com campo em terça).
-    if (weekdayOfDate(date) !== Number(fixed.day_of_week)) {
-      setSkipErrors((prev) => ({
-        ...prev,
-        [fixed.id]: `Escolha uma ${weekdayLabel(fixed.day_of_week, true)} — ${formatDateBR(date)} não é dia da série.`,
-      }));
-      return;
-    }
-    setSkipErrors((prev) => {
-      const next = { ...prev };
-      delete next[fixed.id];
-      return next;
-    });
-    setActingId(`skip-${fixed.id}`);
-    try {
-      await skipFixedScheduleDate(fixed.id, date);
-      await fetchList();
-      setOccMap((prev) => {
-        const next = { ...prev };
-        delete next[fixed.id];
-        return next;
-      });
-      onChanged?.();
-      const msg = `Horário desmarcado só para ${formatDateBR(date)}. A série continua nos demais dias.`;
-      if (Platform.OS === 'web') window.alert(msg);
-      else Alert.alert('Desmarcado', msg);
-    } catch (err) {
-      const msg = extractApiError(err, 'Não foi possível desmarcar este dia.');
-      if (Platform.OS === 'web') window.alert(msg);
-      else Alert.alert('Erro', msg);
-    } finally {
-      setActingId(null);
-    }
-  };
-
   const handleUnskip = async (fixed, exception) => {
     setActingId(`unskip-${exception.id}`);
     try {
@@ -191,35 +148,17 @@ export function FixedSchedulesList({
     }
   };
 
-  // Toque numa data futura: lançar o dia (com pagamento) ou desmarcar.
-  // Toque numa data desmarcada: reativar.
-  const handleOccurrenceTap = (fixed, occ) => {
-    if (occ.skipped) {
-      const ex = (Array.isArray(fixed.exceptions) ? fixed.exceptions : [])
-        .find((e) => String(e.date).substring(0, 10) === occ.date);
-      if (!ex) {
-        fetchList();
-        return;
-      }
-      handleUnskip(fixed, ex);
-      return;
-    }
-    const title = `Dia ${occ.date_br}`;
-    const message = `"${fixed.customer_name}" • ${formatTime(fixed.start_time)} às ${formatTime(fixed.end_time)}\n\nLançar como agendamento do dia (com pagamento) ou desmarcar só este dia?`;
-    if (Platform.OS === 'web') {
-      const choice = window.prompt(
-        `${title}\n\n${message}\n\nDigite: 1 = Lançar dia (pagamento) | 2 = Desmarcar dia`,
-        '1',
-      );
-      if (choice === '1') setLaunchCtx({ fixed, date: occ.date });
-      else if (choice === '2') handleSkip(fixed, occ.date);
-      return;
-    }
-    Alert.alert(title, message, [
-      { text: 'Fechar', style: 'cancel' },
-      { text: 'Desmarcar dia', onPress: () => handleSkip(fixed, occ.date) },
-      { text: 'Lançar dia', onPress: () => setLaunchCtx({ fixed, date: occ.date }) },
-    ]);
+  // Toque numa data: abre o gerenciamento do dia (lançar/desmarcar/reativar).
+  const openDay = (fixed, occ) => {
+    const exception = (Array.isArray(fixed.exceptions) ? fixed.exceptions : [])
+      .find((e) => String(e.date).substring(0, 10) === occ.date) || null;
+    setDayCtx({ fixed, date: occ.date, skipped: Boolean(occ.skipped), exception });
+  };
+
+  const refreshAfterDayChange = async () => {
+    await fetchList();
+    setOccMap({});
+    onChanged?.();
   };
 
   const courtName = (id) => courts.find((c) => String(c.id) === String(id))?.name || `Quadra ${id}`;
@@ -276,6 +215,10 @@ export function FixedSchedulesList({
         </TouchableOpacity>
       </View>
 
+      <Text style={[styles.helper, { color: colors.textMuted }]}>
+        Toque em “Ver próximas datas” e depois numa data para lançar o dia com pagamento ou desmarcar só aquele dia.
+      </Text>
+
       <View style={styles.list}>
         {loading ? (
           <View style={styles.center}>
@@ -298,7 +241,6 @@ export function FixedSchedulesList({
           </View>
         ) : (
           filtered.map((fixed) => {
-            const exceptions = Array.isArray(fixed.exceptions) ? fixed.exceptions : [];
             const isExpanded = String(expandedId) === String(fixed.id);
             const occ = occMap[fixed.id] || [];
             return (
@@ -331,7 +273,7 @@ export function FixedSchedulesList({
 
                 <TouchableOpacity
                   onPress={() => toggleOccurrences(fixed)}
-                  style={[styles.occToggle, { borderColor: colors.border }]}
+                  style={[styles.occToggle, { borderColor: colors.border, backgroundColor: colors.surface }]}
                   activeOpacity={0.7}
                 >
                   <CalendarDays size={13} color={colors.primary} />
@@ -353,16 +295,19 @@ export function FixedSchedulesList({
                       </Text>
                     ) : (
                       <>
+                        <Text style={[styles.occHint, { color: colors.textMuted }]}>
+                          Toque numa data para lançar com pagamento ou desmarcar só ela:
+                        </Text>
                         <View style={styles.occChips}>
                           {occ.slice(0, 8).map((o) => (
                             <TouchableOpacity
                               key={o.date}
                               activeOpacity={0.7}
-                              onPress={() => handleOccurrenceTap(fixed, o)}
+                              onPress={() => openDay(fixed, o)}
                               style={[
                                 styles.occChip,
                                 {
-                                  backgroundColor: o.skipped ? colors.backgroundSecondary : colors.primaryLight,
+                                  backgroundColor: o.skipped ? colors.backgroundSecondary ?? colors.background : colors.primaryLight,
                                   borderColor: o.skipped ? colors.border : colors.primary,
                                 },
                               ]}
@@ -391,73 +336,15 @@ export function FixedSchedulesList({
                   </View>
                 ) : null}
 
-                {exceptions.length > 0 ? (
-                  <View style={styles.exceptionsBox}>
-                    <Text style={[styles.exceptionsTitle, { color: colors.textSecondary }]}>
-                      Dias desmarcados ({exceptions.length}):
-                    </Text>
-                    {exceptions.map((ex) => (
-                      <View key={ex.id} style={styles.exceptionRow}>
-                        <Text style={[styles.exceptionDate, { color: colors.textPrimary }]}>
-                          {formatDateBR(ex.date)}{ex.reason ? ` • ${ex.reason}` : ''}
-                        </Text>
-                        <TouchableOpacity
-                          onPress={() => handleUnskip(fixed, ex)}
-                          disabled={actingId === `unskip-${ex.id}`}
-                          style={[styles.unskipBtn, { borderColor: colors.success }]}
-                        >
-                          {actingId === `unskip-${ex.id}` ? (
-                            <ActivityIndicator size="small" color={colors.success} />
-                          ) : (
-                            <>
-                              <CalendarCheck size={12} color={colors.success} />
-                              <Text style={[styles.unskipText, { color: colors.success }]}>Reativar</Text>
-                            </>
-                          )}
-                        </TouchableOpacity>
-                      </View>
-                    ))}
-                  </View>
-                ) : null}
-
-                <View style={styles.skipRow}>
-                  <View style={{ flex: 1 }}>
-                    <DatePickerInput
-                      value={skipDates[fixed.id] || nextOccurrence(fixed) || getTodayStrInSaoPaulo()}
-                      onChangeDate={(d) => {
-                        setSkipDates((prev) => ({ ...prev, [fixed.id]: d }));
-                        setSkipErrors((prev) => {
-                          const next = { ...prev };
-                          delete next[fixed.id];
-                          return next;
-                        });
-                      }}
-                      colors={colors}
-                    />
-                  </View>
+                <View style={styles.actionsRow}>
                   <TouchableOpacity
-                    onPress={() => handleSkip(fixed)}
-                    disabled={actingId === `skip-${fixed.id}`}
-                    style={[styles.skipBtn, { backgroundColor: colors.warning }]}
+                    onPress={() => toggleOccurrences(fixed)}
+                    style={[styles.actionBtnPrimary, { backgroundColor: colors.primary }]}
                     activeOpacity={0.8}
                   >
-                    {actingId === `skip-${fixed.id}` ? (
-                      <ActivityIndicator size="small" color="#FFF" />
-                    ) : (
-                      <>
-                        <CalendarOff size={13} color="#FFF" />
-                        <Text style={styles.skipBtnText}>Desmarcar dia</Text>
-                      </>
-                    )}
+                    <CalendarDays size={13} color="#FFF" />
+                    <Text style={styles.actionPrimaryText}>Gerenciar dias</Text>
                   </TouchableOpacity>
-                </View>
-                {skipErrors[fixed.id] ? (
-                  <Text style={[styles.skipError, { color: colors.error }]}>
-                    {skipErrors[fixed.id]}
-                  </Text>
-                ) : null}
-
-                <View style={styles.actionsRow}>
                   <TouchableOpacity
                     onPress={() => onOpenEdit?.(fixed)}
                     style={[styles.actionBtn, { borderColor: colors.border }]}
@@ -475,7 +362,7 @@ export function FixedSchedulesList({
                     ) : (
                       <>
                         <Trash2 size={13} color={colors.error} />
-                        <Text style={[styles.actionText, { color: colors.error }]}>Excluir série</Text>
+                        <Text style={[styles.actionText, { color: colors.error }]}>Excluir</Text>
                       </>
                     )}
                   </TouchableOpacity>
@@ -486,20 +373,18 @@ export function FixedSchedulesList({
         )}
       </View>
 
-      <FixedOccurrenceLaunchModal
-        visible={Boolean(launchCtx)}
+      <FixedDayModal
+        visible={Boolean(dayCtx)}
+        fixed={dayCtx?.fixed || null}
+        date={dayCtx?.date || null}
         courts={courts}
-        fixed={launchCtx?.fixed || null}
-        date={launchCtx?.date || null}
-        onClose={() => setLaunchCtx(null)}
-        onSuccess={() => {
-          setOccMap((prev) => {
-            const next = { ...prev };
-            if (launchCtx?.fixed?.id) delete next[launchCtx.fixed.id];
-            return next;
-          });
-          fetchList();
-          onChanged?.();
+        initialSkipped={dayCtx?.skipped || false}
+        initialException={dayCtx?.exception || null}
+        onClose={() => setDayCtx(null)}
+        onChanged={refreshAfterDayChange}
+        onOpenEdit={(f) => {
+          setDayCtx(null);
+          onOpenEdit?.(f);
         }}
       />
     </View>
@@ -509,7 +394,7 @@ export function FixedSchedulesList({
 const styles = StyleSheet.create({
   toolbar: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    marginBottom: theme.spacing.sm,
+    marginBottom: theme.spacing.xs,
   },
   filterRow: { flex: 1, flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
   filterChip: {
@@ -522,6 +407,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 8, borderRadius: theme.radius.md,
   },
   newBtnText: { color: '#FFF', fontWeight: '800', fontSize: theme.typography.sizes.bodySmall },
+  helper: { fontSize: theme.typography.sizes.caption, marginBottom: theme.spacing.sm, lineHeight: 16 },
   list: { gap: 0 },
   center: { alignItems: 'center', padding: theme.spacing.xl, gap: 8 },
   errorText: { fontWeight: '700', textAlign: 'center' },
@@ -550,6 +436,7 @@ const styles = StyleSheet.create({
     padding: theme.spacing.sm, marginTop: 8,
   },
   occEmpty: { fontSize: theme.typography.sizes.caption, fontStyle: 'italic' },
+  occHint: { fontSize: theme.typography.sizes.caption, marginBottom: 6 },
   occChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   occChip: {
     paddingHorizontal: 10, paddingVertical: 5,
@@ -557,26 +444,12 @@ const styles = StyleSheet.create({
   },
   occChipText: { fontSize: theme.typography.sizes.caption, fontWeight: '700' },
   occMore: { fontSize: theme.typography.sizes.caption, marginTop: 6 },
-  exceptionsBox: { marginTop: 8, gap: 4 },
-  exceptionsTitle: { fontSize: theme.typography.sizes.caption, fontWeight: '700' },
-  exceptionRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-  },
-  exceptionDate: { fontSize: theme.typography.sizes.bodySmall, fontWeight: '600', flex: 1 },
-  unskipBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    borderWidth: 1, borderRadius: theme.radius.md,
-    paddingHorizontal: 8, paddingVertical: 4,
-  },
-  unskipText: { fontSize: theme.typography.sizes.caption, fontWeight: '800' },
-  skipRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
-  skipBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 10, paddingVertical: 10, borderRadius: theme.radius.md,
-  },
-  skipBtnText: { color: '#FFF', fontWeight: '800', fontSize: theme.typography.sizes.caption },
-  skipError: { fontSize: theme.typography.sizes.caption, fontWeight: '600', marginTop: 4 },
   actionsRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  actionBtnPrimary: {
+    flex: 1.4, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
+    borderRadius: theme.radius.md, paddingVertical: 8,
+  },
+  actionPrimaryText: { color: '#FFF', fontSize: theme.typography.sizes.caption, fontWeight: '800' },
   actionBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
     borderWidth: 1, borderRadius: theme.radius.md, paddingVertical: 8,
