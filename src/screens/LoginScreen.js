@@ -15,6 +15,7 @@ import { Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { GoogleIcon } from '../components/common/GoogleIcon';
+import { SportsFLogo } from '../components/common/SportsFLogo';
 import { theme } from '../styles/theme';
 import { useGoogleAuth } from '../services/googleAuth';
 
@@ -145,8 +146,7 @@ export function LoginScreen({ onNavigateRegister, onBack, onLoginSuccess }) {
         {/* Brand Logo Header */}
         <View style={styles.brandHeroContainer}>
           <View style={styles.logoRow}>
-            <Text style={[styles.letraS, { color: colors.letraS }]}>S</Text>
-            <Text style={[styles.brandName, { color: colors.brandName }]}>facco</Text>
+            <SportsFLogo height={44} color={colors.primary} />
           </View>
           <Text style={[styles.title, { color: colors.textPrimary }]}>Bem-vindo de volta!</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
@@ -228,7 +228,7 @@ export function LoginScreen({ onNavigateRegister, onBack, onLoginSuccess }) {
             {loading ? (
               <ActivityIndicator size="small" color={colors.white} />
             ) : (
-              <Text style={styles.primaryBtnText}>Entrar no SFACCO</Text>
+              <Text style={styles.primaryBtnText}>Entrar no SportsF</Text>
             )}
           </TouchableOpacity>
 
@@ -311,25 +311,9 @@ const styles = StyleSheet.create({
   },
   logoRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 8,
-  },
-  letraS: {
-    fontFamily:
-      Platform.OS === 'web'
-        ? "'Great Vibes', cursive, 'GreatVibes_400Regular'"
-        : 'GreatVibes_400Regular',
-    fontSize: 50,
-    marginRight: -4,
-  },
-  brandName: {
-    fontFamily:
-      Platform.OS === 'web'
-        ? "'Josefin Sans', sans-serif, 'JosefinSans_700Bold'"
-        : 'JosefinSans_700Bold',
-    fontSize: 36,
-    fontWeight: '700',
-    letterSpacing: -1,
   },
   title: {
     fontSize: theme.typography.sizes.h2,

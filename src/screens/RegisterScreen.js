@@ -14,6 +14,7 @@ import { User, Mail, Phone, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react-na
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { GoogleIcon } from '../components/common/GoogleIcon';
+import { SportsFLogo } from '../components/common/SportsFLogo';
 import { theme } from '../styles/theme';
 import { useGoogleAuth } from '../services/googleAuth';
 
@@ -159,12 +160,11 @@ export function RegisterScreen({ onNavigateLogin, onBack, onRegisterSuccess }) {
         {/* Brand Hero */}
         <View style={styles.brandHeroContainer}>
           <View style={styles.logoRow}>
-            <Text style={[styles.letraS, { color: colors.letraS }]}>S</Text>
-            <Text style={[styles.brandName, { color: colors.brandName }]}>facco</Text>
+            <SportsFLogo height={44} color={colors.primary} />
           </View>
           <Text style={[styles.title, { color: colors.textPrimary }]}>Crie sua conta</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Junte-se ao SFACCO e aproveite a melhor experiência em reservas de quadras
+            Junte-se ao SportsF e aproveite a melhor experiência em reservas de quadras
           </Text>
         </View>
 
@@ -378,25 +378,9 @@ const styles = StyleSheet.create({
   },
   logoRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 8,
-  },
-  letraS: {
-    fontFamily:
-      Platform.OS === 'web'
-        ? "'Great Vibes', cursive, 'GreatVibes_400Regular'"
-        : 'GreatVibes_400Regular',
-    fontSize: 50,
-    marginRight: -4,
-  },
-  brandName: {
-    fontFamily:
-      Platform.OS === 'web'
-        ? "'Josefin Sans', sans-serif, 'JosefinSans_700Bold'"
-        : 'JosefinSans_700Bold',
-    fontSize: 36,
-    fontWeight: '700',
-    letterSpacing: -1,
   },
   title: {
     fontSize: theme.typography.sizes.h2,

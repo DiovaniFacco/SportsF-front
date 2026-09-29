@@ -181,7 +181,7 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
                 Acesse seu Perfil
               </Text>
               <Text style={[styles.authMessage, { color: colors.textSecondary }]}>
-                Faça login para consultar seus agendamentos, alterar seus dados pessoais e gerenciar suas reservas no Sports Facco.
+                Faça login para consultar seus agendamentos, alterar seus dados pessoais e gerenciar suas reservas no SportsF.
               </Text>
               <TouchableOpacity
                 activeOpacity={0.85}
@@ -204,7 +204,7 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
 
                   <View style={styles.userInfoCol}>
                     <Text style={[styles.userName, { color: colors.textPrimary }]} numberOfLines={1}>
-                      {user?.name || 'Atleta Sports Facco'}
+                      {user?.name || 'Atleta SportsF'}
                     </Text>
                     <Text style={[styles.userEmail, { color: colors.textSecondary }]} numberOfLines={1}>
                       {user?.email || 'email@exemplo.com'}
@@ -463,14 +463,14 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
 
             <View style={styles.modalBody}>
               <Text style={[styles.helpIntro, { color: colors.textSecondary }]}>
-                Precisa de auxílio com alguma reserva ou possui dúvidas sobre o aplicativo Sports Facco?
+                Precisa de auxílio com alguma reserva ou possui dúvidas sobre o aplicativo SportsF?
               </Text>
 
               <View style={[styles.supportItem, { backgroundColor: colors.backgroundSecondary }]}>
                 <Mail size={20} color={colors.primary} />
                 <View>
                   <Text style={[styles.supportItemTitle, { color: colors.textPrimary }]}>E-mail de Suporte</Text>
-                  <Text style={[styles.supportItemValue, { color: colors.textSecondary }]}>suporte@sportsfacco.com.br</Text>
+                  <Text style={[styles.supportItemValue, { color: colors.textSecondary }]}>suporte@sportsf.com.br</Text>
                 </View>
               </View>
 
@@ -483,7 +483,7 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
               </View>
 
               <View style={[styles.versionBox, { borderColor: colors.border }]}>
-                <Text style={[styles.versionText, { color: colors.textMuted }]}>Sports Facco v1.0.0 — Todos os direitos reservados</Text>
+                <Text style={[styles.versionText, { color: colors.textMuted }]}>SportsF v1.0.0 — Todos os direitos reservados</Text>
               </View>
             </View>
 

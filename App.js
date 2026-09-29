@@ -476,7 +476,7 @@ export default function App() {
 
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
-      const id = 'google-fonts-sfacco';
+      const id = 'google-fonts-sportsf';
       if (!document.getElementById(id)) {
         const link = document.createElement('link');
         link.id = id;

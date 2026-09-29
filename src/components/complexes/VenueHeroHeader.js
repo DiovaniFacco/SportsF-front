@@ -11,6 +11,7 @@ import { ArrowLeft, MapPin, Phone, Share2, Check } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { AmenityChip } from '../common/AmenityChip';
+import { SportsFLogo } from '../common/SportsFLogo';
 import { SportsBadgeGroup } from '../common/SportsBadgeGroup';
 import { optimizeImageUrl } from '../../utils/imageUtils';
 import { shareVenueLink } from '../../utils/linking';
@@ -43,7 +44,7 @@ export function VenueHeroHeader({ venue, onBack, hideBack = false }) {
         </View>
       ) : null}
 
-      {/* Top Navigation Header with SFACCO Brand Identity (oculto no link exclusivo simplificado) */}
+      {/* Top Navigation Header with SportsF Brand Identity (oculto no link exclusivo simplificado) */}
       {!hideBack ? (
         <View style={[styles.topNavRow, { backgroundColor: colors.surface }]}>
           <TouchableOpacity
@@ -57,8 +58,7 @@ export function VenueHeroHeader({ venue, onBack, hideBack = false }) {
 
           <View style={styles.navRightRow}>
             <View style={styles.logoContainer}>
-              <Text style={[styles.letraS, { color: colors.letraS }]}>S</Text>
-              <Text style={[styles.brandName, { color: colors.brandName }]}>facco</Text>
+              <SportsFLogo height={28} color={colors.primary} />
             </View>
           </View>
         </View>
@@ -72,11 +72,10 @@ export function VenueHeroHeader({ venue, onBack, hideBack = false }) {
           resizeMode="cover"
         />
 
-        {/* Marca Sfacco flutuante no modo link exclusivo (sem a barra branca vazia) */}
+        {/* Marca SportsF flutuante no modo link exclusivo (sem a barra branca vazia) */}
         {hideBack ? (
           <View style={styles.brandOverlay}>
-            <Text style={[styles.brandOverlayS, { color: colors.letraS }]}>S</Text>
-            <Text style={[styles.brandOverlayName, { color: colors.textPrimary }]}>facco</Text>
+            <SportsFLogo height={22} color={colors.primary} />
           </View>
         ) : null}
 
@@ -202,27 +201,7 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  letraS: {
-    fontFamily:
-      Platform.OS === 'web'
-        ? "'Great Vibes', cursive, 'GreatVibes_400Regular'"
-        : 'GreatVibes_400Regular',
-    fontSize: 34,
-    marginRight: -3,
-    textShadowColor: 'rgba(136, 19, 55, 0.3)',
-    textShadowOffset: { width: 0.5, height: 0.5 },
-    textShadowRadius: 1,
-  },
-  brandName: {
-    fontFamily:
-      Platform.OS === 'web'
-        ? "'Josefin Sans', sans-serif, 'JosefinSans_700Bold'"
-        : 'JosefinSans_700Bold',
-    fontSize: 26,
-    fontWeight: '700',
-    letterSpacing: -0.5,
+    alignItems: 'center',
   },
   heroWrapper: {
     position: 'relative',
@@ -314,10 +293,10 @@ const styles = StyleSheet.create({
     top: 12,
     left: 12,
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.92)',
     paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingVertical: 6,
     borderRadius: theme.radius.full,
     zIndex: 2,
     shadowColor: '#0F172A',
@@ -325,22 +304,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 3,
-  },
-  brandOverlayS: {
-    fontFamily:
-      Platform.OS === 'web'
-        ? "'Great Vibes', cursive, 'GreatVibes_400Regular'"
-        : 'GreatVibes_400Regular',
-    fontSize: 22,
-    marginRight: -2,
-  },
-  brandOverlayName: {
-    fontFamily:
-      Platform.OS === 'web'
-        ? "'Josefin Sans', sans-serif, 'JosefinSans_700Bold'"
-        : 'JosefinSans_700Bold',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: -0.5,
   },
 });

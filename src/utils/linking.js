@@ -265,7 +265,7 @@ export async function shareVenueLink(venue) {
   if (!venue) return { success: false };
   const link = buildVenueUrl(venue);
   const title = typeof venue === 'object' ? venue.name : 'Complexo Esportivo';
-  const message = `Confira o complexo "${title}" no SFACCO: ${link}`;
+  const message = `Confira o complexo "${title}" no SportsF: ${link}`;
 
   // Tenta copiar para área de transferência na Web
   if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard) {

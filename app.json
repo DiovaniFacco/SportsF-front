@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Sports Facco",
+    "name": "SportsF",
     "slug": "front",
     "version": "1.0.1",
     "orientation": "portrait",
@@ -20,8 +20,8 @@
     "web": {
       "lang": "pt-BR",
       "favicon": "./public/favicon.png",
-      "name": "Sports Facco",
-      "shortName": "SportsFacco",
+      "name": "SportsF",
+      "shortName": "SportsF",
       "themeColor": "#881337",
       "backgroundColor": "#F8FAFC",
       "display": "standalone",

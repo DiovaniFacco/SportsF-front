@@ -1,4 +1,4 @@
-// FACCO Design Tokens v2.3.0 — Vinho Imperial & Slate / Light Mode
+// SportsF Design Tokens v2.3.0 — Vinho Imperial & Slate / Light Mode
 
 export const lightColors = {
   primary: '#881337',        // Vinho Imperial Escuro (Deep Wine Crimson)

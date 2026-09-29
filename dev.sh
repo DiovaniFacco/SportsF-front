@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # ==============================================================================
-# SFACCO - Script de Inicialização & Reinicialização Unificada (Back + Front)
+# SportsF - Script de Inicialização & Reinicialização Unificada (Back + Front)
 # ==============================================================================
 
 BACKEND_DIR="/home/diovanifacco/back"
@@ -22,7 +22,7 @@ if [[ "$1" == "--clear" || "$1" == "-c" ]]; then
 fi
 
 echo -e "${YELLOW}====================================================${NC}"
-echo -e "${BOLD}${YELLOW}   🚀 SFACCO: Reiniciando Backend & Frontend...     ${NC}"
+echo -e "${BOLD}${YELLOW}   🚀 SportsF: Reiniciando Backend & Frontend...     ${NC}"
 echo -e "${YELLOW}====================================================${NC}"
 
 # 1. Finalizar processos anteriores

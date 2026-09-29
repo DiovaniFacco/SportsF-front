@@ -359,7 +359,7 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
               <View style={[styles.channelCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <View style={styles.channelTitleRow}>
                   <Smartphone size={16} color={colors.info} style={{ marginRight: 6 }} />
-                  <Text style={[styles.channelTitle, { color: colors.textPrimary }]}>Aplicativo SFACCO</Text>
+                  <Text style={[styles.channelTitle, { color: colors.textPrimary }]}>Aplicativo SportsF</Text>
                 </View>
                 <Text style={[styles.channelCount, { color: colors.info }]}>{appCount} reservas ({appPct}%)</Text>
                 <Text style={[styles.channelSubtext, { color: colors.textMuted }]}>

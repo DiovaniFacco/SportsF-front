@@ -4,6 +4,7 @@ import { Search, X, LogIn, LogOut, Building2 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { theme } from '../../styles/theme';
+import { SportsFLogo } from './SportsFLogo';
 
 export function Header({
   searchValue,
@@ -50,8 +51,7 @@ export function Header({
       {/* Top Bar: Brand Logo & Right Action Buttons */}
       <View style={styles.topBar}>
         <View style={styles.logoContainer}>
-          <Text style={[styles.letraS, { color: colors.letraS }]}>S</Text>
-          <Text style={[styles.brandName, { color: colors.brandName }]}>facco</Text>
+          <SportsFLogo height={30} color={colors.primary} />
         </View>
 
         <View style={styles.rightActions}>
@@ -141,25 +141,8 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
     flexShrink: 1,
-  },
-  letraS: {
-    fontFamily:
-      Platform.OS === 'web'
-        ? "'Great Vibes', cursive, 'GreatVibes_400Regular'"
-        : 'GreatVibes_400Regular',
-    fontSize: 38,
-    marginRight: -4,
-  },
-  brandName: {
-    fontFamily:
-      Platform.OS === 'web'
-        ? "'Josefin Sans', sans-serif, 'JosefinSans_700Bold'"
-        : 'JosefinSans_700Bold',
-    fontSize: 27,
-    fontWeight: '700',
-    letterSpacing: -1,
   },
   rightActions: {
     flexDirection: 'row',
