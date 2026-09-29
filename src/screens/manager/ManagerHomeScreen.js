@@ -812,6 +812,8 @@ export function ManagerHomeScreen({ onBackToUserView }) {
         initialStartTime={manualModalParams?.startTime}
         initialEndTime={manualModalParams?.endTime}
         initialDate={manualModalParams?.date}
+        existingBookings={manualModalParams?.existingBookings || []}
+        existingBlocks={manualModalParams?.existingBlocks || []}
         onClose={() => {
           setIsManualModalOpen(false);
           setManualModalParams(null);

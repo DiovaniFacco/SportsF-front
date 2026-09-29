@@ -321,7 +321,7 @@ export function CourtOperatingHoursModal({ visible, court, onClose, onSuccess })
 
                 {/* Duração do Slot */}
                 <View style={{ marginTop: 10 }}>
-                  <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Duração do Slot (minutos)</Text>
+                  <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Intervalo de exibição (minutos)</Text>
                   <TextInput
                     style={[styles.input, { backgroundColor: colors.surface, color: colors.textPrimary, borderColor: colors.border }]}
                     placeholder="60"
@@ -330,6 +330,9 @@ export function CourtOperatingHoursModal({ visible, court, onClose, onSuccess })
                     value={slotDuration}
                     onChangeText={setSlotDuration}
                   />
+                  <Text style={[styles.inputLabel, { color: colors.textMuted, marginTop: 4, fontWeight: '400' }]}>
+                    Só define a grade vista pelo cliente (ex: 60 = 8h, 9h, 10h). O gestor pode lançar qualquer duração, ex: 1h30.
+                  </Text>
                 </View>
 
                 <TouchableOpacity

@@ -31,7 +31,14 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { getUserBookings, cancelBooking } from '../../api/bookings';
-import { getTodayStrInSaoPaulo } from '../../utils/datetime';
+import {
+  getTodayStrInSaoPaulo,
+  parseDateTimeMs,
+  isSameDateStr as isSameDate,
+  extractTimeStr,
+  intervalsOverlap,
+  findOverlappingBooking,
+} from '../../utils/datetime';
 import { getCourtBlocks, deleteCourtBlock } from '../../api/courtBlocks';
 import { getAvailableSlots } from '../../api/slots';
 import {
@@ -547,12 +554,17 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
                     );
                   }
                 } else {
-                  // Clicou em slot LIVRE -> Abre modal de agendamento presencial/balcão
+                  // Clicou em slot LIVRE -> Abre modal de agendamento presencial/balcão.
+                  // Envia o contexto de ocupação para validação local de sobreposição,
+                  // permitindo durações diferentes do intervalo de exibição (ex: 1h30
+                  // numa grade de 60min) sem duplo-booking.
                   onOpenManualModal?.({
                     courtId: court.id,
                     startTime: slotInfo.startTime,
                     endTime: slotInfo.endTime,
                     date: selectedDate,
+                    existingBookings: bookings.filter((b) => String(b.court_id) === String(court.id)),
+                    existingBlocks: courtBlocks.filter((cb) => String(cb.court_id) === String(court.id)),
                   });
                 }
               }}
@@ -613,37 +625,6 @@ function isIndefiniteBlock(block) {
   return Boolean(block.is_indefinite) || block.end_time == null;
 }
 
-function isSameDate(dateTimeStr, targetDateStr) {
-  if (!dateTimeStr || !targetDateStr) return false;
-  const cleanStr = String(dateTimeStr).trim();
-  const datePart = cleanStr.substring(0, 10);
-  return datePart === targetDateStr;
-}
-
-function extractTimeStr(dateTimeStr) {
-  if (!dateTimeStr) return '';
-  const str = String(dateTimeStr).trim();
-  if (str.includes('T')) {
-    return str.split('T')[1]?.substring(0, 5) || '';
-  }
-  if (str.includes(' ')) {
-    return str.split(' ')[1]?.substring(0, 5) || '';
-  }
-  return str.substring(0, 5);
-}
-
-function parseDateTimeMs(dateTimeStr) {
-  if (!dateTimeStr) return NaN;
-  const s = String(dateTimeStr).trim().replace('T', ' ');
-  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ ](\d{2}):(\d{2})(?::(\d{2}))?/);
-  if (m) {
-    const [, Y, Mo, D, H, Mi, S] = m;
-    return new Date(Number(Y), Number(Mo) - 1, Number(D), Number(H), Number(Mi), Number(S || '0')).getTime();
-  }
-  const t = Date.parse(s);
-  return Number.isNaN(t) ? NaN : t;
-}
-
 /**
  * Encontra o bloqueio que atinge um slot.
  * Suporta bloqueio de intervalo (ex: 13:00-21:00 cobrindo vários slots de 1h),
@@ -686,7 +667,7 @@ function findBlockForSlot(courtBlocks = [], slot, selectedDate) {
         extractTimeStr(cb.start_time) === extractTimeStr(slot.start_time)
       );
     }
-    return bS < slotEndMs && bE > slotStartMs;
+    return intervalsOverlap(slotStartMs, slotEndMs, bS, bE);
   });
 
   if (overlapping.length === 0) return null;
@@ -747,7 +728,9 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
         // Mantido como fallback para formatos sem end_time parseável
         return isSameDate(cb.start_time, selectedDate) && extractTimeStr(cb.start_time) === slotStartStr;
       });
-    const b = bookings.find((bk) => isSameDate(bk.start_time, selectedDate) && extractTimeStr(bk.start_time) === slotStartStr);
+    // Desacoplamento exibição x duração: qualquer sobreposição [start,end)
+    // ocupa o slot — ex: reserva 8:00-9:30 ocupa os slots 8:00 e 9:00.
+    const b = findOverlappingBooking(bookings, slot, selectedDate);
     const isFixed = Boolean(slot.is_fixed);
 
     if (isBlocked) {
@@ -844,7 +827,9 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
             const matchingBlock = hasIndefinite
               ? (indefiniteBlock || exactBlock)
               : (exactBlock || slotFallbackBlock);
-            const matchingBooking = bookings.find((b) => isSameDate(b.start_time, selectedDate) && extractTimeStr(b.start_time) === slotStartStr && b.status !== 'cancelled');
+            // Sobreposição em vez de igualdade de início: reserva 8:00-9:30
+            // aparece ocupando tanto o tile 8:00 quanto o 9:00.
+            const matchingBooking = findOverlappingBooking(bookings, slot, selectedDate);
             const matchingFixed = slot.is_fixed
               ? {
                   id: slot.fixed_schedule_id ?? null,
@@ -872,6 +857,18 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
               ? parseFloat(court.hourly_rate)
               : 150;
             const formattedPrice = `R$ ${Math.round(slotPrice)}`;
+
+            // Reserva pode ter duração diferente do intervalo de exibição
+            // (ex: 8:00-9:30 numa grade de 60min). Exibe o intervalo real
+            // quando ele não coincide com o slot, para o gestor entender
+            // por que dois tiles aparecem ocupados.
+            const bookingStartStr = matchingBooking ? extractTimeStr(matchingBooking.start_time) : null;
+            const bookingEndStr = matchingBooking ? extractTimeStr(matchingBooking.end_time) : null;
+            const bookingRange = bookingStartStr && bookingEndStr ? `${bookingStartStr}-${bookingEndStr}` : null;
+            const isSpillover = Boolean(
+              matchingBooking && bookingStartStr && bookingEndStr &&
+              (bookingStartStr !== slotStartStr || bookingEndStr !== slotEndStr)
+            );
 
             return (
               <TouchableOpacity
@@ -962,6 +959,7 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
                     <Store size={13} color={colors.holding} />
                     <Text numberOfLines={1} style={[styles.slotClientText, { color: colors.holding }]}>
                       {matchingBooking.customer_name?.split(' ')[0] || 'Balcão'}
+                      {isSpillover && bookingRange ? ` • ${bookingRange}` : ''}
                     </Text>
                   </View>
                 ) : status === 'booked_app' ? (
@@ -969,6 +967,7 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
                     <Smartphone size={13} color={colors.info} />
                     <Text numberOfLines={1} style={[styles.slotClientText, { color: colors.info }]}>
                       {(matchingBooking.customer_name || matchingBooking.user?.name)?.split(' ')[0] || 'App'}
+                      {isSpillover && bookingRange ? ` • ${bookingRange}` : ''}
                     </Text>
                   </View>
                 ) : (

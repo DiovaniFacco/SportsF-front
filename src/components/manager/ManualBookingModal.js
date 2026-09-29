@@ -16,7 +16,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { createBooking } from '../../api/bookings';
 import { createFixedSchedule, launchFixedScheduleDay, weekdayLabel, extractApiError } from '../../api/fixedSchedules';
-import { getTodayStrInSaoPaulo } from '../../utils/datetime';
+import { getTodayStrInSaoPaulo, parseDateTimeMs, intervalsOverlap, durationHoursBetween, formatDurationMinutes, timeStrToMinutes } from '../../utils/datetime';
 import { formatBRL, parseBRLInput } from '../../utils/payment';
 import { DatePickerInput } from '../common/DatePickerInput';
 import { TimePickerInput } from '../common/TimePickerInput';
@@ -31,6 +31,8 @@ export function ManualBookingModal({
   initialEndTime = '19:00',
   initialDate = null,
   onOpenBlockModal,
+  existingBookings = [],
+  existingBlocks = [],
 }) {
   const { colors } = useTheme();
 
@@ -105,6 +107,34 @@ export function ManualBookingModal({
     if (startTime >= endTime) {
       setErrorMessage('O horário de término deve ser após o horário de início.');
       return;
+    }
+    // Duração livre: não precisa ser múltiplo do intervalo de exibição
+    // (ex: 1h30 numa grade de 60min). Apenas valida sobreposição local
+    // para feedback imediato — o backend é a autoridade final.
+    const dayStr = String(date || '').substring(0, 10);
+    const newStartMs = parseDateTimeMs(`${dayStr} ${startTime.length === 5 ? `${startTime}:00` : startTime}`);
+    const newEndMs = parseDateTimeMs(`${dayStr} ${endTime.length === 5 ? `${endTime}:00` : endTime}`);
+    if (!Number.isNaN(newStartMs) && !Number.isNaN(newEndMs)) {
+      const conflictBooking = (existingBookings || []).find((b) => {
+        if (!b || b.status === 'cancelled') return false;
+        if (String(b.court_id ?? selectedCourtId) !== String(selectedCourtId)) return false;
+        return intervalsOverlap(newStartMs, newEndMs, parseDateTimeMs(b.start_time), parseDateTimeMs(b.end_time));
+      });
+      if (conflictBooking) {
+        const cs = String(conflictBooking.start_time || '').substring(11, 16);
+        const ce = String(conflictBooking.end_time || '').substring(11, 16);
+        setErrorMessage(`Conflito: já existe reserva das ${cs} às ${ce} neste intervalo. Ajuste o horário ou cancele a reserva existente.`);
+        return;
+      }
+      const conflictBlock = (existingBlocks || []).find((b) => {
+        if (!b || b.end_time == null) return false;
+        if (String(b.court_id ?? selectedCourtId) !== String(selectedCourtId)) return false;
+        return intervalsOverlap(newStartMs, newEndMs, parseDateTimeMs(b.start_time), parseDateTimeMs(b.end_time));
+      });
+      if (conflictBlock) {
+        setErrorMessage(`Conflito: este intervalo está bloqueado (${conflictBlock.reason || 'manutenção'}). Escolha outro horário.`);
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -298,7 +328,7 @@ export function ManualBookingModal({
               />
             </View>
 
-            {/* Horário Início e Término */}
+            {/* Horário Início e Término — duração livre, não precisa seguir o slot */}
             <View style={styles.rowInputs}>
               <View style={[styles.inputGroup, { flex: 1 }]}>
                 <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Início *</Text>
@@ -318,6 +348,19 @@ export function ManualBookingModal({
                 />
               </View>
             </View>
+            {(() => {
+              const sMin = timeStrToMinutes(startTime);
+              const eMin = timeStrToMinutes(endTime);
+              if (sMin == null || eMin == null || eMin <= sMin) return null;
+              const durMin = eMin - sMin;
+              const hours = durationHoursBetween(startTime, endTime);
+              return (
+                <Text style={[styles.paymentHint, { color: colors.textMuted, marginTop: -8, marginBottom: 12 }]}>
+                  Duração: {formatDurationMinutes(durMin)}
+                  {hours && hours % 1 !== 0 ? ' (não precisa ser múltiplo do intervalo de exibição)' : ''}.
+                </Text>
+              );
+            })()}
 
             {/* Repetir toda semana (horário fixo) */}
             <View

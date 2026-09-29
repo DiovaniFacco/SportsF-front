@@ -87,13 +87,17 @@ export function TimePickerInput({
     );
   }
 
-  // No Mobile (React Native), exibe Modal com lista de horários de 30 em 30 min (06:00 às 23:30)
+  // No Mobile (React Native), exibe Modal com lista de horários de 15 em 15 min
+  // (06:00 às 23:45). Granularidade fina permite durações livres (ex: 1h30)
+  // sem ficar preso ao intervalo de exibição da grade.
   const generateTimeOptions = () => {
     const options = [];
     for (let h = 6; h <= 23; h++) {
       const hourStr = String(h).padStart(2, '0');
       options.push(`${hourStr}:00`);
+      options.push(`${hourStr}:15`);
       options.push(`${hourStr}:30`);
+      options.push(`${hourStr}:45`);
     }
     options.push('00:00');
     return options;
