@@ -10,7 +10,6 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
-  Switch,
 } from 'react-native';
 import { X, Repeat, CheckCircle2, User, Phone } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
@@ -290,19 +289,46 @@ export function FixedScheduleModal({
               ) : null}
             </View>
 
-            <View style={[styles.endBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
+            <View
+              style={[
+                styles.endBox,
+                {
+                  backgroundColor: !hasEnd ? colors.primaryLight : colors.background,
+                  borderColor: !hasEnd ? colors.primary : colors.border,
+                },
+              ]}
+            >
               <View style={{ flex: 1 }}>
                 <Text style={[styles.endTitle, { color: colors.textPrimary }]}>Sem data final</Text>
                 <Text style={[styles.endDesc, { color: colors.textSecondary }]}>
                   O horário repete para sempre, até você excluir a série.
                 </Text>
               </View>
-              <Switch
-                value={!hasEnd}
-                onValueChange={(v) => setHasEnd(!v)}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor={colors.white}
-              />
+              {/* Toggle customizado com a cor do tema: o Switch nativo usa o
+                  verde padrão do sistema no web/iOS e ignora o trackColor. */}
+              <TouchableOpacity
+                activeOpacity={0.8}
+                accessibilityRole="switch"
+                accessibilityState={{ checked: !hasEnd }}
+                onPress={() => setHasEnd((prev) => !prev)}
+                style={[
+                  styles.toggleTrack,
+                  {
+                    backgroundColor: !hasEnd ? colors.primary : colors.border,
+                    borderColor: !hasEnd ? colors.primary : colors.borderStrong,
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.toggleThumb,
+                    {
+                      backgroundColor: colors.white,
+                      alignSelf: !hasEnd ? 'flex-end' : 'flex-start',
+                    },
+                  ]}
+                />
+              </TouchableOpacity>
             </View>
 
             <View style={styles.inputGroup}>
@@ -420,6 +446,24 @@ const styles = StyleSheet.create({
   },
   endTitle: { fontSize: theme.typography.sizes.label, fontWeight: '800' },
   endDesc: { fontSize: theme.typography.sizes.caption, marginTop: 2, lineHeight: 15 },
+  toggleTrack: {
+    width: 50,
+    height: 30,
+    borderRadius: theme.radius.full,
+    borderWidth: 1,
+    padding: 3,
+    justifyContent: 'center',
+  },
+  toggleThumb: {
+    width: 22,
+    height: 22,
+    borderRadius: theme.radius.full,
+    elevation: 2,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.25,
+    shadowRadius: 2,
+  },
   modalFooter: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     gap: 8, paddingHorizontal: theme.spacing.md,
