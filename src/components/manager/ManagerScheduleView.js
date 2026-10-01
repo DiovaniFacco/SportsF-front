@@ -79,14 +79,14 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
     { id: 2, name: 'Quadra Society 2 - Coberta VIP', hourly_rate: 180 },
   ];
 
-  // Gera lista de datas para atalhos rápidos (Próximos 7 dias, base hoje em SP)
+  // Gera lista de datas para atalhos rápidos (Próximos 15 dias, base hoje em SP)
   const generateDateChips = () => {
     const dates = [];
     const WEEKDAYS_PT = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
     const MONTHS_PT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
     const [baseY, baseM, baseD] = getTodayStrInSaoPaulo().split('-').map(Number);
     const base = new Date(Date.UTC(baseY, baseM - 1, baseD, 12));
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 15; i++) {
       const d = new Date(base.getTime());
       d.setUTCDate(base.getUTCDate() + i);
       const yyyy = d.getUTCFullYear();

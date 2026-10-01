@@ -58,6 +58,7 @@ export function CourtCard({ court, onSelectCourt }) {
           <Text style={[styles.courtName, { color: colors.textPrimary }]} numberOfLines={1}>
             {court.name}
           </Text>
+          <ChevronRight size={18} color={colors.textMuted} />
         </View>
 
         {/* Spec Pills & Details */}
@@ -79,15 +80,15 @@ export function CourtCard({ court, onSelectCourt }) {
           ) : null}
         </View>
 
-        {/* Footer Info (CTA) */}
-        <View style={[styles.cardFooter, { borderTopColor: colors.borderSubtle }]}>
+        {/* Footer Info (CTA) - full width para equilibrar o card */}
+        <View style={styles.cardFooter}>
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={() => onSelectCourt && onSelectCourt(court)}
             style={[styles.ctaButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
           >
             <Text style={styles.ctaText}>Ver horários</Text>
-            <ChevronRight size={14} color={colors.white} style={{ marginLeft: 2 }} />
+            <ChevronRight size={16} color={colors.white} style={{ marginLeft: 4 }} />
           </TouchableOpacity>
         </View>
       </View>
@@ -141,12 +142,17 @@ const styles = StyleSheet.create({
     padding: theme.spacing.md,
   },
   titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: theme.spacing.xs,
   },
   courtName: {
+    flex: 1,
     fontSize: theme.typography.sizes.h3,
     fontWeight: '800',
     letterSpacing: -0.3,
+    marginRight: 8,
   },
   specsContainer: {
     flexDirection: 'row',
@@ -154,7 +160,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
     marginVertical: theme.spacing.xs,
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
   },
   specChip: {
     flexDirection: 'row',
@@ -170,16 +176,16 @@ const styles = StyleSheet.create({
   },
   cardFooter: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
     alignItems: 'center',
     paddingTop: theme.spacing.sm,
-    borderTopWidth: 1,
   },
   ctaButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 13,
     borderRadius: theme.radius.md,
     ...theme.shadows.sm,
     elevation: 3,
