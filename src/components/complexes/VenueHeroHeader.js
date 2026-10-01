@@ -130,6 +130,13 @@ export function VenueHeroHeader({ venue, onBack, hideBack = false }) {
           ) : null}
         </View>
 
+        {/* Descrição do complexo */}
+        {venue.description?.trim() ? (
+          <Text style={[styles.descriptionText, { color: colors.textSecondary }]}>
+            {venue.description.trim()}
+          </Text>
+        ) : null}
+
         {/* Amenity Chips */}
         {venue.amenities && venue.amenities.length > 0 ? (
           <View style={[styles.amenitiesContainer, { borderTopColor: colors.borderSubtle }]}>
@@ -278,6 +285,11 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: theme.typography.sizes.body,
     fontWeight: '500',
+  },
+  descriptionText: {
+    fontSize: theme.typography.sizes.body,
+    lineHeight: 20,
+    marginBottom: theme.spacing.md,
   },
   amenitiesContainer: {
     flexDirection: 'row',
