@@ -13,6 +13,7 @@ import { RegisterScreen } from './src/screens/RegisterScreen';
 import { ForgotPasswordScreen } from './src/screens/ForgotPasswordScreen';
 import { ResetPasswordScreen } from './src/screens/ResetPasswordScreen';
 import { ManagerHomeScreen } from './src/screens/manager/ManagerHomeScreen';
+import { BottomNav } from './src/components/common/BottomNav';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { getVenueIdFromUrl, syncVenueUrlInBrowser, getDefaultVenueSlug, getDefaultVenueCandidates, getSubdomainSlug, isGestaoRoute, syncGestaoUrlInBrowser, isResetRoute, getResetParams, clearResetUrlInBrowser } from './src/utils/linking';
@@ -310,8 +311,20 @@ function MainAppContent() {
   }, []);
 
   const handleTabChange = (tabId) => {
-    // No modo Simplificado travado, o usuário não navega para outras abas/complexos.
-    if (simplifiedLock) return;
+    // No modo Simplificado travado, o usuário comum não navega para outras
+    // abas/complexos. A equipe (gestor/funcionário) pode acessar Gestão,
+    // Perfil e Agendamentos sem sair do complexo.
+    if (simplifiedLock) {
+      if (tabId === 'gestao') {
+        openManagerView();
+        return;
+      }
+      if (isStaff && (tabId === 'perfil' || tabId === 'agendamentos' || tabId === 'explorar')) {
+        setActiveTab(tabId);
+        return;
+      }
+      return;
+    }
     if (tabId === 'gestao') {
       openManagerView();
     } else {
@@ -346,10 +359,63 @@ function MainAppContent() {
       );
     }
     // MODO SIMPLIFICADO (travado no complexo):
-    // sem tela inicial, sem lista/busca de outros complexos, sem abas de navegação,
+    // sem tela inicial, sem lista/busca de outros complexos,
     // sem botão voltar para a lista. Apenas quadras + horários do complexo
     // + Agendar via WhatsApp (sem criar reserva).
+    // A equipe (gestor/funcionário) mantém uma BottomNav para acessar
+    // Gestão, Perfil e Agendamentos sem sair do complexo.
     if (simplifiedLock) {
+      // Equipe: telas próprias por cima do complexo travado.
+      if (isStaff && activeTab === 'perfil') {
+        return (
+          <ProfileScreen
+            onTabChange={handleTabChange}
+            onGoToExplore={() => setActiveTab('explorar')}
+            onOpenAuth={() => setAuthScreen('login')}
+            onOpenManager={openManagerView}
+          />
+        );
+      }
+      if (isStaff && activeTab === 'agendamentos') {
+        return (
+          <MyBookingsScreen
+            onTabChange={handleTabChange}
+            onGoToExplore={() => setActiveTab('explorar')}
+            onOpenAuth={() => setAuthScreen('login')}
+          />
+        );
+      }
+      const simplifiedContent = selectedCourt ? (
+        <CourtSlotsScreen
+          court={selectedCourt}
+          venue={selectedVenue}
+          onBack={() => setSelectedCourt(null)}
+          onOpenAuth={null}
+          onTabChange={null}
+          hideBottomNav
+        />
+      ) : (
+        <VenueCourtsScreen
+          venueId={selectedVenue.id}
+          venue={selectedVenue}
+          onBack={handleBackFromVenue}
+          onSelectCourt={(court, venueObj) => {
+            if (venueObj) handleSelectVenue(venueObj);
+            setSelectedCourt(court);
+          }}
+          onTabChange={null}
+          hideBottomNav
+          hideBack
+        />
+      );
+      if (isStaff) {
+        return (
+          <View style={[styles.container, { backgroundColor: colors.background }]}>
+            <View style={{ flex: 1 }}>{simplifiedContent}</View>
+            <BottomNav activeTab="explorar" onTabChange={handleTabChange} />
+          </View>
+        );
+      }
       if (selectedCourt) {
         return (
           <CourtSlotsScreen

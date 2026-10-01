@@ -15,6 +15,7 @@ import {
   Modal,
   Pressable,
   Dimensions,
+  TextInput,
 } from 'react-native';
 import {
   Building2,
@@ -30,6 +31,9 @@ import {
   Edit3,
   Trash2,
   MoreVertical,
+  User,
+  X,
+  Lock,
 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -54,7 +58,7 @@ import { ScrollableRow } from '../../components/common/ScrollableRow';
 
 export function ManagerHomeScreen({ onBackToUserView }) {
   const { colors } = useTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, updateProfile, changePassword } = useAuth();
 
   const isAdmin =
     user?.role?.toUpperCase() === 'ADMIN' ||
@@ -119,6 +123,88 @@ export function ManagerHomeScreen({ onBackToUserView }) {
   const [editingFixed, setEditingFixed] = useState(null);
 
   const [scheduleRefreshKey, setScheduleRefreshKey] = useState(0);
+
+  // Perfil da equipe dentro da gestão (gestor/funcionário/admin):
+  // acesso a dados pessoais + troca de senha sem sair do painel.
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [profileMode, setProfileMode] = useState('view'); // 'view' | 'edit' | 'password'
+  const [profileName, setProfileName] = useState('');
+  const [profilePhone, setProfilePhone] = useState('');
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState('');
+  const [profileDone, setProfileDone] = useState(false);
+  const [pwdCurrent, setPwdCurrent] = useState('');
+  const [pwdNew, setPwdNew] = useState('');
+  const [pwdConfirm, setPwdConfirm] = useState('');
+  const [pwdSaving, setPwdSaving] = useState(false);
+  const [pwdError, setPwdError] = useState('');
+  const [pwdDone, setPwdDone] = useState(false);
+
+  const openProfileModal = () => {
+    setProfileMode('view');
+    setProfileName(user?.name || '');
+    setProfilePhone(user?.phone || '');
+    setProfileError('');
+    setProfileDone(false);
+    setPwdCurrent('');
+    setPwdNew('');
+    setPwdConfirm('');
+    setPwdError('');
+    setPwdDone(false);
+    setIsProfileOpen(true);
+  };
+
+  const getRoleLabel = () => {
+    const role = user?.role?.toUpperCase();
+    if (role === 'ADMIN' || role === 'ADMINISTRADOR') return 'Administrador';
+    if (role === 'GESTOR_ESPACO' || role === 'GESTOR') return 'Gestor de Espaço';
+    if (role === 'FUNCIONARIO') return 'Funcionário';
+    return 'Atleta';
+  };
+
+  const handleSaveProfile = async () => {
+    setProfileError('');
+    if (!profileName.trim()) {
+      setProfileError('O nome não pode ficar em branco.');
+      return;
+    }
+    setProfileSaving(true);
+    try {
+      await updateProfile({ name: profileName.trim(), phone: profilePhone.trim() || null });
+      setProfileDone(true);
+      setProfileMode('view');
+    } catch (err) {
+      setProfileError(err.message || 'Erro ao atualizar dados do perfil.');
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    setPwdError('');
+    if (!pwdCurrent) {
+      setPwdError('Informe sua senha atual.');
+      return;
+    }
+    if (!pwdNew || pwdNew.length < 8) {
+      setPwdError('A nova senha deve ter pelo menos 8 caracteres.');
+      return;
+    }
+    if (pwdNew !== pwdConfirm) {
+      setPwdError('As senhas não coincidem. Verifique e tente novamente.');
+      return;
+    }
+    setPwdSaving(true);
+    try {
+      await changePassword(pwdCurrent, pwdNew);
+      setPwdDone(true);
+      setProfileMode('view');
+    } catch (err) {
+      setPwdError(err.message || 'Erro ao alterar a senha.');
+    } finally {
+      setPwdSaving(false);
+    }
+  };
 
   const handleOpenManualModal = (params = null) => {
     setManualModalParams(params);
@@ -581,6 +667,15 @@ export function ManagerHomeScreen({ onBackToUserView }) {
       });
     }
     items.push({
+      key: 'perfil',
+      icon: User,
+      label: 'Meu Perfil',
+      onPress: () => {
+        setManagerMenuOpen(false);
+        openProfileModal();
+      },
+    });
+    items.push({
       key: 'logout',
       icon: LogOut,
       label: 'Sair da Conta',
@@ -902,6 +997,199 @@ export function ManagerHomeScreen({ onBackToUserView }) {
           handleScheduleRefresh();
         }}
       />
+
+      {/* Modal Meu Perfil — acesso ao perfil sem sair da gestão */}
+      <Modal
+        transparent
+        visible={isProfileOpen}
+        animationType="slide"
+        onRequestClose={() => setIsProfileOpen(false)}
+      >
+        <View style={styles.profileOverlay}>
+          <View style={[styles.profileCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.profileHeader}>
+              <View style={styles.profileHeaderLeft}>
+                <View style={[styles.profileAvatar, { backgroundColor: colors.primary }]}>
+                  <Text style={styles.profileAvatarText}>
+                    {(user?.name || 'SF').trim().split(' ').length >= 2
+                      ? `${user.name.trim().split(' ')[0][0]}${user.name.trim().split(' ').slice(-1)[0][0]}`.toUpperCase()
+                      : (user?.name || 'SF').substring(0, 2).toUpperCase()}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.profileName, { color: colors.textPrimary }]} numberOfLines={1}>
+                    {user?.name || 'Minha conta'}
+                  </Text>
+                  <Text style={[styles.profileEmail, { color: colors.textSecondary }]} numberOfLines={1}>
+                    {user?.email || ''}
+                  </Text>
+                  <View style={[styles.profileRoleBadge, { backgroundColor: colors.primaryLight }]}>
+                    <ShieldCheck size={11} color={colors.primary} />
+                    <Text style={[styles.profileRoleText, { color: colors.primary }]}>{getRoleLabel()}</Text>
+                  </View>
+                </View>
+              </View>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setIsProfileOpen(false)}
+                style={[styles.profileCloseBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+                accessibilityLabel="Fechar perfil"
+              >
+                <X size={16} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {profileMode === 'view' ? (
+                <View>
+                  {user?.phone ? (
+                    <Text style={[styles.profileInfo, { color: colors.textSecondary }]}>
+                      Telefone: {user.phone}
+                    </Text>
+                  ) : (
+                    <Text style={[styles.profileInfo, { color: colors.textMuted }]}>
+                      Nenhum telefone cadastrado.
+                    </Text>
+                  )}
+                  {profileDone ? (
+                    <Text style={[styles.profileFeedbackOk, { color: colors.success }]}>
+                      Dados atualizados com sucesso.
+                    </Text>
+                  ) : null}
+                  {pwdDone ? (
+                    <Text style={[styles.profileFeedbackOk, { color: colors.success }]}>
+                      Senha alterada com sucesso.
+                    </Text>
+                  ) : null}
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      setProfileName(user?.name || '');
+                      setProfilePhone(user?.phone || '');
+                      setProfileError('');
+                      setProfileDone(false);
+                      setProfileMode('edit');
+                    }}
+                    style={[styles.profileActionBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+                  >
+                    <Edit3 size={16} color={colors.primary} />
+                    <Text style={[styles.profileActionText, { color: colors.textPrimary }]}>Editar nome e telefone</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      setPwdCurrent('');
+                      setPwdNew('');
+                      setPwdConfirm('');
+                      setPwdError('');
+                      setPwdDone(false);
+                      setProfileMode('password');
+                    }}
+                    style={[styles.profileActionBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+                  >
+                    <Lock size={16} color={colors.primary} />
+                    <Text style={[styles.profileActionText, { color: colors.textPrimary }]}>Alterar senha</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : profileMode === 'edit' ? (
+                <View>
+                  <Text style={[styles.profileLabel, { color: colors.textPrimary }]}>Nome</Text>
+                  <TextInput
+                    value={profileName}
+                    onChangeText={setProfileName}
+                    placeholder="Seu nome"
+                    placeholderTextColor={colors.textMuted}
+                    style={[styles.profileInput, { color: colors.textPrimary, borderColor: colors.border, backgroundColor: colors.background }]}
+                  />
+                  <Text style={[styles.profileLabel, { color: colors.textPrimary }]}>Telefone</Text>
+                  <TextInput
+                    value={profilePhone}
+                    onChangeText={setProfilePhone}
+                    placeholder="(11) 99999-9999"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="phone-pad"
+                    style={[styles.profileInput, { color: colors.textPrimary, borderColor: colors.border, backgroundColor: colors.background }]}
+                  />
+                  {profileError ? (
+                    <Text style={[styles.profileFeedbackError, { color: colors.error }]}>{profileError}</Text>
+                  ) : null}
+                  <View style={styles.profileFooter}>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => setProfileMode('view')}
+                      style={[styles.profileCancelBtn, { borderColor: colors.border }]}
+                    >
+                      <Text style={[styles.profileCancelText, { color: colors.textSecondary }]}>Voltar</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={handleSaveProfile}
+                      disabled={profileSaving}
+                      style={[styles.profileSaveBtn, { backgroundColor: colors.primary, opacity: profileSaving ? 0.6 : 1 }]}
+                    >
+                      <Text style={styles.profileSaveText}>
+                        {profileSaving ? 'Salvando...' : 'Salvar'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <View>
+                  <Text style={[styles.profileLabel, { color: colors.textPrimary }]}>Senha atual</Text>
+                  <TextInput
+                    value={pwdCurrent}
+                    onChangeText={setPwdCurrent}
+                    placeholder="••••••••"
+                    placeholderTextColor={colors.textMuted}
+                    secureTextEntry
+                    style={[styles.profileInput, { color: colors.textPrimary, borderColor: colors.border, backgroundColor: colors.background }]}
+                  />
+                  <Text style={[styles.profileLabel, { color: colors.textPrimary }]}>Nova senha (mín. 8 caracteres)</Text>
+                  <TextInput
+                    value={pwdNew}
+                    onChangeText={setPwdNew}
+                    placeholder="••••••••"
+                    placeholderTextColor={colors.textMuted}
+                    secureTextEntry
+                    style={[styles.profileInput, { color: colors.textPrimary, borderColor: colors.border, backgroundColor: colors.background }]}
+                  />
+                  <Text style={[styles.profileLabel, { color: colors.textPrimary }]}>Confirmar nova senha</Text>
+                  <TextInput
+                    value={pwdConfirm}
+                    onChangeText={setPwdConfirm}
+                    placeholder="••••••••"
+                    placeholderTextColor={colors.textMuted}
+                    secureTextEntry
+                    style={[styles.profileInput, { color: colors.textPrimary, borderColor: colors.border, backgroundColor: colors.background }]}
+                  />
+                  {pwdError ? (
+                    <Text style={[styles.profileFeedbackError, { color: colors.error }]}>{pwdError}</Text>
+                  ) : null}
+                  <View style={styles.profileFooter}>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => setProfileMode('view')}
+                      style={[styles.profileCancelBtn, { borderColor: colors.border }]}
+                    >
+                      <Text style={[styles.profileCancelText, { color: colors.textSecondary }]}>Voltar</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={handleChangePassword}
+                      disabled={pwdSaving}
+                      style={[styles.profileSaveBtn, { backgroundColor: colors.primary, opacity: pwdSaving ? 0.6 : 1 }]}
+                    >
+                      <Text style={styles.profileSaveText}>
+                        {pwdSaving ? 'Alterando...' : 'Alterar senha'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1071,5 +1359,144 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: theme.spacing.md,
     fontSize: theme.typography.sizes.body,
+  },
+  profileOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: theme.spacing.md,
+  },
+  profileCard: {
+    width: '100%',
+    maxWidth: 520,
+    maxHeight: '90%',
+    borderRadius: theme.radius.xl,
+    borderWidth: 1,
+    padding: theme.spacing.lg,
+  },
+  profileHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: theme.spacing.md,
+  },
+  profileHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  profileAvatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  profileName: {
+    fontSize: theme.typography.sizes.h4,
+    fontWeight: '800',
+  },
+  profileEmail: {
+    fontSize: theme.typography.sizes.label,
+    marginTop: 1,
+  },
+  profileRoleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: theme.radius.full,
+    gap: 4,
+    marginTop: 6,
+  },
+  profileRoleText: {
+    fontSize: theme.typography.sizes.caption,
+    fontWeight: '700',
+  },
+  profileCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileInfo: {
+    fontSize: theme.typography.sizes.body,
+    marginBottom: theme.spacing.sm,
+  },
+  profileActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: theme.spacing.sm + 4,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    marginTop: theme.spacing.xs,
+  },
+  profileActionText: {
+    fontSize: theme.typography.sizes.body,
+    fontWeight: '700',
+  },
+  profileLabel: {
+    fontSize: theme.typography.sizes.bodySmall,
+    fontWeight: '700',
+    marginBottom: 4,
+    marginTop: theme.spacing.sm,
+  },
+  profileInput: {
+    borderWidth: 1,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+  },
+  profileFeedbackError: {
+    fontSize: theme.typography.sizes.label,
+    fontWeight: '600',
+    marginTop: theme.spacing.sm,
+  },
+  profileFeedbackOk: {
+    fontSize: theme.typography.sizes.label,
+    fontWeight: '600',
+    marginBottom: theme.spacing.xs,
+  },
+  profileFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 10,
+    marginTop: theme.spacing.md,
+  },
+  profileCancelBtn: {
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: theme.radius.md,
+  },
+  profileCancelText: {
+    fontSize: theme.typography.sizes.label,
+    fontWeight: '600',
+  },
+  profileSaveBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: theme.radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileSaveText: {
+    color: '#FFFFFF',
+    fontSize: theme.typography.sizes.label,
+    fontWeight: '700',
   },
 });
