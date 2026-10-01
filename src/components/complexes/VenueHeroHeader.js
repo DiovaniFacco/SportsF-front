@@ -259,11 +259,6 @@ const styles = StyleSheet.create({
     bottom: 14,
     left: 14,
     zIndex: 1,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
   },
   infoBody: {
     padding: theme.spacing.md,
