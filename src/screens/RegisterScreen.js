@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -13,15 +13,13 @@ import {
 import { User, Mail, Phone, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { GoogleIcon } from '../components/common/GoogleIcon';
 import { SportsFLogo } from '../components/common/SportsFLogo';
+import { PasswordStrength } from '../components/common/PasswordStrength';
 import { theme } from '../styles/theme';
-import { useGoogleAuth } from '../services/googleAuth';
 
 export function RegisterScreen({ onNavigateLogin, onBack, onRegisterSuccess }) {
   const { colors } = useTheme();
-  const { register, loginWithGoogle } = useAuth();
-  const { request, response, promptAsync, isConfigured } = useGoogleAuth();
+  const { register } = useAuth();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -33,33 +31,7 @@ export function RegisterScreen({ onNavigateLogin, onBack, onRegisterSuccess }) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-
-  useEffect(() => {
-    if (response?.type === 'success') {
-      const id_token = response.params?.id_token || response.authentication?.idToken;
-      const access_token = response.params?.access_token || response.authentication?.accessToken;
-      handleBackendGoogleAuth({ id_token, access_token });
-    } else if (response?.type === 'error') {
-      setErrorMessage('Erro ao autenticar com o Google: ' + (response.error?.message || 'Falha na autorização'));
-      setGoogleLoading(false);
-    }
-  }, [response]);
-
-  const handleBackendGoogleAuth = async (tokens) => {
-    setGoogleLoading(true);
-    try {
-      await loginWithGoogle(tokens);
-      if (onRegisterSuccess) {
-        onRegisterSuccess();
-      }
-    } catch (err) {
-      setErrorMessage(err.message || 'Erro ao realizar cadastro com o Google.');
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
 
   const handleRegister = async () => {
     setErrorMessage('');
@@ -91,43 +63,6 @@ export function RegisterScreen({ onNavigateLogin, onBack, onRegisterSuccess }) {
       setErrorMessage(err.message || 'Ocorreu um erro ao cadastrar. Tente novamente.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleGoogleSignUp = async () => {
-    setErrorMessage('');
-    setGoogleLoading(true);
-    try {
-      if (isConfigured && request) {
-        const result = await promptAsync();
-        if (result?.type === 'success') {
-          const id_token = result.params?.id_token || result.authentication?.idToken;
-          const access_token = result.params?.access_token || result.authentication?.accessToken;
-          await handleBackendGoogleAuth({ id_token, access_token });
-          return;
-        } else if (result?.type === 'cancel' || result?.type === 'dismiss') {
-          setGoogleLoading(false);
-          return;
-        }
-      }
-
-      if (!isConfigured) {
-        if (email.trim() && email.includes('@')) {
-          await handleBackendGoogleAuth({
-            email: email.trim(),
-            name: name.trim() || email.split('@')[0],
-            google_id: 'google_dev_' + Date.now(),
-          });
-        } else {
-          setErrorMessage(
-            'Para autenticação real com Google em produção, defina EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID no arquivo .env. Em desenvolvimento, informe um e-mail no campo acima para testar.'
-          );
-          setGoogleLoading(false);
-        }
-      }
-    } catch (err) {
-      setErrorMessage('Erro ao acionar o Google: ' + err.message);
-      setGoogleLoading(false);
     }
   };
 
@@ -188,6 +123,10 @@ export function RegisterScreen({ onNavigateLogin, onBack, onRegisterSuccess }) {
                 value={name}
                 onChangeText={setName}
                 autoCapitalize="words"
+                autoCorrect={false}
+                autoComplete="name"
+                textContentType="name"
+                returnKeyType="next"
               />
             </View>
           </View>
@@ -205,6 +144,10 @@ export function RegisterScreen({ onNavigateLogin, onBack, onRegisterSuccess }) {
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="email"
+                textContentType="emailAddress"
+                returnKeyType="next"
               />
             </View>
           </View>
@@ -221,6 +164,9 @@ export function RegisterScreen({ onNavigateLogin, onBack, onRegisterSuccess }) {
                 value={phone}
                 onChangeText={setPhone}
                 keyboardType="phone-pad"
+                autoComplete="tel"
+                textContentType="telephoneNumber"
+                returnKeyType="next"
               />
             </View>
           </View>
@@ -238,6 +184,10 @@ export function RegisterScreen({ onNavigateLogin, onBack, onRegisterSuccess }) {
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="new-password"
+                textContentType="newPassword"
+                returnKeyType="next"
               />
               <TouchableOpacity
                 activeOpacity={0.7}
@@ -251,6 +201,7 @@ export function RegisterScreen({ onNavigateLogin, onBack, onRegisterSuccess }) {
                 )}
               </TouchableOpacity>
             </View>
+            <PasswordStrength password={password} />
           </View>
 
           {/* Confirm Password Field */}
@@ -266,6 +217,11 @@ export function RegisterScreen({ onNavigateLogin, onBack, onRegisterSuccess }) {
                 onChangeText={setConfirmPassword}
                 secureTextEntry={!showConfirmPassword}
                 autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="new-password"
+                textContentType="newPassword"
+                returnKeyType="go"
+                onSubmitEditing={handleRegister}
               />
               <TouchableOpacity
                 activeOpacity={0.7}
@@ -285,47 +241,17 @@ export function RegisterScreen({ onNavigateLogin, onBack, onRegisterSuccess }) {
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={handleRegister}
-            disabled={loading || googleLoading}
+            disabled={loading}
             style={[
               styles.primaryBtn,
               { backgroundColor: colors.primary },
-              (loading || googleLoading) && { opacity: 0.7 },
+              loading && { opacity: 0.7 },
             ]}
           >
             {loading ? (
               <ActivityIndicator size="small" color={colors.white} />
             ) : (
               <Text style={styles.primaryBtnText}>Criar minha conta</Text>
-            )}
-          </TouchableOpacity>
-
-          {/* Divider */}
-          <View style={styles.dividerRow}>
-            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-            <Text style={[styles.dividerText, { color: colors.textMuted }]}>ou cadastre-se com</Text>
-            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-          </View>
-
-          {/* Google Sign-Up Button */}
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={handleGoogleSignUp}
-            disabled={loading || googleLoading}
-            style={[
-              styles.googleBtn,
-              { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
-              (loading || googleLoading) && { opacity: 0.7 },
-            ]}
-          >
-            {googleLoading ? (
-              <ActivityIndicator size="small" color={colors.textPrimary} />
-            ) : (
-              <>
-                <GoogleIcon size={20} style={styles.googleIcon} />
-                <Text style={[styles.googleBtnText, { color: colors.textPrimary }]}>
-                  Cadastrar com o Google
-                </Text>
-              </>
             )}
           </TouchableOpacity>
         </View>
@@ -449,35 +375,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: theme.typography.sizes.button,
     fontWeight: '700',
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
-    fontSize: theme.typography.sizes.bodySmall,
-    fontWeight: '500',
-    paddingHorizontal: 12,
-  },
-  googleBtn: {
-    flexDirection: 'row',
-    height: 50,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  googleIcon: {
-    marginRight: 10,
-  },
-  googleBtnText: {
-    fontSize: theme.typography.sizes.body,
-    fontWeight: '600',
   },
   footerContainer: {
     flexDirection: 'row',

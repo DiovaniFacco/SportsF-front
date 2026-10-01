@@ -1,6 +1,17 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import secureStorage from '../services/secureStorage';
-import { loginApi, registerApi, googleAuthApi, logoutApi, getMeApi, updateProfileApi } from '../api/auth';
+import { onUnauthorized } from '../api/client';
+import {
+  loginApi,
+  registerApi,
+  forgotPasswordApi,
+  resetPasswordApi,
+  changePasswordApi,
+  logoutApi,
+  logoutAllApi,
+  getMeApi,
+  updateProfileApi,
+} from '../api/auth';
 
 const AuthContext = createContext({
   user: null,
@@ -9,8 +20,11 @@ const AuthContext = createContext({
   isAuthenticated: false,
   login: async () => {},
   register: async () => {},
-  loginWithGoogle: async () => {},
+  forgotPassword: async () => {},
+  resetPassword: async () => {},
+  changePassword: async () => {},
   logout: async () => {},
+  logoutAll: async () => {},
   updateProfile: async () => {},
 });
 
@@ -18,6 +32,11 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const clearLocalSession = useCallback(() => {
+    setUser(null);
+    setToken(null);
+  }, []);
 
   // Restore existing session on mount and refresh profile from backend
   useEffect(() => {
@@ -36,7 +55,10 @@ export function AuthProvider({ children }) {
               setUser(freshUser);
             }
           } catch (e) {
-            // Ignora falha de rede se estiver offline
+            if (e?.response?.status === 401) {
+              clearLocalSession();
+            }
+            // Demais falhas (rede): mantém sessão local
           }
         }
       } catch (error) {
@@ -48,7 +70,11 @@ export function AuthProvider({ children }) {
       }
     }
     loadStoredAuth();
-  }, []);
+  }, [clearLocalSession]);
+
+  // Reage na hora a 401 de qualquer request: derruba o estado do React
+  // junto com o storage (antes a UI continuava "logada" até um refresh).
+  useEffect(() => onUnauthorized(clearLocalSession), [clearLocalSession]);
 
   const login = async (email, password) => {
     setIsLoading(true);
@@ -74,10 +100,12 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const loginWithGoogle = async (googleData) => {
+  const forgotPassword = async (email) => forgotPasswordApi(email);
+
+  const resetPassword = async ({ token: resetToken, email, password }) => {
     setIsLoading(true);
     try {
-      const res = await googleAuthApi(googleData);
+      const res = await resetPasswordApi({ token: resetToken, email, password });
       setUser(res.user);
       setToken(res.token);
       return res;
@@ -86,13 +114,25 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const changePassword = async (currentPassword, newPassword) =>
+    changePasswordApi(currentPassword, newPassword);
+
   const logout = async () => {
     setIsLoading(true);
     try {
       await logoutApi();
     } finally {
-      setUser(null);
-      setToken(null);
+      clearLocalSession();
+      setIsLoading(false);
+    }
+  };
+
+  const logoutAll = async () => {
+    setIsLoading(true);
+    try {
+      await logoutAllApi();
+    } finally {
+      clearLocalSession();
       setIsLoading(false);
     }
   };
@@ -125,10 +165,14 @@ export function AuthProvider({ children }) {
       isManager,
       login,
       register,
-      loginWithGoogle,
+      forgotPassword,
+      resetPassword,
+      changePassword,
       logout,
+      logoutAll,
       updateProfile,
     }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [user, token, isLoading, isManager]
   );
 

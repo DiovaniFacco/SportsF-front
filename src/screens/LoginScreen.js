@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -9,52 +9,22 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import { Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { GoogleIcon } from '../components/common/GoogleIcon';
 import { SportsFLogo } from '../components/common/SportsFLogo';
 import { theme } from '../styles/theme';
-import { useGoogleAuth } from '../services/googleAuth';
 
-export function LoginScreen({ onNavigateRegister, onBack, onLoginSuccess }) {
+export function LoginScreen({ onNavigateRegister, onNavigateForgot, onBack, onLoginSuccess }) {
   const { colors } = useTheme();
-  const { login, loginWithGoogle } = useAuth();
-  const { request, response, promptAsync, isConfigured } = useGoogleAuth();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-
-  useEffect(() => {
-    if (response?.type === 'success') {
-      const id_token = response.params?.id_token || response.authentication?.idToken;
-      const access_token = response.params?.access_token || response.authentication?.accessToken;
-      handleBackendGoogleLogin({ id_token, access_token });
-    } else if (response?.type === 'error') {
-      setErrorMessage('Erro ao autenticar com o Google: ' + (response.error?.message || 'Falha na autorização'));
-      setGoogleLoading(false);
-    }
-  }, [response]);
-
-  const handleBackendGoogleLogin = async (tokens) => {
-    setGoogleLoading(true);
-    try {
-      await loginWithGoogle(tokens);
-      if (onLoginSuccess) {
-        onLoginSuccess();
-      }
-    } catch (err) {
-      setErrorMessage(err.message || 'Erro ao realizar login com o Google.');
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
 
   const handleEmailLogin = async () => {
     setErrorMessage('');
@@ -77,43 +47,6 @@ export function LoginScreen({ onNavigateRegister, onBack, onLoginSuccess }) {
       setErrorMessage(err.message || 'Credenciais inválidas. Verifique os dados e tente novamente.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    setErrorMessage('');
-    setGoogleLoading(true);
-    try {
-      if (isConfigured && request) {
-        const result = await promptAsync();
-        if (result?.type === 'success') {
-          const id_token = result.params?.id_token || result.authentication?.idToken;
-          const access_token = result.params?.access_token || result.authentication?.accessToken;
-          await handleBackendGoogleLogin({ id_token, access_token });
-          return;
-        } else if (result?.type === 'cancel' || result?.type === 'dismiss') {
-          setGoogleLoading(false);
-          return;
-        }
-      }
-
-      if (!isConfigured) {
-        if (email.trim() && email.includes('@')) {
-          await handleBackendGoogleLogin({
-            email: email.trim(),
-            name: email.split('@')[0],
-            google_id: 'google_dev_' + Date.now(),
-          });
-        } else {
-          setErrorMessage(
-            'Para autenticação real com Google em produção, defina EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID no arquivo .env. Em desenvolvimento, informe um e-mail no campo acima para testar.'
-          );
-          setGoogleLoading(false);
-        }
-      }
-    } catch (err) {
-      setErrorMessage('Erro ao acionar o Google: ' + err.message);
-      setGoogleLoading(false);
     }
   };
 
@@ -176,6 +109,9 @@ export function LoginScreen({ onNavigateRegister, onBack, onLoginSuccess }) {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
+                autoComplete="email"
+                textContentType="emailAddress"
+                returnKeyType="next"
               />
             </View>
           </View>
@@ -184,7 +120,7 @@ export function LoginScreen({ onNavigateRegister, onBack, onLoginSuccess }) {
           <View style={styles.inputGroup}>
             <View style={styles.labelRow}>
               <Text style={[styles.label, { color: colors.textSecondary }]}>Senha</Text>
-              <TouchableOpacity activeOpacity={0.7} onPress={() => Alert.alert('Recuperação de Senha', 'Um link de redefinição será enviado para seu e-mail.')}>
+              <TouchableOpacity activeOpacity={0.7} onPress={onNavigateForgot}>
                 <Text style={[styles.forgotText, { color: colors.primary }]}>Esqueceu?</Text>
               </TouchableOpacity>
             </View>
@@ -199,6 +135,11 @@ export function LoginScreen({ onNavigateRegister, onBack, onLoginSuccess }) {
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="current-password"
+                textContentType="password"
+                returnKeyType="go"
+                onSubmitEditing={handleEmailLogin}
               />
               <TouchableOpacity
                 activeOpacity={0.7}
@@ -218,47 +159,17 @@ export function LoginScreen({ onNavigateRegister, onBack, onLoginSuccess }) {
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={handleEmailLogin}
-            disabled={loading || googleLoading}
+            disabled={loading}
             style={[
               styles.primaryBtn,
               { backgroundColor: colors.primary },
-              (loading || googleLoading) && { opacity: 0.7 },
+              loading && { opacity: 0.7 },
             ]}
           >
             {loading ? (
               <ActivityIndicator size="small" color={colors.white} />
             ) : (
               <Text style={styles.primaryBtnText}>Entrar no SportsF</Text>
-            )}
-          </TouchableOpacity>
-
-          {/* Divider */}
-          <View style={styles.dividerRow}>
-            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-            <Text style={[styles.dividerText, { color: colors.textMuted }]}>ou continue com</Text>
-            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-          </View>
-
-          {/* Google Login Button */}
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={handleGoogleLogin}
-            disabled={loading || googleLoading}
-            style={[
-              styles.googleBtn,
-              { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
-              (loading || googleLoading) && { opacity: 0.7 },
-            ]}
-          >
-            {googleLoading ? (
-              <ActivityIndicator size="small" color={colors.textPrimary} />
-            ) : (
-              <>
-                <GoogleIcon size={20} style={styles.googleIcon} />
-                <Text style={[styles.googleBtnText, { color: colors.textPrimary }]}>
-                  Entrar com o Google
-                </Text>
-              </>
             )}
           </TouchableOpacity>
         </View>
@@ -392,35 +303,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: theme.typography.sizes.button,
     fontWeight: '700',
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
-    fontSize: theme.typography.sizes.bodySmall,
-    fontWeight: '500',
-    paddingHorizontal: 12,
-  },
-  googleBtn: {
-    flexDirection: 'row',
-    height: 50,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  googleIcon: {
-    marginRight: 10,
-  },
-  googleBtnText: {
-    fontSize: theme.typography.sizes.body,
-    fontWeight: '600',
   },
   footerContainer: {
     flexDirection: 'row',

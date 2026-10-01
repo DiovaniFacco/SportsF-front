@@ -10,17 +10,20 @@ import { MyBookingsScreen } from './src/screens/MyBookingsScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { RegisterScreen } from './src/screens/RegisterScreen';
+import { ForgotPasswordScreen } from './src/screens/ForgotPasswordScreen';
+import { ResetPasswordScreen } from './src/screens/ResetPasswordScreen';
 import { ManagerHomeScreen } from './src/screens/manager/ManagerHomeScreen';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
-import { getVenueIdFromUrl, syncVenueUrlInBrowser, getDefaultVenueSlug, getDefaultVenueCandidates, getSubdomainSlug, isGestaoRoute, syncGestaoUrlInBrowser } from './src/utils/linking';
+import { getVenueIdFromUrl, syncVenueUrlInBrowser, getDefaultVenueSlug, getDefaultVenueCandidates, getSubdomainSlug, isGestaoRoute, syncGestaoUrlInBrowser, isResetRoute, getResetParams, clearResetUrlInBrowser } from './src/utils/linking';
 import { getVenueDetails, getVenues } from './src/api/venues';
 import { isSimplifiedVenue } from './src/utils/whatsapp';
 
 function MainAppContent() {
   const [selectedVenue, setSelectedVenue] = useState(null);
   const [selectedCourt, setSelectedCourt] = useState(null);
-  const [authScreen, setAuthScreen] = useState(null); // null | 'login' | 'register'
+  const [authScreen, setAuthScreen] = useState(null); // null | 'login' | 'register' | 'forgot' | 'reset'
+  const [resetParams, setResetParams] = useState(null); // { token, email } do link de recuperação
   const [isManagerView, setIsManagerView] = useState(false);
   const [activeTab, setActiveTab] = useState('explorar');
   // True quando o app foi aberto diretamente pelo link do complexo (/complexo/slug)
@@ -32,7 +35,7 @@ function MainAppContent() {
   const [bootLoading, setBootLoading] = useState(() => {
     try {
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        return !!getDefaultVenueSlug() || isGestaoRoute(window.location.href);
+        return !!getDefaultVenueSlug() || isGestaoRoute(window.location.href) || isResetRoute(window.location.href);
       }
     } catch {
       // ignora e segue sem splash
@@ -73,6 +76,7 @@ function MainAppContent() {
   const openManagerView = () => {
     setIsManagerView(true);
     setAuthScreen(null);
+    setResetParams(null);
     syncGestaoUrlInBrowser();
   };
 
@@ -145,6 +149,18 @@ function MainAppContent() {
     };
 
     const handleUrl = async (url, isInitial = false) => {
+      // 0. Rota de redefinição de senha: /redefinir-senha?token=…&email=…
+      // (link do e-mail de recuperação — mesmo padrão state-based de /gestao).
+      if (isResetRoute(url)) {
+        const params = getResetParams(url);
+        if (isMounted) {
+          setResetParams(params);
+          setAuthScreen('reset');
+          setIsManagerView(false);
+        }
+        return;
+      }
+
       const gestao = isGestaoRoute(url);
       const venueId = getVenueIdFromUrl(url);
 
@@ -245,6 +261,14 @@ function MainAppContent() {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       handlePopState = () => {
         const currentHref = window.location.href;
+        // Entrando em /redefinir-senha via voltar/avançar do navegador.
+        if (isResetRoute(currentHref)) {
+          const params = getResetParams(currentHref);
+          setResetParams(params);
+          setAuthScreen('reset');
+          setIsManagerView(false);
+          return;
+        }
         // Entrando/saindo de /gestao via voltar/avançar do navegador.
         if (isGestaoRoute(currentHref)) {
           setIsManagerView(true);
@@ -358,6 +382,7 @@ function MainAppContent() {
       return (
         <LoginScreen
           onNavigateRegister={() => setAuthScreen('register')}
+          onNavigateForgot={() => setAuthScreen('forgot')}
           onBack={() => setAuthScreen(null)}
           onLoginSuccess={() => setAuthScreen(null)}
         />
@@ -370,6 +395,34 @@ function MainAppContent() {
           onNavigateLogin={() => setAuthScreen('login')}
           onBack={() => setAuthScreen(null)}
           onRegisterSuccess={() => setAuthScreen(null)}
+        />
+      );
+    }
+
+    if (authScreen === 'forgot') {
+      return (
+        <ForgotPasswordScreen
+          onNavigateLogin={() => setAuthScreen('login')}
+          onBack={() => setAuthScreen('login')}
+        />
+      );
+    }
+
+    if (authScreen === 'reset') {
+      return (
+        <ResetPasswordScreen
+          token={resetParams?.token}
+          email={resetParams?.email}
+          onBack={() => {
+            setAuthScreen('login');
+            setResetParams(null);
+            clearResetUrlInBrowser();
+          }}
+          onResetSuccess={() => {
+            setAuthScreen(null);
+            setResetParams(null);
+            clearResetUrlInBrowser();
+          }}
         />
       );
     }
@@ -388,6 +441,7 @@ function MainAppContent() {
         return (
           <LoginScreen
             onNavigateRegister={() => setAuthScreen('register')}
+            onNavigateForgot={() => setAuthScreen('forgot')}
             onBack={closeManagerView}
             onLoginSuccess={() => {
               // Permanece em /gestao; o guard acima libera o painel quando o role for gestor.

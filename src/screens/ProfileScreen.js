@@ -28,6 +28,8 @@ import {
   ChevronRight,
   X,
   Sparkles,
+  Lock,
+  Smartphone,
 } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -40,7 +42,7 @@ import { ErrorState } from '../components/common/ErrorState';
 
 export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenManager }) {
   const { colors } = useTheme();
-  const { user, isAuthenticated, isManager, logout, updateProfile } = useAuth();
+  const { user, isAuthenticated, isManager, logout, logoutAll, changePassword, updateProfile } = useAuth();
 
   // Bookings state for stats
   const [bookings, setBookings] = useState([]);
@@ -52,9 +54,41 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
   const [editName, setEditName] = useState(user?.name || '');
   const [editPhone, setEditPhone] = useState(user?.phone || '');
   const [updatingProfile, setUpdatingProfile] = useState(false);
+  // Feedback inline: Alert.alert é no-op na web (react-native-web),
+  // então sucesso/erro precisam aparecer dentro do próprio modal.
+  const [editError, setEditError] = useState('');
+  const [editDone, setEditDone] = useState(false);
+
+  const openEditModal = () => {
+    setEditName(user?.name || '');
+    setEditPhone(user?.phone || '');
+    setEditError('');
+    setEditDone(false);
+    setIsEditModalOpen(true);
+  };
 
   // Help Modal State
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+
+  // Change Password Modal State
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  // Feedback inline: Alert.alert é no-op na web (react-native-web),
+  // então sucesso/erro precisam aparecer dentro do próprio modal.
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordDone, setPasswordDone] = useState(false);
+
+  const openPasswordModal = () => {
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmNewPassword('');
+    setPasswordError('');
+    setPasswordDone(false);
+    setIsPasswordModalOpen(true);
+  };
 
   // Fetch bookings summary
   const fetchBookingsSummary = useCallback(async () => {
@@ -85,8 +119,9 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
   }, [user]);
 
   const handleSaveProfile = async () => {
+    setEditError('');
     if (!editName.trim()) {
-      Alert.alert('Atenção', 'O nome não pode ficar em branco.');
+      setEditError('O nome não pode ficar em branco.');
       return;
     }
 
@@ -96,10 +131,9 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
         name: editName.trim(),
         phone: editPhone.trim() || null,
       });
-      Alert.alert('Sucesso', 'Perfil atualizado com sucesso!');
-      setIsEditModalOpen(false);
+      setEditDone(true);
     } catch (err) {
-      Alert.alert('Erro', err.message || 'Erro ao atualizar dados do perfil.');
+      setEditError(err.message || 'Erro ao atualizar dados do perfil.');
     } finally {
       setUpdatingProfile(false);
     }
@@ -130,6 +164,57 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
           style: 'destructive',
           onPress: doLogout,
         },
+      ]);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    setPasswordError('');
+    if (!currentPassword) {
+      setPasswordError('Informe sua senha atual.');
+      return;
+    }
+    if (!newPassword || newPassword.length < 8) {
+      setPasswordError('A nova senha deve ter pelo menos 8 caracteres.');
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setPasswordError('As senhas não coincidem. Verifique e tente novamente.');
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      await changePassword(currentPassword, newPassword);
+      setPasswordDone(true);
+    } catch (err) {
+      setPasswordError(err.message || 'Erro ao alterar a senha.');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  const handleLogoutAllConfirm = () => {
+    const doLogoutAll = async () => {
+      try {
+        await logoutAll();
+      } catch (e) {
+        console.warn('Erro ao encerrar todas as sessões:', e);
+      } finally {
+        if (onOpenAuth) {
+          onOpenAuth();
+        }
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Sair de TODOS os dispositivos, incluindo este?')) {
+        doLogoutAll();
+      }
+    } else {
+      Alert.alert('Sair de todos os dispositivos', 'Isso encerrará sua sessão em todos os aparelhos.', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Sair de todos', style: 'destructive', onPress: doLogoutAll },
       ]);
     }
   };
@@ -226,7 +311,7 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
                   <TouchableOpacity
                     activeOpacity={0.75}
                     style={[styles.editProfileBtn, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                    onPress={() => setIsEditModalOpen(true)}
+                    onPress={openEditModal}
                     accessibilityLabel="Editar Perfil"
                   >
                     <Edit3 size={16} color={colors.primary} />
@@ -332,7 +417,7 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
                 <TouchableOpacity
                   activeOpacity={0.8}
                   style={[styles.actionRowBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                  onPress={() => setIsEditModalOpen(true)}
+                  onPress={openEditModal}
                 >
                   <View style={styles.actionRowLeft}>
                     <View style={[styles.actionIconCircle, { backgroundColor: colors.backgroundSecondary }]}>
@@ -342,6 +427,29 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
                       <Text style={[styles.actionTitle, { color: colors.textPrimary }]}>Editar Perfil</Text>
                       <Text style={[styles.actionSubtitle, { color: colors.textSecondary }]}>
                         Alterar seu nome e telefone de contato
+                      </Text>
+                    </View>
+                  </View>
+                  <ChevronRight size={18} color={colors.textMuted} />
+                </TouchableOpacity>
+
+                {/* Seção Conta */}
+                <Text style={[styles.sectionTitle, { color: colors.textPrimary, marginTop: 4 }]}>Conta</Text>
+
+                {/* Botão Alterar Senha */}
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={[styles.actionRowBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                  onPress={openPasswordModal}
+                >
+                  <View style={styles.actionRowLeft}>
+                    <View style={[styles.actionIconCircle, { backgroundColor: colors.backgroundSecondary }]}>
+                      <Lock size={18} color={colors.primary} />
+                    </View>
+                    <View style={styles.actionTextCol}>
+                      <Text style={[styles.actionTitle, { color: colors.textPrimary }]}>Alterar Senha</Text>
+                      <Text style={[styles.actionSubtitle, { color: colors.textSecondary }]}>
+                        Troque sua senha e desconecte outros aparelhos
                       </Text>
                     </View>
                   </View>
@@ -385,6 +493,26 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
                   </View>
                   <ChevronRight size={18} color={colors.error} />
                 </TouchableOpacity>
+
+                {/* Botão Sair de todos os dispositivos */}
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={[styles.actionRowBtn, { backgroundColor: colors.surface, borderColor: colors.border, marginTop: 10 }]}
+                  onPress={handleLogoutAllConfirm}
+                >
+                  <View style={styles.actionRowLeft}>
+                    <View style={[styles.actionIconCircle, { backgroundColor: colors.backgroundSecondary }]}>
+                      <Smartphone size={18} color={colors.textSecondary} />
+                    </View>
+                    <View style={styles.actionTextCol}>
+                      <Text style={[styles.actionTitle, { color: colors.textPrimary }]}>Sair de todos os dispositivos</Text>
+                      <Text style={[styles.actionSubtitle, { color: colors.textSecondary }]}>
+                        Encerrar sessões em todos os aparelhos
+                      </Text>
+                    </View>
+                  </View>
+                  <ChevronRight size={18} color={colors.textMuted} />
+                </TouchableOpacity>
               </View>
             </View>
           )}
@@ -402,8 +530,30 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
               </TouchableOpacity>
             </View>
 
-            <View style={styles.modalBody}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Nome Completo</Text>
+            {editDone ? (
+              <View style={styles.pwdSuccessBox}>
+                <CheckCircle2 size={48} color={colors.success} />
+                <Text style={[styles.pwdSuccessTitle, { color: colors.textPrimary }]}>Perfil atualizado!</Text>
+                <Text style={[styles.pwdSuccessText, { color: colors.textSecondary }]}>
+                  Seus dados foram salvos com sucesso.
+                </Text>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  style={[styles.modalSaveBtn, { backgroundColor: colors.primary, width: '100%' }]}
+                  onPress={() => setIsEditModalOpen(false)}
+                >
+                  <Text style={styles.modalSaveText}>Entendido</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                <View style={styles.modalBody}>
+                  {editError ? (
+                    <View style={[styles.pwdErrorContainer, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}>
+                      <Text style={[styles.pwdErrorText, { color: colors.error }]}>{editError}</Text>
+                    </View>
+                  ) : null}
+                  <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Nome Completo</Text>
               <TextInput
                 style={[styles.inputField, { backgroundColor: colors.searchBg, borderColor: colors.border, color: colors.textPrimary }]}
                 value={editName}
@@ -446,6 +596,114 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
                 )}
               </TouchableOpacity>
             </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal Alterar Senha */}
+      <Modal visible={isPasswordModalOpen} animationType="slide" transparent onRequestClose={() => setIsPasswordModalOpen(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Alterar Senha</Text>
+              <TouchableOpacity activeOpacity={0.7} onPress={() => setIsPasswordModalOpen(false)}>
+                <X size={20} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            {passwordDone ? (
+              <View style={styles.pwdSuccessBox}>
+                <CheckCircle2 size={48} color={colors.success} />
+                <Text style={[styles.pwdSuccessTitle, { color: colors.textPrimary }]}>Senha alterada!</Text>
+                <Text style={[styles.pwdSuccessText, { color: colors.textSecondary }]}>
+                  Sua senha foi atualizada e os outros dispositivos foram desconectados.
+                </Text>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  style={[styles.modalSaveBtn, { backgroundColor: colors.primary, width: '100%' }]}
+                  onPress={() => setIsPasswordModalOpen(false)}
+                >
+                  <Text style={styles.modalSaveText}>Entendido</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                <View style={styles.modalBody}>
+                  {passwordError ? (
+                    <View style={[styles.pwdErrorContainer, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}>
+                      <Text style={[styles.pwdErrorText, { color: colors.error }]}>{passwordError}</Text>
+                    </View>
+                  ) : null}
+                  <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Senha Atual</Text>
+              <TextInput
+                style={[styles.inputField, { backgroundColor: colors.searchBg, borderColor: colors.border, color: colors.textPrimary }]}
+                value={currentPassword}
+                onChangeText={setCurrentPassword}
+                placeholder="Sua senha atual"
+                placeholderTextColor={colors.textMuted}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="current-password"
+                textContentType="password"
+              />
+
+              <Text style={[styles.inputLabel, { color: colors.textSecondary, marginTop: 14 }]}>Nova Senha (mínimo 8 caracteres)</Text>
+              <TextInput
+                style={[styles.inputField, { backgroundColor: colors.searchBg, borderColor: colors.border, color: colors.textPrimary }]}
+                value={newPassword}
+                onChangeText={setNewPassword}
+                placeholder="Crie uma senha forte"
+                placeholderTextColor={colors.textMuted}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="new-password"
+                textContentType="newPassword"
+              />
+
+              <Text style={[styles.inputLabel, { color: colors.textSecondary, marginTop: 14 }]}>Confirmar Nova Senha</Text>
+              <TextInput
+                style={[styles.inputField, { backgroundColor: colors.searchBg, borderColor: colors.border, color: colors.textPrimary }]}
+                value={confirmNewPassword}
+                onChangeText={setConfirmNewPassword}
+                placeholder="Repita a nova senha"
+                placeholderTextColor={colors.textMuted}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="new-password"
+                textContentType="newPassword"
+              />
+            </View>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={[styles.modalCancelBtn, { borderColor: colors.border }]}
+                onPress={() => setIsPasswordModalOpen(false)}
+                disabled={changingPassword}
+              >
+                <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>Cancelar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={[styles.modalSaveBtn, { backgroundColor: colors.primary }]}
+                onPress={handleChangePassword}
+                disabled={changingPassword}
+              >
+                {changingPassword ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <Text style={styles.modalSaveText}>Alterar Senha</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+              </>
+            )}
           </View>
         </View>
       </Modal>
@@ -796,6 +1054,34 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: theme.typography.sizes.label,
     fontWeight: '700',
+  },
+  pwdErrorContainer: {
+    borderWidth: 1,
+    borderRadius: theme.radius.md,
+    padding: 12,
+    marginBottom: 12,
+  },
+  pwdErrorText: {
+    fontSize: theme.typography.sizes.label,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  pwdSuccessBox: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  pwdSuccessTitle: {
+    fontSize: theme.typography.sizes.h3,
+    fontWeight: '800',
+    marginTop: 12,
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  pwdSuccessText: {
+    fontSize: theme.typography.sizes.body,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
   },
   helpIntro: {
     fontSize: theme.typography.sizes.label,

@@ -198,6 +198,59 @@ export function isGestaoRoute(urlStr) {
 }
 
 /**
+ * Retorna true quando a URL é a rota de redefinição de senha
+ * (/redefinir-senha?token=…&email=… — link enviado pelo e-mail de recuperação).
+ */
+export function isResetRoute(urlStr) {
+  if (!urlStr) return false;
+  try {
+    let cleanUrlStr = urlStr;
+    if (!cleanUrlStr.includes('://') && !cleanUrlStr.startsWith('http')) {
+      cleanUrlStr = `http://localhost${cleanUrlStr.startsWith('/') ? '' : '/'}${cleanUrlStr}`;
+    }
+    const path = new URL(cleanUrlStr).pathname.toLowerCase();
+    return path === '/redefinir-senha' || path === '/redefinir-senha/' || path === '/reset-password';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Extrai { token, email } da URL de redefinição. Retorna null se incompleta.
+ */
+export function getResetParams(urlStr) {
+  if (!urlStr) return null;
+  try {
+    let cleanUrlStr = urlStr;
+    if (!cleanUrlStr.includes('://') && !cleanUrlStr.startsWith('http')) {
+      cleanUrlStr = `http://localhost${cleanUrlStr.startsWith('/') ? '' : '/'}${cleanUrlStr}`;
+    }
+    const url = new URL(cleanUrlStr);
+    const token = url.searchParams.get('token');
+    const email = url.searchParams.get('email');
+    if (!token || !email) return null;
+    return { token, email };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Limpa a rota /redefinir-senha da barra de endereço após uso
+ * (evita reutilização acidental do link e URLs feias).
+ */
+export function clearResetUrlInBrowser() {
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.history) {
+    try {
+      if (isResetRoute(window.location.href)) {
+        window.history.replaceState({}, '', '/');
+      }
+    } catch (e) {
+      console.warn('Não foi possível limpar URL de redefinição:', e);
+    }
+  }
+}
+/**
  * Atualiza a barra de endereço do navegador no ambiente Web mantendo URLs amigáveis sem recarregar a página.
  * Usa o formato canônico /complexo/slug. Mantém leitura dos formatos legados via query param.
  * Não sobrescreve a rota /gestao (a gestão tem URL própria).

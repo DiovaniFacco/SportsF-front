@@ -28,7 +28,6 @@
       "orientation": "portrait"
     },
     "plugins": [
-      "expo-web-browser",
       "expo-secure-store"
     ]
   }

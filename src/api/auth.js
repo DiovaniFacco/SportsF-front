@@ -1,21 +1,25 @@
 import apiClient from './client';
 import secureStorage from '../services/secureStorage';
+import { mapAuthError } from '../utils/authErrors';
+
+async function saveSession(user, access_token) {
+  if (access_token) {
+    await secureStorage.setItem('@auth_token', access_token);
+    await secureStorage.setItem('@auth_user', JSON.stringify(user));
+  }
+  return { success: true, user, token: access_token };
+}
 
 export async function loginApi(email, password) {
   try {
     const response = await apiClient.post('/auth/login', { email, password });
     const { user, access_token } = response.data;
-    if (access_token) {
-      await secureStorage.setItem('@auth_token', access_token);
-      await secureStorage.setItem('@auth_user', JSON.stringify(user));
-    }
-    return { success: true, user, token: access_token };
+    return saveSession(user, access_token);
   } catch (error) {
     if (__DEV__) {
       console.warn('Erro na API de login:', error?.message);
     }
-    const msg = error?.response?.data?.message || (error?.response?.data?.errors ? Object.values(error.response.data.errors)[0]?.[0] : null) || 'Não foi possível realizar o login. Verifique suas credenciais ou conexão com o servidor.';
-    throw new Error(msg);
+    throw new Error(mapAuthError(error, 'Não foi possível realizar o login. Verifique suas credenciais ou conexão com o servidor.'));
   }
 }
 
@@ -25,46 +29,62 @@ export async function registerApi(name, email, password, phone = null) {
       name,
       email,
       password,
+      password_confirmation: password,
       phone,
     });
     const { user, access_token } = response.data;
-    if (access_token) {
-      await secureStorage.setItem('@auth_token', access_token);
-      await secureStorage.setItem('@auth_user', JSON.stringify(user));
-    }
-    return { success: true, user, token: access_token };
+    return saveSession(user, access_token);
   } catch (error) {
     if (__DEV__) {
       console.warn('Erro na API de registro:', error?.message);
     }
-    const msg = error?.response?.data?.message || (error?.response?.data?.errors ? Object.values(error.response.data.errors)[0]?.[0] : null) || 'Não foi possível criar a conta. Verifique os dados inseridos.';
-    throw new Error(msg);
+    throw new Error(mapAuthError(error, 'Não foi possível criar a conta. Verifique os dados inseridos.'));
   }
 }
 
-export async function googleAuthApi(googleUserData) {
+export async function forgotPasswordApi(email) {
   try {
-    const payload = {
-      id_token: googleUserData.id_token || googleUserData.idToken || null,
-      access_token: googleUserData.access_token || googleUserData.accessToken || null,
-      email: googleUserData.email || null,
-      name: googleUserData.name || null,
-      google_id: googleUserData.id || googleUserData.google_id || null,
-      avatar: googleUserData.photo || googleUserData.avatar || null,
-    };
-    const response = await apiClient.post('/auth/google', payload);
-    const { user, access_token } = response.data;
-    if (access_token) {
-      await secureStorage.setItem('@auth_token', access_token);
-      await secureStorage.setItem('@auth_user', JSON.stringify(user));
-    }
-    return { success: true, user, token: access_token };
+    const response = await apiClient.post('/auth/forgot-password', { email });
+    return response.data?.message || 'Se o e-mail estiver cadastrado, você receberá o link em instantes.';
   } catch (error) {
     if (__DEV__) {
-      console.warn('Erro na API Google Auth:', error?.message);
+      console.warn('Erro na API forgot-password:', error?.message);
     }
-    const msg = error?.response?.data?.message || 'Falha ao autenticar com o Google.';
-    throw new Error(msg);
+    throw new Error(mapAuthError(error, 'Não foi possível enviar o link. Tente novamente.'));
+  }
+}
+
+export async function resetPasswordApi({ token, email, password }) {
+  try {
+    const response = await apiClient.post('/auth/reset-password', {
+      token,
+      email,
+      password,
+      password_confirmation: password,
+    });
+    const { user, access_token } = response.data;
+    return saveSession(user, access_token);
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('Erro na API reset-password:', error?.message);
+    }
+    throw new Error(mapAuthError(error, 'Não foi possível redefinir a senha. Verifique o link e tente novamente.'));
+  }
+}
+
+export async function changePasswordApi(currentPassword, newPassword) {
+  try {
+    const response = await apiClient.put('/auth/password', {
+      current_password: currentPassword,
+      password: newPassword,
+      password_confirmation: newPassword,
+    });
+    return response.data?.message || 'Senha alterada com sucesso.';
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('Erro na API change-password:', error?.message);
+    }
+    throw new Error(mapAuthError(error, 'Não foi possível alterar a senha.'));
   }
 }
 
@@ -80,8 +100,7 @@ export async function updateProfileApi(data) {
     if (__DEV__) {
       console.warn('Erro ao atualizar perfil:', error?.message);
     }
-    const msg = error?.response?.data?.message || 'Não foi possível atualizar seus dados.';
-    throw new Error(msg);
+    throw new Error(mapAuthError(error, 'Não foi possível atualizar seus dados.'));
   }
 }
 
@@ -93,6 +112,12 @@ export async function getMeApi() {
     }
     return response.data.user;
   } catch (error) {
+    // 401 = token inválido/expirado: o interceptor já limpou o storage —
+    // nunca devolver dado obsoleto como se fosse sessão válida.
+    if (error?.response?.status === 401) {
+      throw error;
+    }
+    // Falha de rede: mantém sessão local (offline razoável).
     const storedUser = await secureStorage.getItem('@auth_user');
     if (storedUser) {
       return JSON.parse(storedUser);
@@ -107,6 +132,19 @@ export async function logoutApi() {
   } catch (error) {
     if (__DEV__) {
       console.warn('Logout no backend:', error.message);
+    }
+  } finally {
+    await secureStorage.removeItem('@auth_token');
+    await secureStorage.removeItem('@auth_user');
+  }
+}
+
+export async function logoutAllApi() {
+  try {
+    await apiClient.post('/auth/logout-all');
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('Logout-all no backend:', error.message);
     }
   } finally {
     await secureStorage.removeItem('@auth_token');

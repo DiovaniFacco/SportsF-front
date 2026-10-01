@@ -14,6 +14,26 @@ export const getApiUrl = () => {
   return url;
 };
 
+// Assinantes do evento de sessão invalidada (401). O AuthContext assina e
+// derruba o estado do React na hora — sem isso a UI continuaria "logada"
+// até um refresh mesmo com o token já limpo do storage.
+const unauthorizedListeners = new Set();
+
+export function onUnauthorized(listener) {
+  unauthorizedListeners.add(listener);
+  return () => unauthorizedListeners.delete(listener);
+}
+
+function emitUnauthorized() {
+  unauthorizedListeners.forEach((listener) => {
+    try {
+      listener();
+    } catch (e) {
+      if (__DEV__) console.warn('Erro em listener auth:unauthorized:', e?.message);
+    }
+  });
+}
+
 const apiClient = axios.create({
   baseURL: getApiUrl(),
   headers: {
@@ -49,6 +69,7 @@ apiClient.interceptors.response.use(
       // Token expired or invalid, clear token
       await secureStorage.removeItem('@auth_token');
       await secureStorage.removeItem('@auth_user');
+      emitUnauthorized();
     }
     return Promise.reject(error);
   }
