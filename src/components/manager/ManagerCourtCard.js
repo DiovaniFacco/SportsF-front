@@ -122,16 +122,18 @@ export function ManagerCourtCard({ court, onEdit, onDelete, onOpenHours, onOpenP
           ) : null}
         </View>
 
-        {/* Botões de Ação para o Gestor */}
+        {/* Botões de Ação para o Gestor (funcionário: só Horários/Preços) */}
         <View style={[styles.actionsRow, { borderTopColor: colors.border }]}>
-          <TouchableOpacity
-            activeOpacity={0.75}
-            onPress={() => onEdit && onEdit(court)}
-            style={[styles.btnAction, { backgroundColor: colors.primaryLight }]}
-          >
-            <Edit3 size={15} color={colors.primary} />
-            <Text style={[styles.btnActionText, { color: colors.primary }]}>Editar</Text>
-          </TouchableOpacity>
+          {onEdit ? (
+            <TouchableOpacity
+              activeOpacity={0.75}
+              onPress={() => onEdit(court)}
+              style={[styles.btnAction, { backgroundColor: colors.primaryLight }]}
+            >
+              <Edit3 size={15} color={colors.primary} />
+              <Text style={[styles.btnActionText, { color: colors.primary }]}>Editar</Text>
+            </TouchableOpacity>
+          ) : null}
 
           <TouchableOpacity
             activeOpacity={0.75}
@@ -151,13 +153,15 @@ export function ManagerCourtCard({ court, onEdit, onDelete, onOpenHours, onOpenP
             <Text style={[styles.btnActionText, { color: colors.primary }]}>Preços</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            activeOpacity={0.75}
-            onPress={() => onDelete && onDelete(court)}
-            style={[styles.btnDelete, { backgroundColor: colors.errorSurface }]}
-          >
-            <Trash2 size={15} color={colors.error} />
-          </TouchableOpacity>
+          {onDelete ? (
+            <TouchableOpacity
+              activeOpacity={0.75}
+              onPress={() => onDelete(court)}
+              style={[styles.btnDelete, { backgroundColor: colors.errorSurface }]}
+            >
+              <Trash2 size={15} color={colors.error} />
+            </TouchableOpacity>
+          ) : null}
         </View>
       </View>
     </View>

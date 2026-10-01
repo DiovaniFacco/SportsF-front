@@ -99,6 +99,51 @@ export async function deleteVenue(venueId) {
 }
 
 /**
+ * Funcionários do complexo (vínculo por complexo, só ADMIN).
+ * GET /venues/:id/staff
+ */
+export async function getVenueStaff(venueId) {
+  try {
+    const response = await apiClient.get(`/venues/${venueId}/staff`);
+    return response.data?.staff || [];
+  } catch (error) {
+    console.error(`Erro ao buscar funcionários do complexo ${venueId}:`, error.response?.data || error.message);
+    return [];
+  }
+}
+
+/**
+ * Vincula funcionário existente (userId) ou cadastra novo (newStaff).
+ * POST /venues/:id/staff
+ */
+export async function addVenueStaff(venueId, { userId, newStaff } = {}) {
+  try {
+    const payload = {};
+    if (userId) payload.user_id = userId;
+    if (newStaff) payload.new_staff = newStaff;
+    const response = await apiClient.post(`/venues/${venueId}/staff`, payload);
+    return response.data?.staff || [];
+  } catch (error) {
+    console.error(`Erro ao vincular funcionário ao complexo ${venueId}:`, error.response?.data || error.message);
+    throw error;
+  }
+}
+
+/**
+ * Remove vínculo do funcionário com o complexo (só ADMIN).
+ * DELETE /venues/:id/staff/:userId
+ */
+export async function removeVenueStaff(venueId, userId) {
+  try {
+    const response = await apiClient.delete(`/venues/${venueId}/staff/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Erro ao remover funcionário do complexo ${venueId}:`, error.response?.data || error.message);
+    throw error;
+  }
+}
+
+/**
  * Busca a lista de cidades com complexos esportivos cadastrados.
  */
 export async function getCities() {

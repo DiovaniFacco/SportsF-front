@@ -156,6 +156,19 @@ export function AuthProvider({ children }) {
     return role === 'GESTOR_ESPACO' || role === 'ADMIN' || role === 'GESTOR';
   }, [user]);
 
+  const isFuncionario = useMemo(() => {
+    if (!user) return false;
+    return user.role?.toUpperCase() === 'FUNCIONARIO';
+  }, [user]);
+
+  // Equipe operacional: pode acessar /gestao (agenda, horários, preços).
+  // Gestor/Admin têm acesso total; funcionário só opera nos complexos vinculados.
+  const isStaff = useMemo(() => {
+    if (!user) return false;
+    const role = user.role?.toUpperCase();
+    return role === 'GESTOR_ESPACO' || role === 'ADMIN' || role === 'GESTOR' || role === 'FUNCIONARIO';
+  }, [user]);
+
   const value = useMemo(
     () => ({
       user,
@@ -163,6 +176,8 @@ export function AuthProvider({ children }) {
       isLoading,
       isAuthenticated: !!user && !!token,
       isManager,
+      isFuncionario,
+      isStaff,
       login,
       register,
       forgotPassword,
@@ -173,7 +188,7 @@ export function AuthProvider({ children }) {
       updateProfile,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [user, token, isLoading, isManager]
+    [user, token, isLoading, isManager, isFuncionario, isStaff]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

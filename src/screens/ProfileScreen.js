@@ -42,7 +42,7 @@ import { ErrorState } from '../components/common/ErrorState';
 
 export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenManager }) {
   const { colors } = useTheme();
-  const { user, isAuthenticated, isManager, logout, logoutAll, changePassword, updateProfile } = useAuth();
+  const { user, isAuthenticated, isStaff, logout, logoutAll, changePassword, updateProfile } = useAuth();
 
   // Bookings state for stats
   const [bookings, setBookings] = useState([]);
@@ -242,6 +242,7 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
     const role = user?.role?.toUpperCase();
     if (role === 'ADMIN') return 'Administrador';
     if (role === 'GESTOR_ESPACO' || role === 'GESTOR') return 'Gestor de Espaço';
+    if (role === 'FUNCIONARIO') return 'Funcionário';
     return 'Atleta';
   };
 
@@ -391,8 +392,8 @@ export function ProfileScreen({ onTabChange, onGoToExplore, onOpenAuth, onOpenMa
                   <ChevronRight size={18} color={colors.textMuted} />
                 </TouchableOpacity>
 
-                {/* Botão Painel de Gestão (para Gestor / Admin) */}
-                {isManager ? (
+                {/* Botão Painel de Gestão (para equipe: Gestor / Admin / Funcionário) */}
+                {isStaff ? (
                   <TouchableOpacity
                     activeOpacity={0.8}
                     style={[styles.actionRowBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}

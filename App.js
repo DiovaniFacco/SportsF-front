@@ -43,7 +43,7 @@ function MainAppContent() {
     return false;
   });
   const { colors } = useTheme();
-  const { isManager, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isStaff, isAuthenticated, isLoading: authLoading } = useAuth();
 
   // Modo Simplificado travado: sempre que o complexo for simplificado, o usuário
   // fica apenas na tela do complexo (sem volta para a lista inicial).
@@ -428,7 +428,7 @@ function MainAppContent() {
     }
 
     if (isManagerView) {
-      // Guarda de rota /gestao: logado + GESTOR_ESPACO/ADMIN entra direto,
+      // Guarda de rota /gestao: logado + equipe (GESTOR/ADMIN/FUNCIONARIO) entra direto,
       // senão cai no login (e após logar o AuthContext re-renderiza para o painel).
       if (authLoading) {
         return (
@@ -437,7 +437,7 @@ function MainAppContent() {
           </View>
         );
       }
-      if (!isAuthenticated || !isManager) {
+      if (!isAuthenticated || !isStaff) {
         return (
           <LoginScreen
             onNavigateRegister={() => setAuthScreen('register')}

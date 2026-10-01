@@ -7,14 +7,14 @@ import { theme } from '../../styles/theme';
 
 export function BottomNav({ activeTab = 'explorar', onTabChange }) {
   const { colors } = useTheme();
-  const { isManager } = useAuth();
+  const { isStaff } = useAuth();
 
   const navItems = [
     { id: 'explorar', label: 'Explorar', icon: Compass },
     { id: 'agendamentos', label: 'Agendamentos', icon: Calendar },
   ];
 
-  if (isManager) {
+  if (isStaff) {
     navItems.push({ id: 'gestao', label: 'Gestão', icon: Building2 });
   }
 

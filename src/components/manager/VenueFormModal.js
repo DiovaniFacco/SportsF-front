@@ -76,6 +76,14 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
   const [newManagerPhone, setNewManagerPhone] = useState('');
   const [loadingUsers, setLoadingUsers] = useState(false);
 
+  // Funcionários do complexo (Admin Only, vínculo por complexo).
+  // staffIds = lista completa desejada (PUT faz sync); newStaff = novo cadastro incluído no save.
+  const [staffIds, setStaffIds] = useState([]);
+  const [newStaffName, setNewStaffName] = useState('');
+  const [newStaffEmail, setNewStaffEmail] = useState('');
+  const [newStaffPassword, setNewStaffPassword] = useState('');
+  const [newStaffPhone, setNewStaffPhone] = useState('');
+
   const [loadingAmenities, setLoadingAmenities] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -166,6 +174,19 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
         setSelectedUserId(venue.user_id || venue.owner?.id);
       }
 
+      // Funcionários vinculados (backend retorna venue.staff com objetos user).
+      if (Array.isArray(venue.staff)) {
+        setStaffIds(venue.staff.map((s) => (typeof s === 'object' ? s.id : s)).filter(Boolean));
+      } else if (Array.isArray(venue.staff_ids)) {
+        setStaffIds(venue.staff_ids);
+      } else {
+        setStaffIds([]);
+      }
+      setNewStaffName('');
+      setNewStaffEmail('');
+      setNewStaffPassword('');
+      setNewStaffPhone('');
+
       // Se o venue já traz objetos com id, usa direto. Se traz só nomes,
       // a conversão para ids acontece no efeito de sincronização abaixo,
       // sem tocar nos demais campos do formulário.
@@ -211,6 +232,11 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
       setNewManagerPassword('');
       setNewManagerPhone('');
       setManagerMode('select');
+      setStaffIds([]);
+      setNewStaffName('');
+      setNewStaffEmail('');
+      setNewStaffPassword('');
+      setNewStaffPhone('');
       setErrorMsg('');
       amenitiesSyncKeyRef.current = 'new';
     }
@@ -248,6 +274,19 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
     setSelectedAmenityIds((prev) =>
       prev.includes(amenityId) ? prev.filter((id) => id !== amenityId) : [...prev, amenityId]
     );
+  };
+
+  const toggleStaff = (userId) => {
+    setStaffIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
+  };
+
+  const staffRoleLabel = (role) => {
+    const r = String(role || '').toUpperCase();
+    if (r === 'GESTOR_ESPACO' || r === 'GESTOR') return 'GESTOR';
+    if (r === 'FUNCIONARIO') return 'FUNCIONÁRIO';
+    return r || 'CLIENTE';
   };
 
   const handleCreateAmenity = async () => {
@@ -326,6 +365,22 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
       }
     }
 
+    // Validação do novo funcionário (opcional, mas se preencher um campo exige os obrigatórios)
+    if (isAdmin && (newStaffName.trim() || newStaffEmail.trim() || newStaffPassword.trim())) {
+      if (!newStaffName.trim()) {
+        setErrorMsg('Informe o nome do funcionário.');
+        return false;
+      }
+      if (!newStaffEmail.trim() || !newStaffEmail.includes('@')) {
+        setErrorMsg('Informe um e-mail válido para o funcionário.');
+        return false;
+      }
+      if (!newStaffPassword.trim() || newStaffPassword.trim().length < 8) {
+        setErrorMsg('A senha do funcionário deve ter no mínimo 8 caracteres.');
+        return false;
+      }
+    }
+
     setErrorMsg('');
     return true;
   };
@@ -367,6 +422,16 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
             email: newManagerEmail.trim(),
             password: newManagerPassword.trim(),
             phone: newManagerPhone.trim() || null,
+          };
+        }
+        // Funcionários vinculados ao complexo (mesma tela do gestor).
+        payload.staff_ids = staffIds;
+        if (newStaffName.trim() && newStaffEmail.trim() && newStaffPassword.trim()) {
+          payload.new_staff = {
+            name: newStaffName.trim(),
+            email: newStaffEmail.trim(),
+            password: newStaffPassword.trim(),
+            phone: newStaffPhone.trim() || null,
           };
         }
       }
@@ -505,7 +570,7 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
                               </View>
                               <View style={[styles.roleBadge, { backgroundColor: u.role === 'ADMIN' ? colors.errorSurface : u.role === 'GESTOR_ESPACO' ? colors.infoSurface : colors.successSurface }]}>
                                 <Text style={[styles.roleBadgeText, { color: u.role === 'ADMIN' ? colors.error : u.role === 'GESTOR_ESPACO' ? colors.info : colors.success }]}>
-                                  {u.role === 'GESTOR_ESPACO' ? 'GESTOR' : u.role}
+                                  {staffRoleLabel(u.role)}
                                 </Text>
                               </View>
                               {isSelected ? <Check size={16} color={colors.primary} style={{ marginLeft: 6 }} /> : null}
@@ -568,6 +633,110 @@ export function VenueFormModal({ visible, venue, onClose, onSuccess }) {
                     </View>
                   </View>
                 )}
+              </View>
+            ) : null}
+
+            {/* Seção de Funcionários (Apenas para Admin) — mesma tela do gestor */}
+            {isAdmin ? (
+              <View style={[styles.fieldGroup, styles.managerSection, { borderColor: colors.primaryLight, backgroundColor: colors.primaryLight }]}>
+                <View style={styles.managerHeader}>
+                  <Users size={18} color={colors.primary} />
+                  <Text style={[styles.sectionHeading, { color: colors.primary }]}>Funcionários do Complexo</Text>
+                </View>
+                <Text style={{ color: colors.textMuted, fontSize: theme.typography.sizes.bodySmall, marginBottom: 10, lineHeight: 17 }}>
+                  Funcionário opera horários, preços e agenda deste complexo. Não edita o complexo nem gerencia quadras.
+                  {staffIds.length > 0 ? ` (${staffIds.length} vinculado${staffIds.length > 1 ? 's' : ''})` : ''}
+                </Text>
+
+                {loadingUsers ? (
+                  <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 8 }} />
+                ) : usersList.length === 0 ? (
+                  <Text style={{ color: colors.textMuted, fontSize: theme.typography.sizes.label }}>Nenhum usuário encontrado.</Text>
+                ) : (
+                  <ScrollView
+                    style={styles.usersListContainer}
+                    nestedScrollEnabled={true}
+                    showsVerticalScrollIndicator={true}
+                    contentContainerStyle={{ paddingRight: 2 }}
+                  >
+                    {usersList
+                      .filter((u) => u.id !== selectedUserId && String(u.role || '').toUpperCase() !== 'ADMIN')
+                      .map((u) => {
+                        const isSelected = staffIds.includes(u.id);
+                        return (
+                          <TouchableOpacity
+                            key={u.id}
+                            activeOpacity={0.7}
+                            onPress={() => toggleStaff(u.id)}
+                            style={[
+                              styles.userOptionCard,
+                              {
+                                backgroundColor: isSelected ? colors.primaryLight : colors.background,
+                                borderColor: isSelected ? colors.primary : colors.border,
+                              },
+                            ]}
+                          >
+                            <View style={{ flex: 1 }}>
+                              <Text style={[styles.userNameText, { color: colors.textPrimary }]}>{u.name}</Text>
+                              <Text style={[styles.userEmailText, { color: colors.textMuted }]}>{u.email}</Text>
+                            </View>
+                            <View style={[styles.roleBadge, { backgroundColor: colors.successSurface }]}>
+                              <Text style={[styles.roleBadgeText, { color: colors.success }]}>
+                                {staffRoleLabel(u.role)}
+                              </Text>
+                            </View>
+                            {isSelected ? <Check size={16} color={colors.primary} style={{ marginLeft: 6 }} /> : null}
+                          </TouchableOpacity>
+                        );
+                      })}
+                  </ScrollView>
+                )}
+
+                <View style={{ marginTop: 10, gap: 10 }}>
+                  <Text style={[styles.label, { color: colors.textPrimary }]}>Cadastrar novo funcionário</Text>
+                  <View>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
+                      placeholder="Nome do funcionário"
+                      placeholderTextColor={colors.textMuted}
+                      value={newStaffName}
+                      onChangeText={setNewStaffName}
+                    />
+                  </View>
+                  <View>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
+                      placeholder="funcionario@exemplo.com"
+                      placeholderTextColor={colors.textMuted}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      value={newStaffEmail}
+                      onChangeText={setNewStaffEmail}
+                    />
+                  </View>
+                  <View style={styles.rowInputs}>
+                    <View style={{ flex: 1 }}>
+                      <TextInput
+                        style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
+                        placeholder="Senha (mín. 8)"
+                        placeholderTextColor={colors.textMuted}
+                        secureTextEntry
+                        value={newStaffPassword}
+                        onChangeText={setNewStaffPassword}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <TextInput
+                        style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
+                        placeholder="(11) 99999-9999"
+                        placeholderTextColor={colors.textMuted}
+                        keyboardType="phone-pad"
+                        value={newStaffPhone}
+                        onChangeText={setNewStaffPhone}
+                      />
+                    </View>
+                  </View>
+                </View>
               </View>
             ) : null}
 

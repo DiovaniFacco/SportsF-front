@@ -13,7 +13,7 @@ export function Header({
   onOpenManager,
 }) {
   const { colors } = useTheme();
-  const { user, isAuthenticated, isManager, logout } = useAuth();
+  const { user, isAuthenticated, isStaff, logout } = useAuth();
 
   const userName = user?.name ? user.name.split(' ')[0] : 'Esportista';
 
@@ -55,8 +55,8 @@ export function Header({
         </View>
 
         <View style={styles.rightActions}>
-          {/* Botão de Painel de Gestão para Gestores / Admins */}
-          {isAuthenticated && (isManager || user?.role?.toUpperCase() === 'ADMIN' || user?.role?.toUpperCase() === 'GESTOR_ESPACO') ? (
+          {/* Botão de Painel de Gestão para equipe (Gestor/Admin/Funcionário) */}
+          {isAuthenticated && isStaff ? (
             <TouchableOpacity
               activeOpacity={0.75}
               onPress={onOpenManager}

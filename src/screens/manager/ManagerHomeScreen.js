@@ -62,6 +62,19 @@ export function ManagerHomeScreen({ onBackToUserView }) {
     user?.isAdmin === true ||
     user?.is_admin === true;
 
+  const isFuncionario = user?.role?.toUpperCase() === 'FUNCIONARIO';
+  // Funcionário opera agenda/horários/preços, mas NÃO gerencia complexo nem quadras.
+  const canManageVenue = isAdmin || !isFuncionario;
+  const canManageCourts = isAdmin || !isFuncionario;
+
+  const isVenueStaff = (v) => {
+    const staff = v?.staff || v?.staff_users || [];
+    if (Array.isArray(staff) && staff.some((s) => (typeof s === 'object' ? s.id : s) === user?.id)) return true;
+    const ids = v?.staff_ids;
+    if (Array.isArray(ids) && ids.includes(user?.id)) return true;
+    return false;
+  };
+
   const [allVenues, setAllVenues] = useState([]);
   const [activeVenue, setActiveVenue] = useState(null);
   const [courts, setCourts] = useState([]);
@@ -140,7 +153,7 @@ export function ManagerHomeScreen({ onBackToUserView }) {
       const rawVenues = await getVenues();
       const venuesData = isAdmin
         ? rawVenues
-        : rawVenues.filter((v) => v.user_id === user?.id || v.user?.id === user?.id || v.owner?.id === user?.id);
+        : rawVenues.filter((v) => v.user_id === user?.id || v.user?.id === user?.id || v.owner?.id === user?.id || isVenueStaff(v));
       setAllVenues(venuesData);
 
       let venueToSelect = null;
@@ -544,7 +557,7 @@ export function ManagerHomeScreen({ onBackToUserView }) {
         },
       });
     }
-    if (activeVenue) {
+    if (activeVenue && canManageVenue) {
       items.push({
         key: 'edit-venue',
         icon: Edit3,
@@ -632,7 +645,7 @@ export function ManagerHomeScreen({ onBackToUserView }) {
   // e na aba Métricas não há ação — basta recarregar/puxar para atualizar)
   const renderListExtras = () => (
     <View style={styles.actionHeader}>
-      {activeTab === 'quadras' && activeVenue ? (
+      {activeTab === 'quadras' && activeVenue && canManageCourts ? (
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={handleOpenAddModal}
@@ -754,8 +767,8 @@ export function ManagerHomeScreen({ onBackToUserView }) {
               renderItem={({ item }) => (
                 <ManagerCourtCard
                   court={item}
-                  onEdit={handleOpenEditModal}
-                  onDelete={handleDeleteCourt}
+                  onEdit={canManageCourts ? handleOpenEditModal : undefined}
+                  onDelete={canManageCourts ? handleDeleteCourt : undefined}
                   onOpenHours={handleOpenHoursModal}
                   onOpenPricing={handleOpenPricingModal}
                 />
