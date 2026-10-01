@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
-import { ArrowLeft, MapPin, Phone, Share2, Check } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Phone, Share2, Check, BadgeCheck } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { AmenityChip } from '../common/AmenityChip';
@@ -58,11 +58,20 @@ export function VenueHeroHeader({ venue, onBack, hideBack = false }) {
 
           <View style={styles.navRightRow}>
             <View style={styles.logoContainer}>
-              <SportsFLogo height={28} color={colors.primary} />
+              <SportsFLogo height={24} color={colors.primary} />
             </View>
           </View>
         </View>
-      ) : null}
+      ) : (
+        /* Modo link exclusivo: marca fora da imagem — barra própria, sem poluir o banner */
+        <View style={[styles.brandBar, { backgroundColor: colors.surface, borderBottomColor: colors.borderSubtle }]}>
+          <SportsFLogo height={22} color={colors.primary} />
+          <View style={styles.brandBarRight}>
+            <BadgeCheck size={14} color={colors.primary} />
+            <Text style={[styles.brandBarText, { color: colors.textMuted }]}>Reserva oficial</Text>
+          </View>
+        </View>
+      )}
 
       {/* Hero Cover Image Banner */}
       <View style={[styles.heroWrapper, { backgroundColor: colors.backgroundSecondary }]}>
@@ -72,17 +81,10 @@ export function VenueHeroHeader({ venue, onBack, hideBack = false }) {
           resizeMode="cover"
         />
 
-        {/* Marca SportsF flutuante no modo link exclusivo (sem a barra branca vazia) */}
-        {hideBack ? (
-          <View style={styles.brandOverlay}>
-            <SportsFLogo height={18} color={colors.primary} />
-          </View>
-        ) : null}
-
         {/* Floating Top Right Badge - Status */}
         {venue.is_open_today ? (
-          <View style={[styles.statusBadge, { backgroundColor: colors.statusBadgeBg }]}>
-            <View style={[styles.statusDot, { backgroundColor: colors.success }]} />
+          <View style={styles.statusBadge}>
+            <View style={styles.statusDot} />
             <Text style={styles.statusText}>Aberto hoje</Text>
           </View>
         ) : null}
@@ -212,7 +214,7 @@ const styles = StyleSheet.create({
   },
   heroWrapper: {
     position: 'relative',
-    height: 200,
+    height: 232,
     width: '100%',
     overflow: 'hidden',
   },
@@ -222,31 +224,46 @@ const styles = StyleSheet.create({
   },
   statusBadge: {
     position: 'absolute',
-    top: 12,
-    right: 12,
+    top: 14,
+    right: 14,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: theme.radius.full,
     gap: 6,
     zIndex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.18)',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
   statusDot: {
     width: 6,
     height: 6,
     borderRadius: theme.radius.full,
+    backgroundColor: '#10B981',
   },
   statusText: {
     color: '#FFFFFF',
     fontSize: theme.typography.sizes.caption,
     fontWeight: '700',
+    letterSpacing: 0.2,
   },
   sportsContainer: {
     position: 'absolute',
-    bottom: 12,
-    left: 12,
-    zIndex: 10,
+    bottom: 14,
+    left: 14,
+    zIndex: 1,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
   infoBody: {
     padding: theme.spacing.md,
@@ -300,23 +317,23 @@ const styles = StyleSheet.create({
     paddingTop: theme.spacing.sm,
     borderTopWidth: 1,
   },
-  brandOverlay: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
+  brandBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: theme.radius.full,
-    borderWidth: 1,
-    borderColor: 'rgba(15, 23, 42, 0.08)',
-    zIndex: 2,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
+    justifyContent: 'space-between',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  brandBarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  brandBarText: {
+    fontSize: theme.typography.sizes.caption,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
 });

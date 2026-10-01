@@ -75,9 +75,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 7,
     borderRadius: theme.radius.full,
     gap: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.18)',
   },
   sportTagText: {
     fontSize: theme.typography.sizes.caption,
@@ -89,10 +91,12 @@ const styles = StyleSheet.create({
   },
   moreBadge: {
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 7,
     borderRadius: theme.radius.full,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.18)',
   },
   moreBadgeText: {
     fontSize: theme.typography.sizes.caption,
