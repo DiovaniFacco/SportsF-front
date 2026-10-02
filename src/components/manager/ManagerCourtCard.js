@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
-import { Edit3, Trash2, ShieldCheck, Sun, Umbrella, Users, DollarSign, Clock, Zap } from 'lucide-react-native';
+import { Edit3, Trash2, ShieldCheck, Sun, Umbrella, DollarSign, Clock, Zap } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { optimizeImageUrl } from '../../utils/imageUtils';
@@ -105,22 +105,15 @@ export function ManagerCourtCard({ court, onEdit, onDelete, onOpenHours, onOpenP
           ) : null}
         </View>
 
-        {/* Detalhes de Superfície e Capacidade */}
-        <View style={styles.detailsRow}>
-          {court.surface ? (
+        {/* Detalhes de Superfície */}
+        {court.surface ? (
+          <View style={styles.detailsRow}>
             <View style={styles.detailItem}>
               <ShieldCheck size={14} color={colors.textMuted} />
               <Text style={[styles.detailText, { color: colors.textMuted }]}>{court.surface}</Text>
             </View>
-          ) : null}
-
-          {court.capacity ? (
-            <View style={styles.detailItem}>
-              <Users size={14} color={colors.textMuted} />
-              <Text style={[styles.detailText, { color: colors.textMuted }]}>{court.capacity}</Text>
-            </View>
-          ) : null}
-        </View>
+          </View>
+        ) : null}
 
         {/* Botões de Ação para o Gestor (funcionário: só Horários/Preços) */}
         <View style={[styles.actionsRow, { borderTopColor: colors.border }]}>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text, Image, TouchableOpacity } from 'react-native';
-import { ShieldCheck, Users, ChevronRight, SunMedium, Layers } from 'lucide-react-native';
+import { ShieldCheck, ChevronRight, SunMedium, Layers } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { SportsBadgeGroup } from '../common/SportsBadgeGroup';
@@ -62,23 +62,15 @@ export function CourtCard({ court, onSelectCourt }) {
         </View>
 
         {/* Spec Pills & Details */}
-        <View style={styles.specsContainer}>
-          {/* Capacity Pill */}
-          {court.capacity ? (
-            <View style={[styles.specChip, { backgroundColor: colors.backgroundSecondary }]}>
-              <Users size={13} color={colors.primary} />
-              <Text style={[styles.specChipText, { color: colors.textSecondary }]}>{court.capacity}</Text>
-            </View>
-          ) : null}
-
-          {/* Surface Pill */}
-          {court.surface ? (
+        {court.surface ? (
+          <View style={styles.specsContainer}>
+            {/* Surface Pill */}
             <View style={[styles.specChip, { backgroundColor: colors.backgroundSecondary }]}>
               <Layers size={13} color={colors.textMuted} />
               <Text style={[styles.specChipText, { color: colors.textSecondary }]}>{court.surface}</Text>
             </View>
-          ) : null}
-        </View>
+          </View>
+        ) : null}
 
         {/* Footer Info (CTA) - full width para equilibrar o card */}
         <View style={styles.cardFooter}>

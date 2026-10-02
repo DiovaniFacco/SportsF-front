@@ -68,7 +68,6 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
   const [name, setName] = useState('');
   const [hourlyRate, setHourlyRate] = useState('');
   const [surface, setSurface] = useState('Grama Sintética Pro');
-  const [capacity, setCapacity] = useState('10 a 12 Jogadores');
   const [isCovered, setIsCovered] = useState(true);
   const [imageUrl, setImageUrl] = useState('');
   const [selectedSportIds, setSelectedSportIds] = useState([]);
@@ -131,7 +130,6 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
       setName(court.name || '');
       setHourlyRate(court.hourly_rate ? String(court.hourly_rate) : '');
       setSurface(court.surface || 'Grama Sintética Pro');
-      setCapacity(court.capacity || '10 a 12 Jogadores');
       setIsCovered(court.is_covered !== undefined ? Boolean(court.is_covered) : true);
       setImageUrl(court.image_url || '');
 
@@ -184,7 +182,6 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
       setName('');
       setHourlyRate('150');
       setSurface('Grama Sintética Pro');
-      setCapacity('10 a 12 Jogadores');
       setIsCovered(true);
       setImageUrl('');
       setSelectedSportIds([1]);
@@ -296,7 +293,6 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
         type: 'Quadra',
         hourly_rate: rateNum,
         surface: surface.trim(),
-        capacity: capacity.trim(),
         is_covered: isCovered,
         image_url: imageUrl.trim() || null,
         sport_ids: selectedSportIds,
@@ -540,18 +536,6 @@ export function CourtFormModal({ visible, court, venueId, onClose, onSuccess }) 
                     placeholderTextColor={colors.textMuted}
                     value={surface}
                     onChangeText={setSurface}
-                  />
-                </View>
-
-                {/* Capacidade Recomendada */}
-                <View style={styles.fieldGroup}>
-                  <Text style={[styles.label, { color: colors.textPrimary }]}>Capacidade Recomendada</Text>
-                  <TextInput
-                    style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
-                    placeholder="Ex: 10 a 12 Jogadores (5x5)"
-                    placeholderTextColor={colors.textMuted}
-                    value={capacity}
-                    onChangeText={setCapacity}
                   />
                 </View>
 

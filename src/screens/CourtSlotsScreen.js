@@ -17,7 +17,6 @@ import {
   Moon,
   ShieldCheck,
   Layers,
-  Users,
   Calendar,
 } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
@@ -278,21 +277,14 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
               </Text>
             ) : null}
 
-            <View style={styles.pillsRow}>
-              {court.surface ? (
+            {court.surface ? (
+              <View style={styles.pillsRow}>
                 <View style={[styles.miniPill, { backgroundColor: colors.backgroundSecondary }]}>
                   <Layers size={11} color={colors.textMuted} />
                   <Text style={[styles.miniPillText, { color: colors.textSecondary }]}>{court.surface}</Text>
                 </View>
-              ) : null}
-
-              {court.capacity ? (
-                <View style={[styles.miniPill, { backgroundColor: colors.backgroundSecondary }]}>
-                  <Users size={11} color={colors.textMuted} />
-                  <Text style={[styles.miniPillText, { color: colors.textSecondary }]}>{court.capacity}</Text>
-                </View>
-              ) : null}
-            </View>
+              </View>
+            ) : null}
           </View>
         </View>
       </View>

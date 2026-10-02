@@ -283,7 +283,6 @@ export function normalizeVenue(venue, idx = 0) {
         type: courtSports.join(' • ') || 'Multiuso',
         sports: courtSports,
         surface: court.surface || '',
-        capacity: court.capacity || '',
         is_covered: court.is_covered !== undefined ? Boolean(court.is_covered) : true,
         hourly_rate: parseFloat(court.hourly_rate || 0),
         rating: court.rating !== undefined && court.rating !== null ? parseFloat(court.rating) : 0,
