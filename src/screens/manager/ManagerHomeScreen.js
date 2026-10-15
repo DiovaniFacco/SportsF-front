@@ -28,6 +28,7 @@ import {
   ShieldCheck,
   ArrowLeft,
   BarChart3,
+  Activity,
   Edit3,
   Trash2,
   MoreVertical,
@@ -45,6 +46,7 @@ import { CourtFormModal } from '../../components/manager/CourtFormModal';
 import { VenueFormModal } from '../../components/manager/VenueFormModal';
 import { ManagerScheduleView } from '../../components/manager/ManagerScheduleView';
 import { ManagerMetricsView } from '../../components/manager/ManagerMetricsView';
+import { ManagerAnalyticsView } from '../../components/manager/ManagerAnalyticsView';
 import { ManagerBookingsView } from '../../components/manager/ManagerBookingsView';
 import { ManualBookingModal } from '../../components/manager/ManualBookingModal';
 import { CourtBlockModal } from '../../components/manager/CourtBlockModal';
@@ -67,6 +69,9 @@ export function ManagerHomeScreen({ onBackToUserView }) {
     user?.is_admin === true;
 
   const isFuncionario = user?.role?.toUpperCase() === 'FUNCIONARIO';
+  // Métricas de acesso: Admin vê global; Gestor vê os complexos que administra.
+  const roleUpper = user?.role?.toUpperCase();
+  const canViewAnalytics = isAdmin || roleUpper === 'GESTOR_ESPACO' || roleUpper === 'GESTOR';
   // Funcionário opera agenda/horários/preços, mas NÃO gerencia complexo nem quadras.
   const canManageVenue = isAdmin || !isFuncionario;
   const canManageCourts = isAdmin || !isFuncionario;
@@ -666,6 +671,17 @@ export function ManagerHomeScreen({ onBackToUserView }) {
         },
       });
     }
+    if (canViewAnalytics) {
+      items.push({
+        key: 'acessos',
+        icon: Activity,
+        label: 'Acessos',
+        onPress: () => {
+          setManagerMenuOpen(false);
+          setActiveTab('acessos');
+        },
+      });
+    }
     items.push({
       key: 'perfil',
       icon: User,
@@ -767,6 +783,8 @@ export function ManagerHomeScreen({ onBackToUserView }) {
             <ManagerMetricsView
               courts={courts}
             />
+          ) : activeTab === 'acessos' ? (
+            <ManagerAnalyticsView isAdmin={isAdmin} />
           ) : activeTab === 'agenda' ? (
             <ManagerScheduleView
               courts={courts}

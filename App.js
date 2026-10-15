@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { StyleSheet, View, Platform, ActivityIndicator } from 'react-native';
 import * as Linking from 'expo-linking';
 import { useFonts, GreatVibes_400Regular } from '@expo-google-fonts/great-vibes';
@@ -19,6 +19,7 @@ import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { getVenueIdFromUrl, syncVenueUrlInBrowser, getDefaultVenueSlug, getDefaultVenueCandidates, getSubdomainSlug, isGestaoRoute, syncGestaoUrlInBrowser, isResetRoute, getResetParams, clearResetUrlInBrowser } from './src/utils/linking';
 import { getVenueDetails, getVenues } from './src/api/venues';
 import { isSimplifiedVenue } from './src/utils/whatsapp';
+import { initAnalytics, trackAppOpen, trackScreen } from './src/services/analytics';
 
 function MainAppContent() {
   const [selectedVenue, setSelectedVenue] = useState(null);
@@ -45,6 +46,31 @@ function MainAppContent() {
   });
   const { colors } = useTheme();
   const { isStaff, isAuthenticated, isLoading: authLoading } = useAuth();
+
+  // Telemetria de acesso: inicializa os identificadores anônimos e registra a
+  // abertura do app. Best-effort — nunca interfere na navegação.
+  useEffect(() => {
+    initAnalytics().then(() => trackAppOpen());
+  }, []);
+
+  // Nome estável da "tela" atual para as métricas de acesso (page views).
+  const currentScreen = useMemo(() => {
+    if (authScreen) return `auth-${authScreen}`;
+    if (isManagerView) return 'gestao';
+    if (activeTab === 'perfil') return 'perfil';
+    if (activeTab === 'agendamentos') return 'agendamentos';
+    if (selectedCourt) return 'quadra-slots';
+    if (selectedVenue) return 'complexo';
+    return 'explorar';
+  }, [authScreen, isManagerView, activeTab, selectedCourt, selectedVenue]);
+
+  const currentVenueId = selectedVenue?.id ?? null;
+
+  // Registra a visualização sempre que a tela muda (ignora o splash de boot).
+  useEffect(() => {
+    if (bootLoading) return;
+    trackScreen(currentScreen, { venueId: currentVenueId });
+  }, [currentScreen, currentVenueId, bootLoading]);
 
   // Modo Simplificado travado: sempre que o complexo for simplificado, o usuário
   // fica apenas na tela do complexo (sem volta para a lista inicial).
