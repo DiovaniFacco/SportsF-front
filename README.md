@@ -9,7 +9,7 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev/)
 [![Platforms](https://img.shields.io/badge/platforms-web%20%7C%20iOS%20%7C%20Android-0F172A)](#-getting-started)
 [![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8)](https://web.dev/progressive-web-apps/)
-[![REST API](https://img.shields.io/badge/API-Laravel%20REST-FF2D20?logo=laravel&logoColor=white)](https://github.com/DiovaniFacco/back)
+[![REST API](https://img.shields.io/badge/API-Laravel%20REST-FF2D20?logo=laravel&logoColor=white)](https://github.com/DiovaniFacco/SportsF-back)
 
 [Overview](#-overview) · [Screens](#-screens) · [Features](#-features) · [Architecture](#-architecture) · [Getting started](#-getting-started) · [Deployment](#-deployment)
 
@@ -94,12 +94,12 @@ App.js                      # root navigator + white-label / deep-link routing
 ### 1. Requirements
 - Node.js 20+
 - Expo CLI (via `npx`)
-- The backend running (see **[DiovaniFacco/back](https://github.com/DiovaniFacco/back)**)
+- The backend running (see **[DiovaniFacco/SportsF-back](https://github.com/DiovaniFacco/SportsF-back)**)
 
 ### 2. Install
 
 ```bash
-git clone https://github.com/DiovaniFacco/front.git
+git clone https://github.com/DiovaniFacco/SportsF-front.git
 cd front
 npm install
 ```
@@ -171,4 +171,4 @@ The UI follows a documented design system — brand identity, color tokens, typo
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-diovani--facco-0A66C2?logo=linkedin&logoColor=white)](https://www.linkedin.com/in/diovani-facco-3a247b11a/)
 [![Email](https://img.shields.io/badge/Email-diovanifacco@gmail.com-EA4335?logo=gmail&logoColor=white)](mailto:diovanifacco@gmail.com)
 
-> Backend repository: **[DiovaniFacco/back](https://github.com/DiovaniFacco/back)** — Laravel 12 + PostgreSQL API.
+> Backend repository: **[DiovaniFacco/SportsF-back](https://github.com/DiovaniFacco/SportsF-back)** — Laravel 12 + PostgreSQL API.
