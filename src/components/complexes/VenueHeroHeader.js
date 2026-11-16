@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
-import { ArrowLeft, MapPin, Phone, Share2, Check, BadgeCheck } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Phone, Share2, Check, BadgeCheck, Info } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { AmenityChip } from '../common/AmenityChip';
@@ -23,6 +23,10 @@ export function VenueHeroHeader({ venue, onBack, hideBack = false }) {
   if (!venue) return null;
 
   const sportsList = venue.sports && venue.sports.length > 0 ? venue.sports : [];
+  const descriptionLines = (venue.description || '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
 
   const handleShare = async () => {
     const res = await shareVenueLink(venue);
@@ -132,11 +136,34 @@ export function VenueHeroHeader({ venue, onBack, hideBack = false }) {
           ) : null}
         </View>
 
-        {/* Descrição do complexo */}
-        {venue.description?.trim() ? (
-          <Text style={[styles.descriptionText, { color: colors.textSecondary }]}>
-            {venue.description.trim()}
-          </Text>
+        {/* Informações do complexo */}
+        {descriptionLines.length > 0 ? (
+          <View
+            style={[
+              styles.infoCard,
+              {
+                backgroundColor: colors.backgroundSecondary,
+                borderColor: colors.border,
+                borderLeftColor: colors.primary,
+              },
+            ]}
+          >
+            <View style={styles.infoCardHeader}>
+              <Info size={16} color={colors.primary} />
+              <Text style={[styles.infoCardTitle, { color: colors.textPrimary }]}>
+                Informações
+              </Text>
+            </View>
+
+            {descriptionLines.map((line, index) => (
+              <Text
+                key={`${index}-${line}`}
+                style={[styles.infoLine, { color: colors.textSecondary }]}
+              >
+                {line}
+              </Text>
+            ))}
+          </View>
         ) : null}
 
         {/* Amenity Chips */}
@@ -298,10 +325,31 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.body,
     fontWeight: '500',
   },
-  descriptionText: {
+  infoCard: {
+    borderWidth: 1,
+    borderLeftWidth: 3,
+    borderRadius: theme.radius.lg,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+  },
+  infoCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  infoCardTitle: {
+    fontSize: theme.typography.sizes.label,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  infoLine: {
     fontSize: theme.typography.sizes.body,
     lineHeight: 20,
-    marginBottom: theme.spacing.md,
+    fontWeight: '500',
+    paddingVertical: 3,
   },
   amenitiesContainer: {
     flexDirection: 'row',
