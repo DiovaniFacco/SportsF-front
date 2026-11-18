@@ -683,13 +683,41 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
     indefiniteBlock || court?.is_blocked_indefinitely || court?.blocked_indefinitely
   );
 
+  // Agrupa slots que representam a MESMA reserva/horário fixo.
+  // A grade pode começar em :30 e a reserva/fixo em :00; nesse caso o backend
+  // marca mais de um slot com a mesma reserva (ex: fixo 18:00–19:00 numa grade
+  // de 60min iniciada às 10:30 ocupa 17:30–18:30 e 18:30–19:30). Sem agrupar,
+  // o mesmo horário aparecia repetido duas vezes na agenda.
+  const displayItems = [];
+  slots.forEach((slot, index) => {
+    const slotStartMs = parseDateTimeMs(slot.start_time);
+    const isPast = !Number.isNaN(slotStartMs) && slotStartMs < Date.now();
+    const booking = isPast ? null : findOverlappingBooking(bookings, slot, selectedDate);
+    const fixedKey = slot.is_fixed
+      ? `fixed:${slot.fixed_schedule_id ?? `${slot.fixed_customer_name || ''}|${slot.fixed_start_time || ''}|${slot.fixed_end_time || ''}`}`
+      : null;
+    const groupKey = isPast
+      ? null
+      : booking?.id != null
+      ? `booking:${booking.id}`
+      : fixedKey;
+
+    const previous = displayItems[displayItems.length - 1];
+    if (groupKey && previous && previous.groupKey === groupKey) {
+      previous.items.push({ slot, index });
+      return;
+    }
+    displayItems.push({ groupKey, items: [{ slot, index }] });
+  });
+
   let freeCount = 0;
   let bookedCount = 0;
   let blockedCount = 0;
   let fixedCount = 0;
   let pastCount = 0;
 
-  slots.forEach((slot) => {
+  displayItems.forEach(({ items }) => {
+    const { slot } = items[0];
     const slotStartStr = extractTimeStr(slot.start_time);
     const overlappingBlock = findBlockForSlot(courtBlocks, slot, selectedDate);
     const isBlocked = hasIndefinite
@@ -744,6 +772,11 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
       nowLabel = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     }
   }
+  // Um item agrupado pode começar antes do "agora" (ex: fixo em andamento);
+  // nesse caso o marcador vai antes do item que contém o horário atual.
+  const nowMarkerItemIndex = nowMarkerIndex === -1
+    ? -1
+    : displayItems.findIndex((item) => item.items[item.items.length - 1].index >= nowMarkerIndex);
 
   return (
     <View style={[styles.matrixCard, { backgroundColor: colors.surface, borderColor: hasIndefinite ? colors.error : colors.border }]}>
@@ -807,7 +840,8 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
         )
       ) : (
         <View style={styles.gridWrapContainer}>
-          {slots.map((slot, slotIndex) => {
+          {displayItems.map(({ items }, itemIndex) => {
+            const { slot } = items[0];
             const slotStartStr = extractTimeStr(slot.start_time);
             const slotEndStr = extractTimeStr(slot.end_time);
             let displayTime = slot.formatted_time || `${slotStartStr} - ${slotEndStr}`;
@@ -838,15 +872,18 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
                 }
               : null;
 
-            // Fixo desalinhado da grade de exibição (ex: fixo 19:30–21:00 numa
-            // grade de 60min marca os tiles 19:00–20:00 e 20:00–21:00): o
-            // backend agora envia o intervalo real da série (fixed_start_time/
-            // fixed_end_time) e o tile exibe o horário verdadeiro do fixo.
-            if (matchingFixed && slot.fixed_start_time && slot.fixed_end_time) {
-              const fixedRange = `${slot.fixed_start_time} - ${slot.fixed_end_time}`;
-              if (fixedRange !== displayTime) {
-                displayTime = fixedRange;
+            // Exibe o intervalo REAL da reserva/fixo, mesmo quando ele começa
+            // fora da grade (ex: fixo 18:00–19:00 numa grade que começa 10:30).
+            // Como os slots sobrepostos foram agrupados acima, o horário
+            // aparece uma única vez.
+            if (matchingBooking) {
+              const bookingStart = extractTimeStr(matchingBooking.start_time);
+              const bookingEnd = extractTimeStr(matchingBooking.end_time);
+              if (bookingStart && bookingEnd) {
+                displayTime = `${bookingStart} - ${bookingEnd}`;
               }
+            } else if (matchingFixed && slot.fixed_start_time && slot.fixed_end_time) {
+              displayTime = `${slot.fixed_start_time} - ${slot.fixed_end_time}`;
             }
 
             let status = 'free';
@@ -877,21 +914,9 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
               : 150;
             const formattedPrice = `R$ ${Math.round(slotPrice)}`;
 
-            // Reserva pode ter duração diferente do intervalo de exibição
-            // (ex: 8:00-9:30 numa grade de 60min). Exibe o intervalo real
-            // quando ele não coincide com o slot, para o gestor entender
-            // por que dois tiles aparecem ocupados.
-            const bookingStartStr = matchingBooking ? extractTimeStr(matchingBooking.start_time) : null;
-            const bookingEndStr = matchingBooking ? extractTimeStr(matchingBooking.end_time) : null;
-            const bookingRange = bookingStartStr && bookingEndStr ? `${bookingStartStr}-${bookingEndStr}` : null;
-            const isSpillover = Boolean(
-              matchingBooking && bookingStartStr && bookingEndStr &&
-              (bookingStartStr !== slotStartStr || bookingEndStr !== slotEndStr)
-            );
-
             return (
               <React.Fragment key={slot.start_time || displayTime}>
-                {slotIndex === nowMarkerIndex ? (
+                {itemIndex === nowMarkerItemIndex ? (
                   <View
                     style={[styles.nowMarkerRow, { backgroundColor: colors.surface }]}
                     accessibilityRole="text"
@@ -1008,7 +1033,6 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
                     <Store size={13} color={colors.holding} />
                     <Text numberOfLines={1} style={[styles.slotClientText, { color: colors.holding }]}>
                       {matchingBooking.customer_name?.split(' ')[0] || 'Balcão'}
-                      {isSpillover && bookingRange ? ` • ${bookingRange}` : ''}
                     </Text>
                   </View>
                 ) : status === 'booked_app' ? (
@@ -1016,7 +1040,6 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
                     <Smartphone size={13} color={colors.teal} />
                     <Text numberOfLines={1} style={[styles.slotClientText, { color: colors.teal }]}>
                       {(matchingBooking.customer_name || matchingBooking.user?.name)?.split(' ')[0] || 'App'}
-                      {isSpillover && bookingRange ? ` • ${bookingRange}` : ''}
                     </Text>
                   </View>
                 ) : (
@@ -1386,9 +1409,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   matrixSlotTile: {
-    width: '48%',
+    width: '100%',
     minWidth: 140,
-    flexGrow: 1,
     paddingHorizontal: 10,
     paddingVertical: 10,
     borderRadius: theme.radius.md,
