@@ -23,6 +23,7 @@ import {
 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
+import { formatBRL } from '../../utils/payment';
 
 export function BookingConfirmationModal({
   visible,
@@ -55,14 +56,26 @@ export function BookingConfirmationModal({
   const count = selectedSlots.length;
   const totalPrice = selectedSlots.reduce((acc, slot) => acc + (slot.price || 0), 0);
 
-  // Data formatada DD/MM/YYYY
-  const formattedDateParts = selectedDate ? selectedDate.split('-') : [];
-  const dateFormatted =
-    formattedDateParts.length === 3
-      ? `${formattedDateParts[2]}/${formattedDateParts[1]}/${formattedDateParts[0]}`
-      : selectedDate;
-
-  const timesText = selectedSlots.map((s) => s.formatted_time).join(', ');
+  // Agrupa por dia (seleção multi-data): [{ date, times }]
+  const daysMap = new Map();
+  selectedSlots.forEach((slot) => {
+    const d = slot.bookingDate || selectedDate || '';
+    if (!daysMap.has(d)) daysMap.set(d, []);
+    daysMap.get(d).push(slot.formatted_time);
+  });
+  const dayEntries = Array.from(daysMap.entries());
+  const fmtDay = (d) => {
+    const p = String(d).split('-');
+    return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d;
+  };
+  const dateSummary =
+    dayEntries.length === 1
+      ? fmtDay(dayEntries[0][0])
+      : `${dayEntries.length} dias (${dayEntries.map(([d]) => fmtDay(d).slice(0, 5)).join(', ')})`;
+  const timesSummary =
+    dayEntries.length === 1
+      ? dayEntries[0][1].join(', ')
+      : dayEntries.map(([d, ts]) => `${fmtDay(d).slice(0, 5)}: ${ts.join(', ')}`).join(' • ');
 
   const handleConfirm = () => {
     if (onConfirmBooking) {
@@ -132,21 +145,21 @@ export function BookingConfirmationModal({
                   <View style={styles.summaryItem}>
                     <Calendar size={16} color={colors.primary} />
                     <Text style={[styles.summaryText, { color: colors.textPrimary }]}>
-                      {dateFormatted}
+                      {dateSummary}
                     </Text>
                   </View>
 
                   <View style={styles.summaryItem}>
                     <Clock size={16} color={colors.primary} />
                     <Text style={[styles.summaryText, { color: colors.textPrimary }]}>
-                      {timesText}
+                      {timesSummary}
                     </Text>
                   </View>
 
                   <View style={styles.summaryItem}>
                     <Banknote size={16} color={colors.primary} />
                     <Text style={[styles.summaryText, { color: colors.textPrimary }]}>
-                      Valor: R$ {Math.round(totalPrice)},00
+                      Valor: {formatBRL(totalPrice)}
                     </Text>
                   </View>
                 </View>
@@ -182,7 +195,7 @@ export function BookingConfirmationModal({
                     </View>
                     <View style={styles.detailTextCol}>
                       <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Data</Text>
-                      <Text style={[styles.detailValue, { color: colors.textPrimary }]}>{dateFormatted}</Text>
+                      <Text style={[styles.detailValue, { color: colors.textPrimary }]}>{dateSummary}</Text>
                     </View>
                   </View>
 
@@ -196,7 +209,7 @@ export function BookingConfirmationModal({
                       <Text style={[styles.detailLabel, { color: colors.textMuted }]}>
                         {count === 1 ? 'Horário Selecionado' : `${count} Horários Selecionados`}
                       </Text>
-                      <Text style={[styles.detailValue, { color: colors.textPrimary }]}>{timesText}</Text>
+                      <Text style={[styles.detailValue, { color: colors.textPrimary }]}>{timesSummary}</Text>
                     </View>
                   </View>
 
@@ -209,7 +222,7 @@ export function BookingConfirmationModal({
                     <View style={styles.detailTextCol}>
                       <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Valor Total</Text>
                       <Text style={[styles.priceValue, { color: colors.primary }]}>
-                        R$ {Math.round(totalPrice)},00
+                        {formatBRL(totalPrice)}
                       </Text>
                     </View>
                   </View>
@@ -484,7 +497,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.md,
     borderWidth: 1,
     padding: 10,
-    fontSize: theme.typography.sizes.label,
+    fontSize: 16,
     minHeight: 60,
     textAlignVertical: 'top',
   },

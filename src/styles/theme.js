@@ -41,6 +41,10 @@ export const lightColors = {
   holding: '#7C3AED',
   holdingSurface: '#F5F3FF',
 
+  // "Via App" em verde-azulado (evita colisão com o azul de Horário Fixo)
+  teal: '#0D9488',
+  tealSurface: '#F0FDFA',
+
   border: '#E2E8F0',
   borderStrong: '#CBD5E1',
   borderSubtle: '#F1F5F9',

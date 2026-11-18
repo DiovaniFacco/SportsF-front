@@ -191,3 +191,34 @@ export function formatDurationMinutes(totalMinutes) {
   if (h > 0) return `${h}h`;
   return `${rest}min`;
 }
+
+/**
+ * Horário de fechamento do complexo HOJE ("HH:MM") a partir dos turnos de
+ * funcionamento das quadras (venue.courts[].operating_hours). Retorna o
+ * fechamento mais tarde do dia; null quando não há horários cadastrados.
+ * Usado no selo "Aberto hoje · até HH:MM" do site público.
+ */
+export function getTodayClosingHours(venue, todayStr = getTodayStrInSaoPaulo()) {
+  try {
+    if (!venue || !Array.isArray(venue.courts)) return null;
+    const parts = String(todayStr).split('-').map(Number);
+    if (parts.length !== 3) return null;
+    const d = new Date(parts[0], parts[1] - 1, parts[2]);
+    const todayDow = d.getDay(); // 0=dom .. 6=sáb (mesma convenção do backend)
+    let latest = null;
+    venue.courts.forEach((court) => {
+      const hours = court?.operating_hours || court?.operatingHours || [];
+      if (!Array.isArray(hours)) return;
+      hours.forEach((h) => {
+        const dow = Number(h?.day_of_week ?? h?.dayOfWeek);
+        const close = h?.closing_time || h?.closingTime || null;
+        if (dow !== todayDow || !close) return;
+        const hhmm = String(close).slice(0, 5);
+        if (!latest || hhmm > latest) latest = hhmm;
+      });
+    });
+    return latest;
+  } catch {
+    return null;
+  }
+}

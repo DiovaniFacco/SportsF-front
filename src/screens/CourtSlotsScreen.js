@@ -12,12 +12,13 @@ import {
 } from 'react-native';
 import {
   ArrowLeft,
+  Sunrise,
   Sun,
-  SunMedium,
   Moon,
   ShieldCheck,
   Layers,
   Calendar,
+  MessageCircle,
 } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -36,22 +37,41 @@ import { BottomNav } from '../components/common/BottomNav';
 import { optimizeImageUrl } from '../utils/imageUtils';
 import { isSimplifiedVenue, openWhatsappBooking } from '../utils/whatsapp';
 import { getTodayStrInSaoPaulo, parseServerDateTime } from '../utils/datetime';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange, hideBottomNav = false }) {
+const CUSTOMER_NAME_KEY = '@sf_customer_name';
+
+export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange, hideBottomNav = false, onDateSync, initialDate = null }) {
   const { colors } = useTheme();
   const { user, isAuthenticated } = useAuth();
 
   // Modo Simplificado: agenda apenas visual, Agendar abre o WhatsApp (sem criar reserva).
   const isSimplified = isSimplifiedVenue(venue);
   const [whatsappError, setWhatsappError] = useState(null);
+  // Nome do cliente para a mensagem do WhatsApp (lembrado no aparelho).
+  const [customerName, setCustomerName] = useState('');
+
+  useEffect(() => {
+    // Nome lembrado no aparelho: pré-preenche o campo do pedido no WhatsApp.
+    AsyncStorage.getItem(CUSTOMER_NAME_KEY)
+      .then((v) => v && setCustomerName(v))
+      .catch(() => {});
+  }, []);
+
+  const handleChangeName = (value) => {
+    setCustomerName(value);
+    AsyncStorage.setItem(CUSTOMER_NAME_KEY, value).catch(() => {});
+  };
 
   const getTodayStr = () => getTodayStrInSaoPaulo();
 
-  const [selectedDate, setSelectedDate] = useState(getTodayStr());
+  const [selectedDate, setSelectedDate] = useState(initialDate || getTodayStr());
   const [slotsData, setSlotsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  // "Carrinho" multi-dia: cada slot carrega bookingDate, permitindo
+  // selecionar horários em dias diferentes sem perder a seleção.
   const [selectedSlots, setSelectedSlots] = useState([]);
   const [activeTab, setActiveTab] = useState('explorar');
 
@@ -80,8 +100,6 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
 
   useEffect(() => {
     fetchSlots();
-    // Limpar seleção ao mudar de data
-    setSelectedSlots([]);
   }, [fetchSlots, selectedDate]);
 
   const handleRefresh = () => {
@@ -89,16 +107,25 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
     fetchSlots(true);
   };
 
+  const handleSelectDate = (date) => {
+    setSelectedDate(date);
+    // Sincroniza a data na URL (replaceState: não empilha histórico).
+    if (onDateSync) onDateSync(date);
+  };
+
   const handleToggleSelectSlot = (slot) => {
     if (!slot.available) return;
 
     setSelectedSlots((prev) => {
-      const exists = prev.some((s) => s.start_time === slot.start_time);
+      const exists = prev.some(
+        (s) => s.start_time === slot.start_time && (s.bookingDate || selectedDate) === (slot.bookingDate || selectedDate)
+      );
       if (exists) {
-        return prev.filter((s) => s.start_time !== slot.start_time);
-      } else {
-        return [...prev, slot];
+        return prev.filter(
+          (s) => !(s.start_time === slot.start_time && (s.bookingDate || selectedDate) === (slot.bookingDate || selectedDate))
+        );
       }
+      return [...prev, { ...slot, bookingDate: selectedDate }];
     });
   };
 
@@ -106,12 +133,21 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
     // MODO SIMPLIFICADO: não cria reserva — abre o WhatsApp com mensagem pré-preenchida.
     if (isSimplified) {
       setWhatsappError(null);
-      const times = selectedSlots.map((s) => s.formatted_time);
+      // Agrupa os horários selecionados por dia: [{ date, times }]
+      const byDate = new Map();
+      selectedSlots.forEach((s) => {
+        const d = s.bookingDate || selectedDate;
+        if (!byDate.has(d)) byDate.set(d, []);
+        byDate.get(d).push(s.formatted_time);
+      });
+      const days = Array.from(byDate.entries()).map(([date, times]) => ({ date, times }));
+      const totalPrice = selectedSlots.reduce((acc, s) => acc + (s.price || 0), 0);
       const result = await openWhatsappBooking({
         venue,
         courtName: court?.name,
-        date: selectedDate,
-        times,
+        days,
+        customerName: customerName.trim() || (user?.name ?? ''),
+        totalPrice: totalPrice > 0 ? totalPrice : null,
       });
       if (!result.success && result.error === 'no-number') {
         setWhatsappError('Este complexo ainda não configurou um WhatsApp para agendamentos. Entre em contato diretamente pelo telefone do complexo.');
@@ -144,28 +180,38 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
 
     try {
       let lastBooking = null;
-      // Seleção múltipla usa o endpoint em lote (atômico: tudo ou nada).
-      // Evita "sucesso parcial" quando um dos horários falha.
-      if (selectedSlots.length > 1) {
-        const res = await createBookingsBatch({
-          courtId: court.id,
-          slots: selectedSlots.map((slot) => ({
-            startTime: slot.start_time,
-            endTime: slot.end_time,
-          })),
-          notes,
-        });
-        const created = res.bookings || (res.booking ? [res.booking] : []);
-        lastBooking = created[created.length - 1] || null;
-      } else {
-        for (const slot of selectedSlots) {
-          const res = await createBooking({
+      // Agrupa a seleção por dia (carrinho multi-dia) e usa o endpoint em lote
+      // por data (atômico: tudo ou nada). Evita "sucesso parcial" quando um
+      // dos horários falha.
+      const byDate = new Map();
+      selectedSlots.forEach((slot) => {
+        const d = slot.bookingDate || selectedDate;
+        if (!byDate.has(d)) byDate.set(d, []);
+        byDate.get(d).push(slot);
+      });
+
+      for (const [, daySlots] of byDate) {
+        if (daySlots.length > 1) {
+          const res = await createBookingsBatch({
             courtId: court.id,
-            startTime: slot.start_time,
-            endTime: slot.end_time,
+            slots: daySlots.map((slot) => ({
+              startTime: slot.start_time,
+              endTime: slot.end_time,
+            })),
             notes,
           });
-          lastBooking = res.booking;
+          const created = res.bookings || (res.booking ? [res.booking] : []);
+          lastBooking = created[created.length - 1] || lastBooking;
+        } else {
+          for (const slot of daySlots) {
+            const res = await createBooking({
+              courtId: court.id,
+              startTime: slot.start_time,
+              endTime: slot.end_time,
+              notes,
+            });
+            lastBooking = res.booking;
+          }
         }
       }
 
@@ -242,7 +288,9 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
         {/* Grid of Slots */}
         <View style={styles.slotsGrid}>
           {slots.map((slot) => {
-            const isSelected = selectedSlots.some((s) => s.start_time === slot.start_time);
+            const isSelected = selectedSlots.some(
+              (s) => s.start_time === slot.start_time && (s.bookingDate || selectedDate) === selectedDate
+            );
             return (
               <SlotCard
                 key={slot.start_time}
@@ -292,7 +340,7 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
       {/* Date Selector — sempre visível para permitir navegar entre dias */}
       <DateSelector
         selectedDate={selectedDate}
-        onSelectDate={(date) => setSelectedDate(date)}
+        onSelectDate={handleSelectDate}
       />
     </>
   );
@@ -436,10 +484,11 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
         {/* Status Legend */}
         <SlotLegend />
 
-        {/* Period Sections */}
-        {renderPeriodSection('Manhã (06:00 - 12:00)', morningSlots, Sun, colors.warning)}
-        {renderPeriodSection('Tarde (12:00 - 18:00)', afternoonSlots, SunMedium, colors.gold)}
-        {renderPeriodSection('Noite (18:00 - 23:00)', eveningSlots, Moon, colors.holding)}
+        {/* Period Sections — rótulos sem intervalo (não batem com os slots)
+            e ícone distinto por período (nascer do sol / sol / lua). */}
+        {renderPeriodSection('Manhã', morningSlots, Sunrise, colors.gold)}
+        {renderPeriodSection('Tarde', afternoonSlots, Sun, colors.warning)}
+        {renderPeriodSection('Noite', eveningSlots, Moon, colors.info)}
       </ScrollView>
     );
   };
@@ -476,7 +525,11 @@ export function CourtSlotsScreen({ court, venue, onBack, onOpenAuth, onTabChange
         selectedSlots={selectedSlots}
         selectedDate={selectedDate}
         courtName={court.name}
-        confirmLabel={isSimplified ? 'Agendar via WhatsApp' : 'Agendar'}
+        confirmLabel={isSimplified ? 'Enviar pedido no WhatsApp' : 'Agendar'}
+        confirmIcon={isSimplified ? MessageCircle : null}
+        showNameField={isSimplified}
+        nameValue={customerName}
+        onNameChange={handleChangeName}
         onClearSelection={() => setSelectedSlots([])}
         onConfirmSelection={handleOpenConfirmModal}
       />

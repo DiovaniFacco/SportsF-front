@@ -19,11 +19,9 @@ import {
   Smartphone,
   XCircle,
   Plus,
-  Filter,
   CheckCircle,
   AlertCircle,
   FileText,
-  Grid,
   PlusCircle,
   ShieldAlert,
   Repeat,
@@ -400,7 +398,7 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
   // Controles que rolam junto com a grade (ações e legenda)
   const renderScrollControls = () => (
     <>
-      {/* Faixa de Ações + Alternador de Modo (Grid Matrix vs Lista) */}
+      {/* Faixa de Ações */}
       <View style={styles.metricsBar}>
         <View style={styles.metricsLeft}>
           <TouchableOpacity
@@ -420,32 +418,6 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
             <ShieldAlert size={14} color={colors.error} style={{ marginRight: 4 }} />
             <Text style={[styles.blockBtnHeaderText, { color: colors.error }]}>Bloquear Horários</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => setIsFixedListOpen(true)}
-            style={[styles.blockBtnHeader, { backgroundColor: colors.primaryLight, borderColor: colors.primary }]}
-          >
-            <Repeat size={14} color={colors.primary} style={{ marginRight: 4 }} />
-            <Text style={[styles.blockBtnHeaderText, { color: colors.primary }]}>Horários Fixos</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.viewToggleContainer}>
-          <View
-            style={[
-              styles.toggleBtn,
-              {
-                backgroundColor: colors.primary,
-                borderColor: colors.primary,
-              },
-            ]}
-          >
-            <Grid size={15} color={colors.white} />
-            <Text style={[styles.toggleBtnText, { color: colors.white }]}>
-              Grade Matrix
-            </Text>
-          </View>
         </View>
       </View>
 
@@ -467,18 +439,23 @@ export function ManagerScheduleView({ courts = [], onOpenManualModal, onOpenBloc
         </View>
 
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: colors.info }]} />
+          <View style={[styles.legendDot, { backgroundColor: colors.teal }]} />
           <Text style={[styles.legendText, { color: colors.textMuted }]}>Via App</Text>
         </View>
 
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: colors.primary }]} />
+          <View style={[styles.legendDot, { backgroundColor: colors.info }]} />
           <Text style={[styles.legendText, { color: colors.textMuted }]}>Horário Fixo (toque p/ gerenciar o dia)</Text>
         </View>
 
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: colors.error }]} />
+          <View style={[styles.legendDot, { backgroundColor: colors.borderStrong }]} />
           <Text style={[styles.legendText, { color: colors.textMuted }]}>Bloqueado (Manutenção)</Text>
+        </View>
+
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: colors.backgroundSecondary }]} />
+          <Text style={[styles.legendText, { color: colors.textMuted }]}>Passado</Text>
         </View>
       </ScrollView>
     </>
@@ -710,6 +687,7 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
   let bookedCount = 0;
   let blockedCount = 0;
   let fixedCount = 0;
+  let pastCount = 0;
 
   slots.forEach((slot) => {
     const slotStartStr = extractTimeStr(slot.start_time);
@@ -733,7 +711,13 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
     const b = findOverlappingBooking(bookings, slot, selectedDate);
     const isFixed = Boolean(slot.is_fixed);
 
-    if (isBlocked) {
+    // Horário que já passou (agenda de hoje): não é mais acionável.
+    const slotStartMs = parseDateTimeMs(slot.start_time);
+    const isPast = !Number.isNaN(slotStartMs) && slotStartMs < Date.now();
+
+    if (isPast) {
+      pastCount++;
+    } else if (isBlocked) {
       blockedCount++;
     } else if (b && b.status !== 'cancelled') {
       bookedCount++;
@@ -743,6 +727,23 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
       freeCount++;
     }
   });
+
+  // Linha do "agora" (somente na agenda de hoje): índice do primeiro slot
+  // que ainda não começou — o marcador é renderizado antes desse tile.
+  // Usa a mesma convenção local do detector de "passado" (Date.now()).
+  const isToday = selectedDate === getTodayStrInSaoPaulo();
+  let nowMarkerIndex = -1;
+  let nowLabel = '';
+  if (isToday) {
+    const nowMs = Date.now();
+    nowMarkerIndex = slots.findIndex((s) => {
+      const ms = parseDateTimeMs(s.start_time);
+      return !Number.isNaN(ms) && ms >= nowMs;
+    });
+    if (nowMarkerIndex !== -1) {
+      nowLabel = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+  }
 
   return (
     <View style={[styles.matrixCard, { backgroundColor: colors.surface, borderColor: hasIndefinite ? colors.error : colors.border }]}>
@@ -755,7 +756,7 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
             </Text>
           ) : isOperating && slots.length > 0 ? (
             <Text style={[styles.matrixCourtStats, { color: colors.textMuted }]}>
-              {freeCount} livres • {bookedCount} ocupados{fixedCount > 0 ? ` • ${fixedCount} fixos` : ''} {blockedCount > 0 ? `• ${blockedCount} bloqueados` : ''}
+              {freeCount} livres • {bookedCount} ocupados{fixedCount > 0 ? ` • ${fixedCount} fixos` : ''} {blockedCount > 0 ? `• ${blockedCount} bloqueados` : ''}{pastCount > 0 ? ` • ${pastCount} passados` : ''}
             </Text>
           ) : (
             <Text style={[styles.matrixCourtStats, { color: colors.error }]}>
@@ -806,10 +807,10 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
         )
       ) : (
         <View style={styles.gridWrapContainer}>
-          {slots.map((slot) => {
+          {slots.map((slot, slotIndex) => {
             const slotStartStr = extractTimeStr(slot.start_time);
             const slotEndStr = extractTimeStr(slot.end_time);
-            const displayTime = slot.formatted_time || `${slotStartStr} - ${slotEndStr}`;
+            let displayTime = slot.formatted_time || `${slotStartStr} - ${slotEndStr}`;
 
             const overlappingBlock = findBlockForSlot(courtBlocks, slot, selectedDate);
             const exactBlock =
@@ -837,6 +838,17 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
                 }
               : null;
 
+            // Fixo desalinhado da grade de exibição (ex: fixo 19:30–21:00 numa
+            // grade de 60min marca os tiles 19:00–20:00 e 20:00–21:00): o
+            // backend agora envia o intervalo real da série (fixed_start_time/
+            // fixed_end_time) e o tile exibe o horário verdadeiro do fixo.
+            if (matchingFixed && slot.fixed_start_time && slot.fixed_end_time) {
+              const fixedRange = `${slot.fixed_start_time} - ${slot.fixed_end_time}`;
+              if (fixedRange !== displayTime) {
+                displayTime = fixedRange;
+              }
+            }
+
             let status = 'free';
             if (hasIndefinite || matchingBlock || slot.blocked) {
               status = 'blocked';
@@ -848,6 +860,13 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
               }
             } else if (matchingFixed) {
               status = 'fixed';
+            }
+
+            // Horário já decorrido: fica cinza e inerte (não é clicável).
+            const slotStartMs = parseDateTimeMs(slot.start_time);
+            const isPast = !Number.isNaN(slotStartMs) && slotStartMs < Date.now();
+            if (isPast) {
+              status = 'past';
             }
 
             // Determina o preço específico deste horário (slot)
@@ -871,9 +890,25 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
             );
 
             return (
-              <TouchableOpacity
-                key={slot.start_time || displayTime}
-                activeOpacity={0.7}
+              <React.Fragment key={slot.start_time || displayTime}>
+                {slotIndex === nowMarkerIndex ? (
+                  <View
+                    style={[styles.nowMarkerRow, { backgroundColor: colors.surface }]}
+                    accessibilityRole="text"
+                    accessibilityLabel={`Agora, ${nowLabel}`}
+                  >
+                    <View style={[styles.nowMarkerLine, { backgroundColor: colors.teal }]} />
+                    <Text style={[styles.nowMarkerText, { color: colors.teal, backgroundColor: colors.surface }]}>
+                      Agora {nowLabel}
+                    </Text>
+                    <View style={[styles.nowMarkerLine, { backgroundColor: colors.teal }]} />
+                  </View>
+                ) : null}
+                <TouchableOpacity
+                activeOpacity={status === 'past' ? 1 : 0.7}
+                disabled={status === 'past'}
+                accessibilityRole={status === 'past' ? 'text' : 'button'}
+                accessibilityState={status === 'past' ? { disabled: true } : undefined}
                 onPress={() =>
                   onSlotClick({
                     startTime: slotStartStr,
@@ -888,17 +923,18 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
                   styles.matrixSlotTile,
                   status === 'free' && { backgroundColor: colors.successSurface, borderColor: colors.successSurface },
                   status === 'booked_manual' && { backgroundColor: colors.holdingSurface, borderColor: colors.holding },
-                  status === 'booked_app' && { backgroundColor: colors.infoSurface, borderColor: colors.info },
-                  status === 'fixed' && { backgroundColor: colors.primaryLight, borderColor: colors.primary },
+                  status === 'booked_app' && { backgroundColor: colors.tealSurface, borderColor: colors.teal },
+                  status === 'fixed' && { backgroundColor: colors.infoSurface, borderColor: colors.info },
                   status === 'cancelled' && { backgroundColor: colors.errorSurface, borderColor: colors.error },
-                  status === 'blocked' && { backgroundColor: colors.errorSurface, borderColor: colors.error },
+                  status === 'blocked' && { backgroundColor: colors.backgroundSecondary, borderColor: colors.borderStrong },
+                  status === 'past' && { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
                 ]}
               >
                 {/* Linha Superior: Horário + Preço Dinâmico do Slot */}
                 <View style={styles.tileHeaderRow}>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Clock size={11} color={colors.textMuted} style={{ marginRight: 3 }} />
-                    <Text style={[styles.slotTimeText, { color: colors.textPrimary }]}>{displayTime}</Text>
+                    <Text style={[styles.slotTimeText, { color: status === 'past' ? colors.textMuted : colors.textPrimary }]}>{displayTime}</Text>
                   </View>
 
                   <View
@@ -908,9 +944,13 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
                         backgroundColor:
                           status === 'free'
                             ? colors.successSurface
-                            : status === 'blocked'
-                            ? colors.errorSurface
-                            : colors.primaryLight,
+                            : status === 'blocked' || status === 'past'
+                            ? colors.border
+                            : status === 'booked_app'
+                            ? colors.tealSurface
+                            : status === 'fixed'
+                            ? colors.infoSurface
+                            : colors.holdingSurface,
                       },
                     ]}
                   >
@@ -921,11 +961,13 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
                           color:
                             status === 'free'
                               ? colors.success
-                              : status === 'blocked'
-                              ? colors.error
+                              : status === 'blocked' || status === 'past'
+                              ? colors.textSecondary
+                              : status === 'booked_app'
+                              ? colors.teal
                               : status === 'fixed'
-                              ? colors.primary
-                              : colors.primary,
+                              ? colors.info
+                              : colors.holding,
                         },
                       ]}
                     >
@@ -935,17 +977,24 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
                 </View>
 
                 {/* Conteúdo / Status do Horário */}
-                {status === 'blocked' ? (
+                {status === 'past' ? (
                   <View style={styles.slotBookedContent}>
-                    <ShieldAlert size={13} color={colors.error} />
-                    <Text numberOfLines={1} style={[styles.slotClientText, { color: colors.error }]}>
+                    <Clock size={13} color={colors.textMuted} />
+                    <Text numberOfLines={1} style={[styles.slotClientText, { color: colors.textMuted }]}>
+                      Passado
+                    </Text>
+                  </View>
+                ) : status === 'blocked' ? (
+                  <View style={styles.slotBookedContent}>
+                    <ShieldAlert size={13} color={colors.textSecondary} />
+                    <Text numberOfLines={1} style={[styles.slotClientText, { color: colors.textSecondary }]}>
                       {slot.block_reason || matchingBlock?.reason || 'Bloqueado'}
                     </Text>
                   </View>
                 ) : status === 'fixed' ? (
                   <View style={styles.slotBookedContent}>
-                    <Repeat size={13} color={colors.primary} />
-                    <Text numberOfLines={1} style={[styles.slotClientText, { color: colors.primary }]}>
+                    <Repeat size={13} color={colors.info} />
+                    <Text numberOfLines={1} style={[styles.slotClientText, { color: colors.info }]}>
                       {(matchingFixed?.customer_name || 'Fixo').split(' ')[0]} • Fixo
                     </Text>
                   </View>
@@ -964,8 +1013,8 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
                   </View>
                 ) : status === 'booked_app' ? (
                   <View style={styles.slotBookedContent}>
-                    <Smartphone size={13} color={colors.info} />
-                    <Text numberOfLines={1} style={[styles.slotClientText, { color: colors.info }]}>
+                    <Smartphone size={13} color={colors.teal} />
+                    <Text numberOfLines={1} style={[styles.slotClientText, { color: colors.teal }]}>
                       {(matchingBooking.customer_name || matchingBooking.user?.name)?.split(' ')[0] || 'App'}
                       {isSpillover && bookingRange ? ` • ${bookingRange}` : ''}
                     </Text>
@@ -977,6 +1026,7 @@ function CourtMatrixRow({ court, courtSlotsData, selectedDate, bookings, courtBl
                   </View>
                 )}
               </TouchableOpacity>
+              </React.Fragment>
             );
           })}
         </View>
@@ -1112,6 +1162,8 @@ const styles = StyleSheet.create({
   dateChip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
+    minHeight: 44,
+    justifyContent: 'center',
     borderRadius: theme.radius.md,
     borderWidth: 1,
     alignItems: 'center',
@@ -1136,7 +1188,9 @@ const styles = StyleSheet.create({
   },
   courtFilterChip: {
     paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingVertical: 10,
+    minHeight: 44,
+    justifyContent: 'center',
     borderRadius: theme.radius.full,
     borderWidth: 1,
   },
@@ -1190,23 +1244,6 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '800',
   },
-  viewToggleContainer: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  toggleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    gap: 4,
-  },
-  toggleBtnText: {
-    fontSize: theme.typography.sizes.bodySmall,
-    fontWeight: '700',
-  },
   legendBar: {
     flexGrow: 0,
     borderBottomWidth: 1,
@@ -1229,7 +1266,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   legendText: {
-    fontSize: theme.typography.sizes.bodySmall,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '600',
   },
   listContainer: {
@@ -1326,6 +1363,27 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
     padding: theme.spacing.md,
+  },
+  nowMarkerRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 2,
+  },
+  nowMarkerLine: {
+    flex: 1,
+    height: 2,
+    borderRadius: 1,
+  },
+  nowMarkerText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    overflow: 'hidden',
   },
   matrixSlotTile: {
     width: '48%',

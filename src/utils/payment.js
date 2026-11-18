@@ -53,7 +53,15 @@ export function getRemainingAmount(booking = {}) {
 
 export function formatBRL(value) {
   const n = toNumber(value);
-  return `R$ ${n.toFixed(2).replace('.', ',')}`;
+  // Intl.NumberFormat garante "1.234,50" (separador de milhar) em pt-BR.
+  try {
+    return `R$ ${new Intl.NumberFormat('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(n)}`;
+  } catch {
+    return `R$ ${n.toFixed(2).replace('.', ',')}`;
+  }
 }
 
 /** Aceita "40", "40,50", "R$ 40.50" -> 40.5 */

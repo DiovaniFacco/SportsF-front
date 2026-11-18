@@ -20,7 +20,7 @@
     "web": {
       "lang": "pt-BR",
       "favicon": "./public/favicon.png",
-      "name": "SportsF",
+      "name": "SportsF – Reserve sua quadra",
       "shortName": "SportsF",
       "themeColor": "#881337",
       "backgroundColor": "#F8FAFC",

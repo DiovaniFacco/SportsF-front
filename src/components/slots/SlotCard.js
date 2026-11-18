@@ -41,6 +41,9 @@ export function SlotCard({ slot, isSelected, onToggleSelect }) {
       activeOpacity={isAvailable ? 0.75 : 1.0}
       onPress={handlePress}
       disabled={!isAvailable}
+      accessibilityRole={isAvailable ? 'button' : 'text'}
+      accessibilityState={{ selected: isSelected, disabled: !isAvailable }}
+      accessibilityLabel={`${slot.formatted_time}${isAvailable ? ', disponível' : ', indisponível'}${isSelected ? ', selecionado' : ''}`}
       style={[
         styles.card,
         {
@@ -51,7 +54,8 @@ export function SlotCard({ slot, isSelected, onToggleSelect }) {
         !isAvailable && styles.disabledCard,
       ]}
     >
-      {/* Top Header: Check Icon / Lock Icon / Status */}
+      {/* Top Header: Check Icon / Lock Icon / Status.
+          Altura fixa: evita salto de layout (~4px) ao selecionar. */}
       <View style={styles.cardHeader}>
         <Text style={[styles.timeText, { color: timeTextColor }]}>
           {slot.formatted_time}
@@ -109,6 +113,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 6,
+    // Altura fixa para o badge de check/lock não mudar a altura do card
+    height: 20,
   },
   timeText: {
     fontSize: theme.typography.sizes.body,

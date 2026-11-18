@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -10,13 +10,18 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react-native';
+import { Mail, Lock, Eye, EyeOff, ArrowLeft, AlertCircle } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { SportsFLogo } from '../components/common/SportsFLogo';
 import { theme } from '../styles/theme';
 
-export function LoginScreen({ onNavigateRegister, onNavigateForgot, onBack, onLoginSuccess }) {
+/**
+ * Tela de Login.
+ * `subtitle`: substitui o texto padrão (ex: modo gestão usa copy neutra).
+ * `showRegisterLink`: oculta o link de cadastro quando embutida no painel de gestão.
+ */
+export function LoginScreen({ onNavigateRegister, onNavigateForgot, onBack, onLoginSuccess, subtitle = null, showRegisterLink = true }) {
   const { colors } = useTheme();
   const { login } = useAuth();
 
@@ -25,15 +30,20 @@ export function LoginScreen({ onNavigateRegister, onNavigateForgot, onBack, onLo
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const passwordRef = useRef(null);
 
   const handleEmailLogin = async () => {
     setErrorMessage('');
+    setEmailError('');
+    setPasswordError('');
     if (!email.trim()) {
-      setErrorMessage('Por favor, informe seu e-mail.');
+      setEmailError('Informe seu e-mail.');
       return;
     }
     if (!password) {
-      setErrorMessage('Por favor, digite sua senha.');
+      setPasswordError('Digite sua senha.');
       return;
     }
 
@@ -83,7 +93,7 @@ export function LoginScreen({ onNavigateRegister, onNavigateForgot, onBack, onLo
           </View>
           <Text style={[styles.title, { color: colors.textPrimary }]}>Bem-vindo de volta!</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Entre na sua conta para agendar quadras e partidas
+            {subtitle || 'Entre na sua conta para agendar quadras e partidas'}
           </Text>
         </View>
 
@@ -98,22 +108,37 @@ export function LoginScreen({ onNavigateRegister, onNavigateForgot, onBack, onLo
           {/* Email Field */}
           <View style={styles.inputGroup}>
             <Text style={[styles.label, { color: colors.textSecondary }]}>E-mail</Text>
-            <View style={[styles.inputWrapper, { backgroundColor: colors.searchBg, borderColor: colors.border }]}>
-              <Mail size={18} color={colors.textMuted} style={styles.inputIcon} />
+            <View
+              style={[
+                styles.inputWrapper,
+                { backgroundColor: colors.searchBg, borderColor: emailError ? colors.error : colors.border },
+              ]}
+            >
+              <Mail size={18} color={emailError ? colors.error : colors.textMuted} style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { color: colors.textPrimary }]}
                 placeholder="seu.email@exemplo.com"
                 placeholderTextColor={colors.textMuted}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(v) => {
+                  setEmail(v);
+                  if (emailError) setEmailError('');
+                }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
                 autoComplete="email"
                 textContentType="emailAddress"
                 returnKeyType="next"
+                onSubmitEditing={() => passwordRef.current?.focus?.()}
               />
             </View>
+            {emailError ? (
+              <View style={styles.fieldErrorRow}>
+                <AlertCircle size={12} color={colors.error} />
+                <Text style={[styles.fieldErrorText, { color: colors.error }]}>{emailError}</Text>
+              </View>
+            ) : null}
           </View>
 
           {/* Password Field */}
@@ -125,14 +150,23 @@ export function LoginScreen({ onNavigateRegister, onNavigateForgot, onBack, onLo
               </TouchableOpacity>
             </View>
 
-            <View style={[styles.inputWrapper, { backgroundColor: colors.searchBg, borderColor: colors.border }]}>
-              <Lock size={18} color={colors.textMuted} style={styles.inputIcon} />
+            <View
+              style={[
+                styles.inputWrapper,
+                { backgroundColor: colors.searchBg, borderColor: passwordError ? colors.error : colors.border },
+              ]}
+            >
+              <Lock size={18} color={passwordError ? colors.error : colors.textMuted} style={styles.inputIcon} />
               <TextInput
+                ref={passwordRef}
                 style={[styles.input, { color: colors.textPrimary }]}
                 placeholder="Sua senha secreta"
                 placeholderTextColor={colors.textMuted}
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(v) => {
+                  setPassword(v);
+                  if (passwordError) setPasswordError('');
+                }}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -153,6 +187,12 @@ export function LoginScreen({ onNavigateRegister, onNavigateForgot, onBack, onLo
                 )}
               </TouchableOpacity>
             </View>
+            {passwordError ? (
+              <View style={styles.fieldErrorRow}>
+                <AlertCircle size={12} color={colors.error} />
+                <Text style={[styles.fieldErrorText, { color: colors.error }]}>{passwordError}</Text>
+              </View>
+            ) : null}
           </View>
 
           {/* Primary Submit Button */}
@@ -174,15 +214,17 @@ export function LoginScreen({ onNavigateRegister, onNavigateForgot, onBack, onLo
           </TouchableOpacity>
         </View>
 
-        {/* Footer Navigation Link */}
-        <View style={styles.footerContainer}>
-          <Text style={[styles.footerText, { color: colors.textSecondary }]}>
-            Ainda não tem uma conta?{' '}
-          </Text>
-          <TouchableOpacity activeOpacity={0.7} onPress={onNavigateRegister}>
-            <Text style={[styles.footerLink, { color: colors.primary }]}>Cadastre-se</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Footer Navigation Link — oculto no modo gestão (contas são criadas pelo administrador) */}
+        {showRegisterLink ? (
+          <View style={styles.footerContainer}>
+            <Text style={[styles.footerText, { color: colors.textSecondary }]}>
+              Ainda não tem uma conta?{' '}
+            </Text>
+            <TouchableOpacity activeOpacity={0.7} onPress={onNavigateRegister}>
+              <Text style={[styles.footerLink, { color: colors.primary }]}>Cadastre-se</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -273,6 +315,17 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '600',
   },
+  fieldErrorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  fieldErrorText: {
+    fontSize: theme.typography.sizes.caption,
+    fontWeight: '600',
+    flex: 1,
+  },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -286,7 +339,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: theme.typography.sizes.body,
+    fontSize: 16,
     paddingVertical: 8,
   },
   eyeBtn: {

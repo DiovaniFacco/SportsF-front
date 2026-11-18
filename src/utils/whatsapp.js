@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import * as Linking from 'expo-linking';
+import { formatBRL } from './payment';
 
 /**
  * Modo Simplificado: agenda visual + agendamento via WhatsApp.
@@ -68,22 +69,80 @@ export function formatDateBR(dateStr) {
 
 /**
  * Monta a mensagem pré-preenchida do WhatsApp.
- * Ex: "Olá! Gostaria de agendar a quadra [nome] para o dia [data], às [horário]."
+ *
+ * Formato rico (relatório UI/UX): nome do cliente, quadra destacada,
+ * horários agrupados por dia e total/sinal quando informados:
+ * "Olá! Sou *João*. Quero reservar a *Quadra externa 4* — seg 16/11: 20:30–21:30 e 22:30–23:30. Total R$ 137,00 (sinal R$ 68,50)."
+ *
+ * Aceita dois formatos:
+ * - Multi-dia: `days` = [{ date: 'YYYY-MM-DD', times: ['20:30 - 21:30', ...] }]
+ * - Legado (1 dia): `date` + `times` (string ou array)
  */
-export function buildWhatsappMessage({ courtName, date, times }) {
-  const dateFormatted = formatDateBR(date);
-  const timesText = Array.isArray(times) ? times.join(', ') : String(times || '');
-  return `Olá! Gostaria de agendar a quadra ${courtName || ''} para o dia ${dateFormatted}, às ${timesText}.`;
+const WEEKDAYS_PT = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+
+export function weekdayShort(dateStr) {
+  const parts = String(dateStr || '').split('-');
+  if (parts.length !== 3) return '';
+  const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  if (Number.isNaN(d.getTime())) return '';
+  return WEEKDAYS_PT[d.getDay()];
+}
+
+export function buildWhatsappMessage({ courtName, date, times, days, customerName, totalPrice }) {
+  const court = String(courtName || '').trim();
+  const name = String(customerName || '').trim();
+
+  // Normaliza os dias: [{ date, times }]
+  let daysList = Array.isArray(days) ? days : null;
+  if (!daysList && date) {
+    const timesText = Array.isArray(times) ? times.filter(Boolean) : times ? [String(times)] : [];
+    daysList = timesText.length > 0 ? [{ date, times: timesText }] : [];
+  }
+  if (!daysList || daysList.length === 0) {
+    return `Olá! Gostaria de agendar a quadra ${court}.`;
+  }
+
+  // Monta os trechos por dia: "seg 16/11: 20:30–21:30 e 22:30–23:30"
+  const dayParts = daysList
+    .map((d) => {
+      const rawTimes = Array.isArray(d.times) ? d.times.filter(Boolean) : d.times ? [String(d.times)] : [];
+      if (rawTimes.length === 0) return null;
+      const shortTimes = rawTimes.map((t) => String(t).replace(/\s*-\s*/g, '–'));
+      const label = weekdayShort(d.date);
+      const dateFormatted = formatDateBR(d.date);
+      const timesJoined =
+        shortTimes.length > 1
+          ? `${shortTimes.slice(0, -1).join(', ')} e ${shortTimes[shortTimes.length - 1]}`
+          : shortTimes[0];
+      return `${label ? `${label} ` : ''}${dateFormatted}: ${timesJoined}`;
+    })
+    .filter(Boolean);
+
+  if (dayParts.length === 0) {
+    return `Olá! Gostaria de agendar a quadra ${court}.`;
+  }
+
+  const courtBold = court ? `*${court}*` : '';
+  const greeting = name ? `Olá! Sou *${name}*. Quero reservar a ${courtBold}` : `Olá! Quero reservar a ${courtBold}`;
+  let msg = `${greeting} — ${dayParts.join('; ')}.`;
+
+  // Total e sinal (regra do complexo: sinal = 50% do total)
+  if (totalPrice != null && Number.isFinite(Number(totalPrice)) && Number(totalPrice) > 0) {
+    const total = Math.round(Number(totalPrice) * 100) / 100;
+    const deposit = Math.round((total / 2) * 100) / 100;
+    msg += ` Total ${formatBRL(total)} (sinal ${formatBRL(deposit)}).`;
+  }
+  return msg;
 }
 
 /**
  * Monta a URL wa.me com mensagem pré-preenchida.
  * Retorna null se não houver número configurado.
  */
-export function buildWhatsappUrl({ venue, courtName, date, times }) {
+export function buildWhatsappUrl({ venue, courtName, date, times, days, customerName, totalPrice }) {
   const number = getVenueWhatsappNumber(venue);
   if (!number) return null;
-  const message = buildWhatsappMessage({ courtName, date, times });
+  const message = buildWhatsappMessage({ courtName, date, times, days, customerName, totalPrice });
   return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
 }
 
@@ -92,8 +151,8 @@ export function buildWhatsappUrl({ venue, courtName, date, times }) {
  * NÃO cria nenhuma reserva no sistema.
  * Retorna { success, error } — error = 'no-number' quando o complexo não configurou WhatsApp.
  */
-export async function openWhatsappBooking({ venue, courtName, date, times }) {
-  const url = buildWhatsappUrl({ venue, courtName, date, times });
+export async function openWhatsappBooking({ venue, courtName, date, times, days, customerName, totalPrice }) {
+  const url = buildWhatsappUrl({ venue, courtName, date, times, days, customerName, totalPrice });
   if (!url) {
     return { success: false, error: 'no-number' };
   }

@@ -20,7 +20,8 @@ export function ComplexCard({ venue, onPress }) {
   const handleShare = async (e) => {
     e?.stopPropagation && e.stopPropagation();
     const res = await shareVenueLink(venue);
-    if (res.success) {
+    // Toast só na cópia — o seletor nativo (Web Share) já é feedback.
+    if (res.success && res.method === 'copied') {
       setCopiedToast(true);
       setTimeout(() => {
         setCopiedToast(false);
@@ -33,10 +34,12 @@ export function ComplexCard({ venue, onPress }) {
       activeOpacity={0.94}
       onPress={() => onPress && onPress(venue)}
       style={[styles.cardContainer, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}
+      accessibilityRole="button"
+      accessibilityLabel={`Abrir complexo ${venue.name}`}
     >
-      {/* Toast Feedback */}
+      {/* Toast Feedback (flutuante, não empurra o conteúdo) */}
       {copiedToast ? (
-        <View style={[styles.toastBanner, { backgroundColor: colors.success }]}>
+        <View style={[styles.toastBanner, { backgroundColor: colors.success }]} pointerEvents="none">
           <Check size={14} color={colors.white} />
           <Text style={styles.toastText}>Link do complexo copiado!</Text>
         </View>
@@ -48,6 +51,8 @@ export function ComplexCard({ venue, onPress }) {
           source={{ uri: optimizeImageUrl(venue.image_url, { width: 1400, quality: 90 }) }}
           style={styles.coverImage}
           resizeMode="cover"
+          alt={`Foto do complexo ${venue.name}`}
+          accessibilityLabel={`Foto do complexo ${venue.name}`}
         />
 
         {/* Status Badge */}
@@ -184,14 +189,23 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   toastBanner: {
+    position: 'absolute',
+    top: 8,
+    left: theme.spacing.sm,
+    right: theme.spacing.sm,
+    zIndex: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 6,
+    paddingVertical: 8,
     paddingHorizontal: theme.spacing.md,
-    borderTopLeftRadius: theme.radius.lg,
-    borderTopRightRadius: theme.radius.lg,
+    borderRadius: theme.radius.full,
+    elevation: 10,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
   toastText: {
     color: '#FFFFFF',

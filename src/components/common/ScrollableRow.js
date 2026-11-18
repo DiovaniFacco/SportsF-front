@@ -199,9 +199,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   chevronBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

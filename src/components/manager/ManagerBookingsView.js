@@ -3,7 +3,7 @@ import {
   StyleSheet,
   View,
   Text,
-  FlatList,
+  SectionList,
   TextInput,
   TouchableOpacity,
   RefreshControl,
@@ -26,10 +26,12 @@ import {
   X,
   Repeat,
 } from 'lucide-react-native';
+import * as Linking from 'expo-linking';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { getUserBookings, cancelBooking, updateBookingPayment } from '../../api/bookings';
-import { parseServerDateTime } from '../../utils/datetime';
+import { parseServerDateTime, getTodayStrInSaoPaulo } from '../../utils/datetime';
+import { toInternationalWhatsappNumber } from '../../utils/whatsapp';
 import {
   PAYMENT_PAGO,
   PAYMENT_PENDENTE,
@@ -76,7 +78,7 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-  const [statusFilter, setStatusFilter] = useState('todos'); // todos | futuros | realizados | cancelados
+  const [statusFilter, setStatusFilter] = useState('futuros'); // todos | futuros | realizados | cancelados — "futuros" é o uso típico
   const [paymentFilter, setPaymentFilter] = useState('all'); // all | pago | pendente | nao_pago
   const [courtFilter, setCourtFilter] = useState('ALL');
   const [search, setSearch] = useState('');
@@ -257,6 +259,48 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
       .sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
   }, [scoped, statusFilter, paymentFilter, courtFilter, search, now]);
 
+  // Agrupa a lista por dia (Hoje / Amanhã / ter 24/11) para leitura rápida.
+  const WDAY_PT = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+  const sections = useMemo(() => {
+    const today = getTodayStrInSaoPaulo();
+    const [ty, tm, td] = today.split('-').map(Number);
+    const tomorrowDate = new Date(Date.UTC(ty, tm - 1, td + 1, 12));
+    const tomorrowStr = `${tomorrowDate.getUTCFullYear()}-${String(tomorrowDate.getUTCMonth() + 1).padStart(2, '0')}-${String(tomorrowDate.getUTCDate()).padStart(2, '0')}`;
+
+    const map = new Map();
+    filtered.forEach((b) => {
+      const key = String(b.start_time || '').substring(0, 10) || 'sem-data';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(b);
+    });
+
+    return Array.from(map.entries()).map(([key, data]) => {
+      let label = 'Sem data';
+      if (key === today) {
+        label = 'Hoje';
+      } else if (key === tomorrowStr) {
+        label = 'Amanhã';
+      } else if (key !== 'sem-data') {
+        const parts = key.split('-');
+        const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        label = `${Number.isNaN(d.getTime()) ? '' : `${WDAY_PT[d.getDay()]} `}${parts[2]}/${parts[1]}`;
+      }
+      return { key, label, data };
+    });
+  }, [filtered]);
+
+  // Telefone do cliente com WhatsApp vira atalho wa.me (abre a conversa direto).
+  const openClientWhatsapp = (phone) => {
+    const digits = toInternationalWhatsappNumber(phone);
+    if (!digits) return;
+    const url = `https://wa.me/${digits}`;
+    if (Platform.OS === 'web') {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      Linking.openURL(url).catch(() => {});
+    }
+  };
+
   const filters = [
     { id: 'todos', label: `Todos (${counts.todos})` },
     { id: 'futuros', label: `Futuros (${counts.futuros})` },
@@ -288,7 +332,7 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
     const end = parseDateTime(item.end_time) || parseDateTime(item.start_time);
     const isPast = end ? end < new Date() : false;
     const client = item.customer_name || item.user?.name || 'Cliente';
-    const phone = item.customer_phone || item.user?.phone || '—';
+    const phone = item.customer_phone || item.user?.phone || '';
     const isTogglingPayment = togglingPaymentId === item.id;
     const isFixedDay = Boolean(
       item.court_fixed_schedule_id ?? item.fixed_schedule_id ?? item.fixedSchedule?.id,
@@ -330,12 +374,15 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
                 <Text style={[styles.badgeText, { color: colors.primary }]}>AGENDADO</Text>
               </View>
             )}
-            <View style={[styles.badge, { backgroundColor: payBadge.bg }]}>
-              <Banknote size={13} color={payBadge.fg} style={{ marginRight: 4 }} />
-              <Text style={[styles.badgeText, { color: payBadge.fg }]}>
-                {payBadge.label}
-              </Text>
-            </View>
+            {/* Badge de pagamento só faz sentido em reservas não canceladas */}
+            {!isCancelled ? (
+              <View style={[styles.badge, { backgroundColor: payBadge.bg }]}>
+                <Banknote size={13} color={payBadge.fg} style={{ marginRight: 4 }} />
+                <Text style={[styles.badgeText, { color: payBadge.fg }]}>
+                  {payBadge.label}
+                </Text>
+              </View>
+            ) : null}
             {isFixedDay ? (
               <View style={[styles.badge, { backgroundColor: colors.primaryLight }]}>
                 <Repeat size={13} color={colors.primary} style={{ marginRight: 4 }} />
@@ -360,10 +407,20 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
           </View>
         </View>
 
-        <View style={styles.infoRow}>
-          <Phone size={14} color={colors.textMuted} style={{ marginRight: 6 }} />
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>{phone}</Text>
-        </View>
+        {/* Telefone: omitido quando vazio; quando existe, abre o WhatsApp do cliente */}
+        {phone ? (
+          <TouchableOpacity
+            style={styles.infoRow}
+            activeOpacity={0.7}
+            onPress={() => openClientWhatsapp(phone)}
+            accessibilityRole="link"
+            accessibilityLabel={`Abrir WhatsApp do cliente ${phone}`}
+          >
+            <Phone size={14} color={colors.textMuted} style={{ marginRight: 6 }} />
+            <Text style={[styles.infoText, { color: colors.textSecondary }]}>{phone}</Text>
+            <Text style={[styles.phoneHint, { color: colors.teal }]}>• WhatsApp</Text>
+          </TouchableOpacity>
+        ) : null}
 
         {item.notes ? (
           <View style={styles.infoRow}>
@@ -374,54 +431,57 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
           </View>
         ) : null}
 
+        {/* Preço e situação de pagamento */}
         <View style={[styles.cardFooter, { borderTopColor: colors.border }]}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={[styles.priceText, { color: colors.textPrimary }]}>
               {formatBRL(total)}
             </Text>
-            {paymentStatus !== PAYMENT_PAGO ? (
+            {!isCancelled && paymentStatus !== PAYMENT_PAGO ? (
               <Text style={[styles.remainingText, { color: colors.textMuted }]}>
                 Pago {formatBRL(paid)} • Falta {formatBRL(remaining)}
               </Text>
-            ) : (
+            ) : !isCancelled ? (
               <Text style={[styles.remainingText, { color: colors.success }]}>
                 Pago {formatBRL(paid)}
               </Text>
-            )}
-          </View>
-          <View style={styles.footerActions}>
-            {!isCancelled ? (
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => openPaymentModal(item)}
-                disabled={isTogglingPayment}
-                style={[
-                  styles.btnPay,
-                  {
-                    backgroundColor: payBadge.bg,
-                    borderColor: payBadge.bg,
-                    opacity: isTogglingPayment ? 0.6 : 1,
-                  },
-                ]}
-              >
-                <Banknote size={13} color={payBadge.fg} style={{ marginRight: 4 }} />
-                <Text style={[styles.btnPayText, { color: payBadge.fg }]}>
-                  {isTogglingPayment ? '...' : 'Registrar pagamento'}
-                </Text>
-              </TouchableOpacity>
-            ) : null}
-            {!isCancelled && !isPast ? (
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => handleCancel(item)}
-                style={[styles.btnCancel, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}
-              >
-                <XCircle size={13} color={colors.error} style={{ marginRight: 4 }} />
-                <Text style={[styles.btnCancelText, { color: colors.error }]}>Cancelar</Text>
-              </TouchableOpacity>
             ) : null}
           </View>
         </View>
+
+        {/* Ações em linha própria (não dividem espaço com o preço — evita botão cortado) */}
+        {!isCancelled ? (
+          <View style={styles.actionsRow}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => openPaymentModal(item)}
+              disabled={isTogglingPayment}
+              style={[
+                styles.actionBtn,
+                {
+                  backgroundColor: payBadge.bg,
+                  borderColor: payBadge.bg,
+                  opacity: isTogglingPayment ? 0.6 : 1,
+                },
+              ]}
+            >
+              <Banknote size={13} color={payBadge.fg} style={{ marginRight: 4 }} />
+              <Text style={[styles.actionBtnText, { color: payBadge.fg }]}>
+                {isTogglingPayment ? '...' : 'Registrar pagamento'}
+              </Text>
+            </TouchableOpacity>
+            {!isPast ? (
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => handleCancel(item)}
+                style={[styles.actionBtn, styles.btnCancel, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}
+              >
+                <XCircle size={13} color={colors.error} style={{ marginRight: 4 }} />
+                <Text style={[styles.actionBtnText, styles.btnCancelText, { color: colors.error }]}>Cancelar</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        ) : null}
       </View>
     );
   };
@@ -500,10 +560,19 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
           }}
         />
       ) : (
-        <FlatList
-          data={filtered}
+        <SectionList
+          sections={sections}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderCard}
+          renderSectionHeader={({ section }) => (
+            <View style={[styles.sectionHeader, { backgroundColor: colors.background }]}>
+              <Text style={[styles.sectionHeaderText, { color: colors.textPrimary }]}>{section.label}</Text>
+              <Text style={[styles.sectionHeaderCount, { color: colors.textMuted }]}>
+                {section.data.length} {section.data.length === 1 ? 'reserva' : 'reservas'}
+              </Text>
+            </View>
+          )}
+          stickySectionHeadersEnabled={false}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -564,15 +633,18 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
                   <Text style={[styles.quickBtnText, { color: colors.textSecondary }]}>Não pago</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.quickBtn, { borderColor: colors.border, backgroundColor: colors.background }]}
+                  style={[styles.quickBtn, { borderColor: colors.gold, backgroundColor: colors.warningSurface }]}
                   onPress={() => {
                     if (!paymentModalBooking) return;
-                    const total = getTotalPrice(paymentModalBooking);
-                    setPaymentInput(String(Math.floor(total / 2)));
+                    const modalTotal = getTotalPrice(paymentModalBooking);
+                    // Metade exata do total (2 casas), não apenas a parte inteira.
+                    setPaymentInput(String(Math.round((modalTotal / 2) * 100) / 100));
                   }}
                   disabled={savingPayment}
                 >
-                  <Text style={[styles.quickBtnText, { color: colors.textSecondary }]}>Metade</Text>
+                  <Text style={[styles.quickBtnText, { color: colors.gold }]}>
+                    Sinal 50% ({formatBRL(getTotalPrice(paymentModalBooking) / 2)})
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.quickBtn, { borderColor: colors.success, backgroundColor: colors.successSurface }]}
@@ -582,7 +654,9 @@ export function ManagerBookingsView({ courts = [], activeVenueId = null, refresh
                   }}
                   disabled={savingPayment}
                 >
-                  <Text style={[styles.quickBtnText, { color: colors.success }]}>Valor total</Text>
+                  <Text style={[styles.quickBtnText, { color: colors.success }]}>
+                    Total ({formatBRL(getTotalPrice(paymentModalBooking))})
+                  </Text>
                 </TouchableOpacity>
               </View>
 
@@ -645,7 +719,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: theme.typography.sizes.label,
+    fontSize: 16,
   },
   chipsRow: {
     flexDirection: 'row',
@@ -731,37 +805,57 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   remainingText: {
-    fontSize: 11,
+    fontSize: 13,
     marginTop: 2,
   },
-  btnCancel: {
+  phoneHint: {
+    fontSize: theme.typography.sizes.caption,
+    fontWeight: '700',
+    marginLeft: 6,
+  },
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
+    justifyContent: 'space-between',
+    paddingTop: theme.spacing.sm,
+    paddingBottom: 4,
+    paddingHorizontal: 2,
+  },
+  sectionHeaderText: {
+    fontSize: theme.typography.sizes.body,
+    fontWeight: '800',
+  },
+  sectionHeaderCount: {
+    fontSize: theme.typography.sizes.caption,
+    fontWeight: '600',
+  },
+  btnCancel: {
+    // mantém a borda vermelha sobreposta ao estilo base do botão de ação
   },
   btnCancelText: {
-    fontSize: theme.typography.sizes.bodySmall,
-    fontWeight: '700',
+    // herda do actionBtnText
   },
-  footerActions: {
+  actionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    marginTop: 8,
   },
-  btnPay: {
+  actionBtn: {
+    flex: 1,
+    minHeight: 40,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: theme.radius.md,
     borderWidth: 1,
   },
-  btnPayText: {
+  actionBtnText: {
     fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '700',
+    textAlign: 'center',
   },
   center: {
     flex: 1,

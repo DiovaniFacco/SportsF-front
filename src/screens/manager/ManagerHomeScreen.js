@@ -35,6 +35,7 @@ import {
   User,
   X,
   Lock,
+  CalendarPlus,
 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -91,7 +92,7 @@ export function ManagerHomeScreen({ onBackToUserView }) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  const [activeTab, setActiveTab] = useState('metricas'); // 'quadras' | 'agenda' | 'agendamentos' | 'fixos' | 'metricas'
+  const [activeTab, setActiveTab] = useState('agenda'); // 'quadras' | 'agenda' | 'agendamentos' | 'fixos' | 'metricas' — agenda é a tarefa principal do gestor
   const [managerMenuOpen, setManagerMenuOpen] = useState(false);
   const menuBtnRef = useRef(null);
   const [menuAnchor, setMenuAnchor] = useState({ x: 0, y: 0, width: 0, height: 0 });
@@ -338,9 +339,17 @@ export function ManagerHomeScreen({ onBackToUserView }) {
     };
 
     if (Platform.OS === 'web') {
-      if (window.confirm(`Tem certeza que deseja excluir o complexo "${venue.name}"? Esta ação removerá todas as quadras vinculadas!`)) {
-        doDelete();
+      // Confirmação digitada: evita exclusão acidental de um complexo inteiro.
+      const typed = window.prompt(
+        `"${venue.name}" será excluído PERMANENTEMENTE, junto com todas as quadras e horários vinculados.\n\nPara confirmar, digite o nome do complexo abaixo:`,
+        ''
+      );
+      if (typed == null) return; // cancelou
+      if (typed.trim().toLowerCase() !== String(venue.name || '').trim().toLowerCase()) {
+        window.alert('O nome digitado não confere. Exclusão cancelada.');
+        return;
       }
+      doDelete();
     } else {
       Alert.alert(
         'Excluir Complexo',
@@ -462,8 +471,22 @@ export function ManagerHomeScreen({ onBackToUserView }) {
               onPress={handleOpenAddVenue}
               style={[styles.iconBtn, { backgroundColor: colors.primary, borderColor: colors.primary }]}
               title="Novo Complexo"
+              accessibilityLabel="Novo Complexo"
             >
               <Plus size={16} color={colors.white} />
+            </TouchableOpacity>
+          ) : null}
+
+          {/* "+ Novo agendamento": atalho direto para o modal balcão (abre sem quadra/hora pré-selecionados) */}
+          {courts.length > 0 ? (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => handleOpenManualModal(null)}
+              style={[styles.iconBtn, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+              title="Novo agendamento"
+              accessibilityLabel="Novo agendamento"
+            >
+              <CalendarPlus size={16} color={colors.white} />
             </TouchableOpacity>
           ) : null}
 
@@ -472,6 +495,7 @@ export function ManagerHomeScreen({ onBackToUserView }) {
             onPress={openManagerMenu}
             style={[styles.iconBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
             title="Mais ações"
+            accessibilityLabel="Mais ações"
           >
             <MoreVertical size={18} color={colors.textPrimary} />
           </TouchableOpacity>
@@ -634,7 +658,9 @@ export function ManagerHomeScreen({ onBackToUserView }) {
     </View>
   );
 
-  // Menu flutuante com as ações menos frequentes do painel
+  // Menu flutuante com as ações menos frequentes do painel.
+  // Itens destrutivos ("Excluir Complexo", "Sair") ficam agrupados no fim,
+  // separados por um divisor — e a exclusão exige digitar o nome (web).
   const renderManagerMenu = () => {
     const items = [];
     if (isAdmin) {
@@ -659,18 +685,6 @@ export function ManagerHomeScreen({ onBackToUserView }) {
         },
       });
     }
-    if (isAdmin && activeVenue) {
-      items.push({
-        key: 'delete-venue',
-        icon: Trash2,
-        label: 'Excluir Complexo',
-        danger: true,
-        onPress: () => {
-          setManagerMenuOpen(false);
-          handleDeleteVenue(activeVenue);
-        },
-      });
-    }
     if (canViewAnalytics) {
       items.push({
         key: 'acessos',
@@ -691,6 +705,20 @@ export function ManagerHomeScreen({ onBackToUserView }) {
         openProfileModal();
       },
     });
+    // Divisor antes do grupo destrutivo
+    items.push({ key: 'sep-danger', separator: true });
+    if (isAdmin && activeVenue) {
+      items.push({
+        key: 'delete-venue',
+        icon: Trash2,
+        label: 'Excluir Complexo',
+        danger: true,
+        onPress: () => {
+          setManagerMenuOpen(false);
+          handleDeleteVenue(activeVenue);
+        },
+      });
+    }
     items.push({
       key: 'logout',
       icon: LogOut,
@@ -725,6 +753,14 @@ export function ManagerHomeScreen({ onBackToUserView }) {
             ]}
           >
             {items.map((item) => {
+              if (item.separator) {
+                return (
+                  <View
+                    key={item.key}
+                    style={[styles.menuSeparator, { backgroundColor: colors.border }]}
+                  />
+                );
+              }
               const Icon = item.icon;
               return (
                 <TouchableOpacity
@@ -1292,6 +1328,10 @@ const styles = StyleSheet.create({
   menuItemText: {
     fontSize: theme.typography.sizes.body,
     fontWeight: '600',
+  },
+  menuSeparator: {
+    height: 1,
+    marginVertical: theme.spacing.xs,
   },
   venuePillScroll: {
     flexDirection: 'row',

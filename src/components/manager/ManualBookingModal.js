@@ -11,7 +11,7 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import { X, User, Phone, FileText, CheckCircle2, ShieldAlert, Banknote, Repeat } from 'lucide-react-native';
+import { X, User, Phone, FileText, CheckCircle2, Banknote, Repeat } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { createBooking } from '../../api/bookings';
@@ -30,7 +30,6 @@ export function ManualBookingModal({
   initialStartTime = '18:00',
   initialEndTime = '19:00',
   initialDate = null,
-  onOpenBlockModal,
   existingBookings = [],
   existingBlocks = [],
 }) {
@@ -254,6 +253,25 @@ export function ManualBookingModal({
 
   const fixedDow = isFixed ? weekdayOfDate(date) : null;
 
+  // Estimativa de valor = tarifa/hora × duração (o total exato com preço de
+  // pico/feriado é calculado no servidor, que recusa paid > total).
+  const selectedCourtForPay = courts.find((c) => String(c.id) === String(selectedCourtId));
+  const payRate = selectedCourtForPay?.hourly_rate != null ? Number(selectedCourtForPay.hourly_rate) : null;
+  const toPayMinutes = (t) => {
+    const m = String(t || '').match(/^(\d{1,2}):(\d{2})/);
+    return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+  };
+  const payStartMin = toPayMinutes(startTime);
+  const payEndMin = toPayMinutes(endTime);
+  const payHours = payStartMin != null && payEndMin != null && payEndMin > payStartMin ? (payEndMin - payStartMin) / 60 : 1;
+  const estimatedTotal = payRate != null ? Math.round(payRate * payHours * 100) / 100 : null;
+  const estimatedHalf = estimatedTotal != null ? Math.round((estimatedTotal / 2) * 100) / 100 : null;
+  const parsedPaid = parseBRLInput(paidInput);
+  // Estado ativo de cada segmento (compara valores com tolerância de centavo)
+  const segNoneActive = Number.isFinite(parsedPaid) && parsedPaid === 0;
+  const segHalfActive = estimatedHalf != null && Number.isFinite(parsedPaid) && Math.abs(parsedPaid - estimatedHalf) < 0.005;
+  const segTotalActive = estimatedTotal != null && Number.isFinite(parsedPaid) && Math.abs(parsedPaid - estimatedTotal) < 0.005;
+
   return (
     <Modal animationType="slide" transparent visible={visible} onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
@@ -432,7 +450,7 @@ export function ManualBookingModal({
                   style={[styles.input, { color: colors.textPrimary }]}
                   value={customerPhone}
                   onChangeText={setCustomerPhone}
-                  placeholder="Ex: (54) 99988-7766"
+                  placeholder="Ex: (55) 99999-0000"
                   keyboardType="phone-pad"
                   placeholderTextColor={colors.textMuted}
                 />
@@ -472,65 +490,64 @@ export function ManualBookingModal({
                 />
               </View>
               {(() => {
-                const selectedCourt = courts.find((c) => String(c.id) === String(selectedCourtId));
-                const rate = selectedCourt?.hourly_rate != null ? Number(selectedCourt.hourly_rate) : null;
-                const paid = parseBRLInput(paidInput);
-                // Valor estimado = tarifa/hora × duração (base; o total exato com
-                // preço de pico/feriado é calculado no servidor, que recusa paid > total).
-                const toMin = (t) => {
-                  const m = String(t || '').match(/^(\d{1,2}):(\d{2})/);
-                  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
-                };
-                const sMin = toMin(startTime);
-                const eMin = toMin(endTime);
-                const hours = sMin != null && eMin != null && eMin > sMin ? (eMin - sMin) / 60 : 1;
-                const expected = rate != null ? Math.round(rate * hours * 100) / 100 : null;
-                const over = Number.isFinite(paid) && expected != null && paid > expected;
-                const preview = Number.isFinite(paid) ? ' • ' : '';
+                const over = Number.isFinite(parsedPaid) && estimatedTotal != null && parsedPaid > estimatedTotal;
                 return (
                   <Text style={[styles.paymentHint, { color: colors.textMuted }]}>
-                    {expected != null ? `Valor estimado: ${formatBRL(expected)} (${formatBRL(rate)} × ${hours}h).` : 'Informe quanto o cliente já pagou.'}
-                    {Number.isFinite(paid) && paid === 0 ? ' Ficará como NÃO PAGO.' : ''}
-                    {Number.isFinite(paid) && paid > 0 && (expected == null || paid < expected) ? ' Ficará como PENDENTE (pagamento parcial).' : ''}
-                    {Number.isFinite(paid) && expected != null && paid === expected ? ' Ficará como PAGO (valor integral).' : ''}
+                    {estimatedTotal != null ? `Valor estimado: ${formatBRL(estimatedTotal)} (${formatBRL(payRate)} × ${payHours}h).` : 'Informe quanto o cliente já pagou.'}
+                    {Number.isFinite(parsedPaid) && parsedPaid === 0 ? ' Ficará como NÃO PAGO.' : ''}
+                    {Number.isFinite(parsedPaid) && parsedPaid > 0 && (estimatedTotal == null || parsedPaid < estimatedTotal) ? ' Ficará como PENDENTE (pagamento parcial).' : ''}
+                    {Number.isFinite(parsedPaid) && estimatedTotal != null && parsedPaid === estimatedTotal ? ' Ficará como PAGO (valor integral).' : ''}
                     {over ? ` Valor acima do estimado — o sistema não aceita valor maior que o total.` : ''}
-                    {preview === '' && !Number.isFinite(paid) ? ' Valor inválido.' : ''}
+                    {!Number.isFinite(parsedPaid) ? ' Valor inválido.' : ''}
                   </Text>
                 );
               })()}
-              <View style={styles.paymentRow}>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => setPaidInput('0')}
-                  style={[styles.paymentBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
-                >
-                  <Text style={[styles.paymentBtnText, { color: colors.textSecondary }]}>Não pago</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    const selectedCourt = courts.find((c) => String(c.id) === String(selectedCourtId));
-                    const rate = selectedCourt?.hourly_rate != null ? Number(selectedCourt.hourly_rate) : null;
-                    if (rate == null) return;
-                    const toMin = (t) => {
-                      const m = String(t || '').match(/^(\d{1,2}):(\d{2})/);
-                      return m ? Number(m[1]) * 60 + Number(m[2]) : null;
-                    };
-                    const sMin = toMin(startTime);
-                    const eMin = toMin(endTime);
-                    const hours = sMin != null && eMin != null && eMin > sMin ? (eMin - sMin) / 60 : 1;
-                    setPaidInput(String(Math.round(rate * hours * 100) / 100));
-                  }}
-                  style={[styles.paymentBtn, { backgroundColor: colors.successSurface, borderColor: colors.success }]}
-                >
-                  <Banknote size={15} color={colors.success} style={{ marginRight: 6 }} />
-                  <Text style={[styles.paymentBtnText, { color: colors.success }]}>Valor total</Text>
-                </TouchableOpacity>
+              {/* Controle segmentado: Não pago | Sinal 50% | Total — um toque define o valor */}
+              <View style={[styles.segmentedRow, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                {[
+                  {
+                    key: 'none',
+                    label: 'Não pago',
+                    active: segNoneActive,
+                    onPress: () => setPaidInput('0'),
+                  },
+                  {
+                    key: 'half',
+                    label: estimatedHalf != null ? `Sinal 50% (${formatBRL(estimatedHalf)})` : 'Sinal 50%',
+                    active: segHalfActive,
+                    onPress: () => estimatedHalf != null && setPaidInput(String(estimatedHalf)),
+                  },
+                  {
+                    key: 'total',
+                    label: estimatedTotal != null ? `Total (${formatBRL(estimatedTotal)})` : 'Total',
+                    active: segTotalActive,
+                    onPress: () => estimatedTotal != null && setPaidInput(String(estimatedTotal)),
+                  },
+                ].map((seg) => (
+                  <TouchableOpacity
+                    key={seg.key}
+                    activeOpacity={0.8}
+                    onPress={seg.onPress}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: seg.active }}
+                    style={[
+                      styles.segmentedBtn,
+                      seg.active && { backgroundColor: colors.primary },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.segmentedText, { color: seg.active ? colors.white : colors.textSecondary }]}
+                      numberOfLines={1}
+                    >
+                      {seg.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             </View>
           </ScrollView>
 
-          {/* Footer Buttons */}
+          {/* Footer Buttons — bloquear horário é feito pela agenda (ação "Bloquear Horários") */}
           <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
             <TouchableOpacity
               onPress={onClose}
@@ -539,29 +556,6 @@ export function ManualBookingModal({
             >
               <Text style={[styles.cancelBtnText, { color: colors.textPrimary }]}>Cancelar</Text>
             </TouchableOpacity>
-
-            {onOpenBlockModal ? (
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => {
-                  onClose();
-                  onOpenBlockModal({
-                    courtId: selectedCourtId,
-                    startTime,
-                    endTime,
-                    date,
-                  });
-                }}
-                style={[
-                  styles.blockBtn,
-                  { backgroundColor: colors.errorSurface, borderColor: colors.error },
-                ]}
-                disabled={submitting}
-              >
-                <ShieldAlert size={16} color={colors.error} style={{ marginRight: 6 }} />
-                <Text style={[styles.blockBtnText, { color: colors.error }]}>Bloquear Horário</Text>
-              </TouchableOpacity>
-            ) : null}
 
             <TouchableOpacity
               activeOpacity={0.8}
@@ -669,7 +663,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: theme.typography.sizes.body,
+    fontSize: 16,
   },
   rowInputs: {
     flexDirection: 'row',
@@ -691,23 +685,25 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.caption,
     fontWeight: '700',
   },
-  paymentRow: {
+  segmentedRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 4,
+    borderWidth: 1,
+    borderRadius: theme.radius.md,
+    overflow: 'hidden',
+    marginTop: 6,
   },
-  paymentBtn: {
+  segmentedBtn: {
     flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 11,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
+    minHeight: 40,
+    paddingHorizontal: 4,
+    paddingVertical: 8,
   },
-  paymentBtnText: {
-    fontSize: theme.typography.sizes.body,
-    fontWeight: '700',
+  segmentedText: {
+    fontSize: theme.typography.sizes.caption,
+    fontWeight: '800',
+    textAlign: 'center',
   },
   paymentHint: {
     fontSize: theme.typography.sizes.caption,
@@ -801,22 +797,6 @@ const styles = StyleSheet.create({
   cancelBtnText: {
     fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '600',
-    textAlign: 'center',
-  },
-  blockBtn: {
-    flex: 1.2,
-    minWidth: 110,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 10,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-  },
-  blockBtnText: {
-    fontSize: theme.typography.sizes.bodySmall,
-    fontWeight: '700',
     textAlign: 'center',
   },
   submitBtn: {

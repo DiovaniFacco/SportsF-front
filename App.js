@@ -16,7 +16,7 @@ import { ManagerHomeScreen } from './src/screens/manager/ManagerHomeScreen';
 import { BottomNav } from './src/components/common/BottomNav';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
-import { getVenueIdFromUrl, syncVenueUrlInBrowser, getDefaultVenueSlug, getDefaultVenueCandidates, getSubdomainSlug, isGestaoRoute, syncGestaoUrlInBrowser, isResetRoute, getResetParams, clearResetUrlInBrowser } from './src/utils/linking';
+import { getVenueIdFromUrl, syncVenueUrlInBrowser, getDefaultVenueSlug, getDefaultVenueCandidates, getSubdomainSlug, isGestaoRoute, syncGestaoUrlInBrowser, isResetRoute, getResetParams, clearResetUrlInBrowser, getCourtIdFromUrl, getCourtDateFromUrl, syncCourtUrlInBrowser } from './src/utils/linking';
 import { getVenueDetails, getVenues } from './src/api/venues';
 import { isSimplifiedVenue } from './src/utils/whatsapp';
 import { initAnalytics, trackAppOpen, trackScreen } from './src/services/analytics';
@@ -81,8 +81,35 @@ function MainAppContent() {
   // Ref para uso dentro do listener de popstate (evita closure desatualizada).
   const lockRef = useRef({ locked: false, venue: null });
   lockRef.current = { locked: simplifiedLock, venue: selectedVenue };
+  // Ref da quadra selecionada (mesmo propósito no popstate / sync de data).
+  const selectedCourtRef = useRef(null);
+  selectedCourtRef.current = selectedCourt;
   // Dedupe do evento 'url' (expo-linking pode reemitir a URL inicial na web).
   const lastHandledRef = useRef({ url: null, at: 0 });
+
+  // Título da aba do navegador acompanha a tela atual (web).
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    let title = 'SportsF – Reserve sua quadra';
+    if (isManagerView) {
+      title = 'Gestão | SportsF';
+    } else if (authScreen === 'login') {
+      title = 'Entrar | SportsF';
+    } else if (authScreen === 'register') {
+      title = 'Criar conta | SportsF';
+    } else if (authScreen === 'forgot' || authScreen === 'reset') {
+      title = 'Recuperar senha | SportsF';
+    } else if (selectedCourt && selectedVenue) {
+      title = `${selectedCourt.name} – ${selectedVenue.name} | SportsF`;
+    } else if (selectedVenue) {
+      title = `${selectedVenue.name} | SportsF`;
+    } else if (activeTab === 'perfil') {
+      title = 'Meu Perfil | SportsF';
+    } else if (activeTab === 'agendamentos') {
+      title = 'Meus Agendamentos | SportsF';
+    }
+    document.title = title;
+  }, [isManagerView, authScreen, selectedCourt, selectedVenue, activeTab]);
 
   const handleSelectVenue = (venue) => {
     setSelectedVenue(venue);
@@ -98,6 +125,47 @@ function MainAppContent() {
     if (simplifiedLock) return;
     setSelectedVenue(null);
     syncVenueUrlInBrowser(null);
+  };
+
+  // Navegação quadra ↔ complexo com URL compartilhável:
+  // /complexo/<slug>/quadra/<id>?data=YYYY-MM-DD (compartilhamento + back do navegador).
+  const [pendingCourtDate, setPendingCourtDate] = useState(null);
+
+  const handleSelectCourt = (court, venueObj) => {
+    const venue = venueObj || lockRef.current.venue;
+    if (venueObj && venueObj !== lockRef.current.venue) {
+      handleSelectVenue(venueObj);
+    }
+    setSelectedCourt(court);
+    setPendingCourtDate(null);
+    if (Platform.OS === 'web' && court && venue) {
+      syncCourtUrlInBrowser(court, venue, null);
+    }
+  };
+
+  const handleBackFromCourt = () => {
+    setSelectedCourt(null);
+    setPendingCourtDate(null);
+    // Restaura a URL do complexo (substitui a URL da quadra — não empilha histórico).
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.history) {
+      try {
+        const venue = lockRef.current.venue;
+        const targetPath = venue?.slug ? `/complexo/${venue.slug}` : '/';
+        window.history.replaceState({}, '', targetPath);
+      } catch {
+        // mantém URL atual
+      }
+    }
+  };
+
+  // Troca de data dentro da quadra: atualiza ?data= sem empilhar histórico.
+  const handleCourtDateSync = (dateStr) => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const court = selectedCourtRef.current;
+    const venue = lockRef.current.venue;
+    if (court && venue) {
+      syncCourtUrlInBrowser(court, venue, dateStr, { replace: true });
+    }
   };
 
   const openManagerView = () => {
@@ -302,6 +370,39 @@ function MainAppContent() {
           setAuthScreen(null);
           return;
         }
+        // Rota de quadra: /complexo/<slug>/quadra/<id>?data=YYYY-MM-DD —
+        // restaura a tela de horários (voltar/avançar entre quadra e complexo).
+        const courtIdFromPop = getCourtIdFromUrl(currentHref);
+        if (courtIdFromPop) {
+          const vIdFromPop = getVenueIdFromUrl(currentHref);
+          const cachedVenue = lockRef.current.venue;
+          const venueMatches =
+            cachedVenue &&
+            vIdFromPop &&
+            (String(cachedVenue.id) === String(vIdFromPop) || cachedVenue.slug === vIdFromPop);
+          const resolveCourt = async () => {
+            let venue = venueMatches ? cachedVenue : null;
+            if (!venue && vIdFromPop) {
+              try {
+                venue = await getVenueDetails(vIdFromPop);
+              } catch {
+                return;
+              }
+            }
+            if (!venue) return;
+            const court = (venue.courts || []).find(
+              (c) => String(c.id) === String(courtIdFromPop),
+            );
+            if (!court) return;
+            setSelectedVenue(venue);
+            setSelectedCourt(court);
+            setPendingCourtDate(getCourtDateFromUrl(currentHref));
+            setIsManagerView(false);
+            setAuthScreen(null);
+          };
+          resolveCourt();
+          return;
+        }
         // Saindo de /gestao para outra rota: fecha o painel.
         // (A URL já foi alterada pelo navegador no popstate.)
         setIsManagerView(false);
@@ -415,20 +516,19 @@ function MainAppContent() {
         <CourtSlotsScreen
           court={selectedCourt}
           venue={selectedVenue}
-          onBack={() => setSelectedCourt(null)}
+          onBack={handleBackFromCourt}
           onOpenAuth={null}
           onTabChange={null}
           hideBottomNav
+          initialDate={pendingCourtDate || undefined}
+          onDateSync={handleCourtDateSync}
         />
       ) : (
         <VenueCourtsScreen
           venueId={selectedVenue.id}
           venue={selectedVenue}
           onBack={handleBackFromVenue}
-          onSelectCourt={(court, venueObj) => {
-            if (venueObj) handleSelectVenue(venueObj);
-            setSelectedCourt(court);
-          }}
+          onSelectCourt={handleSelectCourt}
           onTabChange={null}
           hideBottomNav
           hideBack
@@ -447,10 +547,12 @@ function MainAppContent() {
           <CourtSlotsScreen
             court={selectedCourt}
             venue={selectedVenue}
-            onBack={() => setSelectedCourt(null)}
+            onBack={handleBackFromCourt}
             onOpenAuth={null}
             onTabChange={null}
             hideBottomNav
+            initialDate={pendingCourtDate || undefined}
+            onDateSync={handleCourtDateSync}
           />
         );
       }
@@ -459,10 +561,7 @@ function MainAppContent() {
           venueId={selectedVenue.id}
           venue={selectedVenue}
           onBack={handleBackFromVenue}
-          onSelectCourt={(court, venueObj) => {
-            if (venueObj) handleSelectVenue(venueObj);
-            setSelectedCourt(court);
-          }}
+          onSelectCourt={handleSelectCourt}
           onTabChange={null}
           hideBottomNav
           hideBack
@@ -539,6 +638,8 @@ function MainAppContent() {
               // Permanece em /gestao; o guard acima libera o painel quando o role for gestor.
               syncGestaoUrlInBrowser();
             }}
+            subtitle="Acesso exclusivo de gestores e funcionários do complexo."
+            showRegisterLink={false}
           />
         );
       }
@@ -575,9 +676,11 @@ function MainAppContent() {
         <CourtSlotsScreen
           court={selectedCourt}
           venue={selectedVenue}
-          onBack={() => setSelectedCourt(null)}
+          onBack={handleBackFromCourt}
           onOpenAuth={() => setAuthScreen('login')}
           onTabChange={handleTabChange}
+          initialDate={pendingCourtDate || undefined}
+          onDateSync={handleCourtDateSync}
         />
       );
     }
@@ -587,10 +690,7 @@ function MainAppContent() {
         <VenueCourtsScreen
           venueId={selectedVenue.id}
           onBack={handleBackFromVenue}
-          onSelectCourt={(court, venueObj) => {
-            if (venueObj) handleSelectVenue(venueObj);
-            setSelectedCourt(court);
-          }}
+          onSelectCourt={handleSelectCourt}
           onTabChange={handleTabChange}
         />
       );

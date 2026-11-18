@@ -313,6 +313,8 @@ export function syncGestaoUrlInBrowser() {
 
 /**
  * Copia ou compartilha o link direto seguro do complexo esportivo.
+ * No mobile (Web Share API) abre o seletor nativo (WhatsApp, Instagram, etc);
+ * no desktop copia para a área de transferência.
  */
 export async function shareVenueLink(venue) {
   if (!venue) return { success: false };
@@ -320,7 +322,21 @@ export async function shareVenueLink(venue) {
   const title = typeof venue === 'object' ? venue.name : 'Complexo Esportivo';
   const message = `Confira o complexo "${title}" no SportsF: ${link}`;
 
-  // Tenta copiar para área de transferência na Web
+  // Web Share API primeiro (mobile): abre WhatsApp/Instagram/etc nativo.
+  if (Platform.OS === 'web' && typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+    try {
+      await navigator.share({ title, text: message, url: link });
+      return { success: true, method: 'shared', link };
+    } catch (err) {
+      // Usuário cancelou o seletor nativo — não tenta clipboard nem trata como erro.
+      if (err?.name === 'AbortError') {
+        return { success: false, cancelled: true };
+      }
+      console.warn('Web Share API falhou, tentando clipboard:', err);
+    }
+  }
+
+  // Fallback: copiar para área de transferência na Web
   if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard) {
     try {
       await navigator.clipboard.writeText(link);
@@ -342,4 +358,107 @@ export async function shareVenueLink(venue) {
     console.error('Erro ao compartilhar link do complexo:', err);
     return { success: false, error: err };
   }
+}
+
+/**
+ * Extrai o ID da quadra de uma URL com rota de horários
+ * (/complexo/<slug>/quadra/<id>). Retorna null quando ausente.
+ */
+export function getCourtIdFromUrl(urlStr) {
+  if (!urlStr) return null;
+  try {
+    let cleanUrlStr = urlStr;
+    if (!cleanUrlStr.includes('://') && !cleanUrlStr.startsWith('http')) {
+      cleanUrlStr = `http://localhost${cleanUrlStr.startsWith('/') ? '' : '/'}${cleanUrlStr}`;
+    }
+    const url = new URL(cleanUrlStr);
+
+    // Query param legado: ?quadra=5 / ?court=5
+    const q = url.searchParams.get('quadra') || url.searchParams.get('court');
+    if (q) return decodeURIComponent(q);
+
+    // Path: /complexo/<slug>/quadra/<id> (aceita "quadra" ou "court")
+    const pathParts = url.pathname.split('/').filter(Boolean).map((p) => p.toLowerCase());
+    const courtIndex = pathParts.findIndex((p) => p === 'quadra' || p === 'court');
+    if (courtIndex !== -1 && pathParts[courtIndex + 1]) {
+      return decodeURIComponent(url.pathname.split('/').filter(Boolean)[courtIndex + 1]);
+    }
+  } catch (err) {
+    console.error('Erro ao decodificar URL da quadra:', err);
+  }
+  return null;
+}
+
+/**
+ * Extrai a data (YYYY-MM-DD) da query (?data= ou ?date=) de uma URL.
+ */
+export function getCourtDateFromUrl(urlStr) {
+  if (!urlStr) return null;
+  try {
+    let cleanUrlStr = urlStr;
+    if (!cleanUrlStr.includes('://') && !cleanUrlStr.startsWith('http')) {
+      cleanUrlStr = `http://localhost${cleanUrlStr.startsWith('/') ? '' : '/'}${cleanUrlStr}`;
+    }
+    const url = new URL(cleanUrlStr);
+    const d = url.searchParams.get('data') || url.searchParams.get('date');
+    return d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Sincroniza a URL do navegador para a tela de horários de uma quadra:
+ * /complexo/<slug>/quadra/<id>?data=YYYY-MM-DD
+ * Usa replaceState quando `replace` (troca de data não deve empilhar histórico).
+ */
+export function syncCourtUrlInBrowser(court, venue, dateStr = null, opts = {}) {
+  if (Platform.OS !== 'web' || typeof window === 'undefined' || !window.history) return;
+  try {
+    const slug = getVenueSlug(venue);
+    if (!court || !slug) return;
+    const url = new URL(window.location.href);
+    const dateParam = dateStr || getCourtDateFromUrl(window.location.href) || '';
+    const targetPath = `/complexo/${slug}/quadra/${court.id}`;
+    url.searchParams.delete('complex');
+    url.searchParams.delete('c');
+    url.searchParams.delete('venue');
+    url.searchParams.delete('quadra');
+    url.searchParams.delete('court');
+    if (dateParam) url.searchParams.set('data', dateParam);
+    else url.searchParams.delete('data');
+    const full = `${targetPath}${url.search}${url.hash}`;
+    if (opts.replace) window.history.replaceState({}, '', full);
+    else window.history.pushState({}, '', full);
+  } catch (e) {
+    console.warn('Não foi possível sincronizar URL da quadra:', e);
+  }
+}
+
+/**
+ * Telefone em URL clicável (tel:) — mantém apenas dígitos.
+ */
+export function buildTelUrl(rawPhone) {
+  const digits = String(rawPhone || '').replace(/\D+/g, '');
+  return digits ? `tel:+${digits}` : null;
+}
+
+/**
+ * URL do Google Maps para um endereço (rota "Como chegar").
+ */
+export function buildMapsUrl(venue) {
+  if (!venue) return null;
+  const address = [venue.address, venue.city, venue.state].filter(Boolean).join(', ');
+  if (!address) return null;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+}
+
+/**
+ * Rota/rota do Waze para o mesmo endereço (alternativa ao Google Maps).
+ */
+export function buildWazeUrl(venue) {
+  if (!venue) return null;
+  const address = [venue.address, venue.city, venue.state].filter(Boolean).join(', ');
+  if (!address) return null;
+  return `https://waze.com/ul?q=${encodeURIComponent(address)}&navigate=yes`;
 }

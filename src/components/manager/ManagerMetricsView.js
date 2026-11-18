@@ -15,7 +15,6 @@ import {
   Store,
   Smartphone,
   Layers,
-  Calendar,
   BarChart3,
   Award,
   Clock,
@@ -24,8 +23,9 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { getUserBookings } from '../../api/bookings';
+import { getFixedSchedules, weekdayOfDate as fixedWeekdayOfDate } from '../../api/fixedSchedules';
 import { ScrollableRow } from '../common/ScrollableRow';
-import { getPaidAmount, getTotalPrice, getPaymentStatus, PAYMENT_PAGO, PAYMENT_PENDENTE } from '../../utils/payment';
+import { formatBRL, getPaidAmount, getTotalPrice, getPaymentStatus, PAYMENT_PAGO, PAYMENT_PENDENTE } from '../../utils/payment';
 import { parseServerDateTime, getTodayStrInSaoPaulo } from '../../utils/datetime';
 
 export function ManagerMetricsView({ courts = [], headerComponent }) {
@@ -33,6 +33,7 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
 
   const [period, setPeriod] = useState('today'); // 'today' | 'week' | 'month'
   const [bookings, setBookings] = useState([]);
+  const [fixedSchedules, setFixedSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -50,6 +51,19 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
       setLoading(false);
       setRefreshing(false);
     }
+  }, []);
+
+  // Horários fixos ativos também ocupam a agenda — entram na taxa de ocupação.
+  useEffect(() => {
+    let alive = true;
+    getFixedSchedules({ includeInactive: false })
+      .then((list) => {
+        if (alive) setFixedSchedules(Array.isArray(list) ? list : []);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -102,6 +116,44 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
 
   const activeBookings = scopedBookings.filter(filterByPeriod);
 
+  // Datas (YYYY-MM-DD) que compõem o período — base para contar ocorrências fixas.
+  const periodDates = (() => {
+    const [y, m, d] = todayStr.split('-').map(Number);
+    if (period === 'today') return [todayStr];
+    if (period === 'week') {
+      const dates = [];
+      for (let i = 0; i < 7; i++) {
+        const dt = new Date(y, m - 1, d + i);
+        dates.push(`${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`);
+      }
+      return dates;
+    }
+    // month: todos os dias do mês corrente (o filtro de reservas cobre o mês inteiro)
+    const lastDay = new Date(y, m, 0).getDate();
+    const dates = [];
+    for (let i = 1; i <= lastDay; i++) {
+      dates.push(`${y}-${String(m).padStart(2, '0')}-${String(i).padStart(2, '0')}`);
+    }
+    return dates;
+  })();
+
+  // Ocorrências de horários fixos no período: cada série ativa ocupa seu dia
+  // da semana (respeitando valid_from/valid_until e o escopo de quadras).
+  const fixedOccurrences = (() => {
+    let count = 0;
+    fixedSchedules.forEach((f) => {
+      if (!f || f.is_active === false) return;
+      if (f.court_id != null && courtIds.size > 0 && !courtIds.has(String(f.court_id))) return;
+      periodDates.forEach((ds) => {
+        if (fixedWeekdayOfDate(ds) !== Number(f.day_of_week)) return;
+        if (f.valid_from && ds < String(f.valid_from).substring(0, 10)) return;
+        if (f.valid_until && ds > String(f.valid_until).substring(0, 10)) return;
+        count++;
+      });
+    });
+    return count;
+  })();
+
   const totalCourts = courts.length;
   const avgHourlyRate = totalCourts > 0
     ? (courts.reduce((acc, c) => acc + (parseFloat(c.hourly_rate) || 0), 0) / totalCourts)
@@ -127,13 +179,16 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
   const manualPct = totalBookingsCount > 0 ? Math.round((manualCount / totalBookingsCount) * 100) : 0;
   const appPct = totalBookingsCount > 0 ? Math.round((appCount / totalBookingsCount) * 100) : 0;
 
-  // Estimativa de slots e ocupação (proporcional ao período)
+  // Estimativa de slots e ocupação (proporcional ao período).
+  // Ocupação = reservas + horários fixos do período.
   const daysInPeriod = period === 'today' ? 1 : period === 'week' ? 7 : 30;
   const estimatedSlotsPerDay = (totalCourts > 0 ? totalCourts : 2) * 16; // 16h/dia operacionais
   const estimatedSlots = estimatedSlotsPerDay * daysInPeriod;
+  const occupiedSlots = totalBookingsCount + fixedOccurrences;
   const occupancyRate = estimatedSlots > 0
-    ? Math.min(100, Math.round((totalBookingsCount / estimatedSlots) * 100))
+    ? Math.min(100, Math.round((occupiedSlots / estimatedSlots) * 100))
     : 0;
+  const remainingSlots = Math.max(0, estimatedSlots - occupiedSlots);
 
   // Ticket Médio (sobre valor recebido; fallback para valor previsto)
   const ticketMedio = totalBookingsCount > 0
@@ -253,16 +308,16 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
                 </View>
               </View>
               <Text style={[styles.kpiValue, { color: colors.textPrimary }]}>
-                R$ {totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatBRL(totalRevenue)}
               </Text>
               <View style={styles.kpiFooter}>
                 <TrendingUp size={14} color={colors.success} style={{ marginRight: 4 }} />
                 <Text style={[styles.kpiSubtext, { color: colors.success }]}>
-                  {totalBookingsCount} agendamento{totalBookingsCount !== 1 ? 's' : ''} • Previsto R$ {totalExpected.toFixed(0)}
+                  {totalBookingsCount} agendamento{totalBookingsCount !== 1 ? 's' : ''} • Previsto {formatBRL(totalExpected)}
                 </Text>
               </View>
               <Text style={[styles.kpiSubtext, { color: colors.textMuted }]}>
-                A receber: R$ {totalPending.toFixed(2)} • {paidCount} pago(s), {pendingCount} pendente(s)
+                A receber: {formatBRL(totalPending)} • {paidCount} pago(s), {pendingCount} pendente(s)
               </Text>
             </View>
 
@@ -292,11 +347,11 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
                 </View>
               </View>
               <Text style={[styles.kpiValue, { color: colors.textPrimary }]}>
-                R$ {avgHourlyRate.toFixed(0)}
+                {formatBRL(avgHourlyRate)}
               </Text>
               <View style={styles.kpiFooter}>
                 <Text style={[styles.kpiSubtext, { color: colors.textMuted }]}>
-                  Ticket médio: R$ {ticketMedio.toFixed(0)} / jogo
+                  Ticket médio: {formatBRL(ticketMedio)} / jogo
                 </Text>
               </View>
             </View>
@@ -312,9 +367,12 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
               <Text style={[styles.kpiValue, { color: colors.textPrimary }]}>{occupancyRate}%</Text>
               <View style={styles.kpiFooter}>
                 <Text style={[styles.kpiSubtext, { color: '#F59E0B' }]}>
-                  {totalBookingsCount} de {estimatedSlots} horários ({period === 'today' ? 'hoje' : period === 'week' ? '7 dias' : 'mês'})
+                  {occupiedSlots} de {estimatedSlots} horários ({remainingSlots} restantes)
                 </Text>
               </View>
+              <Text style={[styles.kpiSubtext, { color: colors.textMuted }]}>
+                Inclui {fixedOccurrences} horário{fixedOccurrences !== 1 ? 's' : ''} fixo{fixedOccurrences !== 1 ? 's' : ''} do período.
+              </Text>
             </View>
           </View>
 
@@ -328,7 +386,17 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
               <Text style={[styles.cardBadgeText, { color: colors.textMuted }]}>Canais de Venda</Text>
             </View>
 
-            {/* Barra Visual Proporcional */}
+            {/* Barra Visual Proporcional + detalhes (ou estado vazio do período) */}
+            {totalBookingsCount === 0 ? (
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+                {period === 'today'
+                  ? 'Nenhuma reserva hoje.'
+                  : period === 'week'
+                  ? 'Nenhuma reserva nos próximos 7 dias.'
+                  : 'Nenhuma reserva neste mês.'}
+              </Text>
+            ) : (
+            <>
             <View style={[styles.progressBarContainer, { backgroundColor: colors.background }]}>
               <View
                 style={[
@@ -367,6 +435,8 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
                 </Text>
               </View>
             </View>
+            </>
+            )}
           </View>
 
           {/* Desempenho Detalhado por Quadra */}
@@ -389,16 +459,16 @@ export function ManagerMetricsView({ courts = [], headerComponent }) {
                   <View style={styles.courtPerfInfo}>
                     <Text style={[styles.courtPerfName, { color: colors.textPrimary }]}>{c.name}</Text>
                     <Text style={[styles.courtPerfMeta, { color: colors.textMuted }]}>
-                      Valor da hora: R$ {parseFloat(c.hourly_rate).toFixed(0)} • {c.bookingsCount} reservas
+                      Valor da hora: {formatBRL(parseFloat(c.hourly_rate))} • {c.bookingsCount} reservas
                     </Text>
                     <Text style={[styles.courtPerfMeta, { color: colors.textMuted }]}>
-                      Recebido R$ {c.revenue.toFixed(0)} de R$ {c.expected.toFixed(0)} previsto
+                      Recebido {formatBRL(c.revenue)} de {formatBRL(c.expected)} previsto
                     </Text>
                   </View>
 
                   <View style={styles.courtPerfValues}>
                     <Text style={[styles.courtPerfRevenue, { color: colors.success }]}>
-                      R$ {c.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      {formatBRL(c.revenue)}
                     </Text>
                     <Text style={[styles.courtPerfOccupancy, { color: colors.textMuted }]}>
                       {c.occupancy}% ocupado

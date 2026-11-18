@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   legendText: {
-    fontSize: theme.typography.sizes.caption,
+    fontSize: theme.typography.sizes.label,
     fontWeight: '600',
   },
 });

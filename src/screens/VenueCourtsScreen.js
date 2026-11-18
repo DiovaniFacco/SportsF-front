@@ -9,10 +9,12 @@ import {
   RefreshControl,
   Alert,
   ScrollView,
+  Dimensions,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { theme } from '../styles/theme';
 import { getVenueDetails } from '../api/venues';
+import { getAvailableSlots } from '../api/slots';
 import { VenueHeroHeader } from '../components/complexes/VenueHeroHeader';
 import { CourtCard } from '../components/courts/CourtCard';
 import { SkeletonCard } from '../components/common/SkeletonCard';
@@ -21,6 +23,17 @@ import { ErrorState } from '../components/common/ErrorState';
 import { BottomNav } from '../components/common/BottomNav';
 import { FilterChip } from '../components/common/FilterChip';
 import { isSimplifiedVenue } from '../utils/whatsapp';
+import { getTodayStrInSaoPaulo } from '../utils/datetime';
+
+const ALL_SPORTS = 'Todas';
+const ALL_COVER = 'Todas';
+
+// Grid responsivo: 1 coluna no mobile, 2 em tablets, 3 em telas largas.
+function getGridColumns(width) {
+  if (width >= 1024) return 3;
+  if (width >= 768) return 2;
+  return 1;
+}
 
 export function VenueCourtsScreen({ venueId, venue: venueProp = null, onBack, onSelectCourt, onTabChange, hideBottomNav = false, hideBack = false }) {
   const { colors } = useTheme();
@@ -28,10 +41,20 @@ export function VenueCourtsScreen({ venueId, venue: venueProp = null, onBack, on
   const [loading, setLoading] = useState(!venueProp);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-  const [selectedSportFilter, setSelectedSportFilter] = useState('Todas');
+  const [selectedSportFilter, setSelectedSportFilter] = useState(ALL_SPORTS);
+  const [selectedCoverFilter, setSelectedCoverFilter] = useState(ALL_COVER);
+  const [availability, setAvailability] = useState({}); // { [courtId]: { freeCount, minPrice } }
   const [activeTab, setActiveTab] = useState('explorar');
+  const [windowWidth, setWindowWidth] = useState(Dimensions.get('window').width);
 
   const effectiveVenueId = venueProp?.id || venueId;
+
+  useEffect(() => {
+    const sub = Dimensions.addEventListener('change', ({ window }) => {
+      setWindowWidth(window.width);
+    });
+    return () => sub?.remove();
+  }, []);
 
   // Se o venue já veio pronto (link direto simplificado), usa direto sem refetch inicial.
   useEffect(() => {
@@ -64,6 +87,40 @@ export function VenueCourtsScreen({ venueId, venue: venueProp = null, onBack, on
     fetchVenueDetailsData();
   }, [fetchVenueDetailsData, venueProp]);
 
+  // Disponibilidade de hoje por quadra ("N horários livres hoje" / "a partir de R$ X").
+  const fetchAvailability = useCallback(async (venueData) => {
+    const courts = venueData?.courts || [];
+    if (courts.length === 0) return;
+    const today = getTodayStrInSaoPaulo();
+    const results = await Promise.allSettled(
+      courts.map(async (court) => {
+        const data = await getAvailableSlots(court.id, today);
+        const freeSlots = Array.isArray(data?.slots) ? data.slots : [];
+        const prices = freeSlots
+          .map((s) => (s.price != null ? parseFloat(s.price) : null))
+          .filter((p) => p != null && p > 0);
+        return {
+          courtId: court.id,
+          freeCount: freeSlots.length,
+          minPrice: prices.length > 0 ? Math.min(...prices) : null,
+        };
+      })
+    );
+    const next = {};
+    for (const res of results) {
+      if (res.status === 'fulfilled') {
+        next[res.value.courtId] = { freeCount: res.value.freeCount, minPrice: res.value.minPrice };
+      }
+    }
+    setAvailability(next);
+  }, []);
+
+  useEffect(() => {
+    if (venue?.courts?.length) {
+      fetchAvailability(venue);
+    }
+  }, [venue, fetchAvailability]);
+
   const handleRefresh = () => {
     setRefreshing(true);
     fetchVenueDetailsData(true);
@@ -82,11 +139,58 @@ export function VenueCourtsScreen({ venueId, venue: venueProp = null, onBack, on
   };
 
   const courtsList = venue?.courts || [];
-  const availableSportsFilters = ['Todas', ...new Set(courtsList.map((c) => c.type))];
 
-  const filteredCourts = selectedSportFilter === 'Todas'
-    ? courtsList
-    : courtsList.filter((c) => c.type === selectedSportFilter);
+  // Filtro de modalidade só aparece quando existe mais de uma modalidade no complexo.
+  const sportTypes = [...new Set(courtsList.map((c) => c.type).filter(Boolean))];
+  const showSportFilter = sportTypes.length > 1;
+  const availableSportsFilters = [ALL_SPORTS, ...sportTypes];
+
+  // Quando a modalidade não diferencia (todas iguais), oferece filtro Coberta / Ao ar livre
+  // — desde que existam dos dois tipos.
+  const coveredCount = courtsList.filter((c) => c.is_covered).length;
+  const outdoorCount = courtsList.length - coveredCount;
+  const showCoverFilter = !showSportFilter && coveredCount > 0 && outdoorCount > 0;
+  const coverFilters = [ALL_COVER, 'Coberta', 'Ao ar livre'];
+
+  let filteredCourts = courtsList;
+  if (showSportFilter && selectedSportFilter !== ALL_SPORTS) {
+    filteredCourts = filteredCourts.filter((c) => c.type === selectedSportFilter);
+  }
+  if (showCoverFilter && selectedCoverFilter !== ALL_COVER) {
+    filteredCourts = filteredCourts.filter((c) =>
+      selectedCoverFilter === 'Coberta' ? c.is_covered : !c.is_covered
+    );
+  }
+
+  const numColumns = getGridColumns(windowWidth);
+
+  const renderCourt = ({ item }) => (
+    <View style={styles.gridCell}>
+      <CourtCard
+        court={item}
+        onSelectCourt={handleSelectCourt}
+        availability={availability[item.id] || null}
+      />
+    </View>
+  );
+
+  const renderFilterChips = (filters, selected, onSelect) => (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.filterScroll}
+      contentContainerStyle={styles.filterScrollContent}
+    >
+      {filters.map((filter) => (
+        <FilterChip
+          key={filter}
+          label={filter}
+          isSelected={selected === filter}
+          onPress={() => onSelect(filter)}
+        />
+      ))}
+    </ScrollView>
+  );
 
   const renderContent = () => {
     if (loading && !refreshing) {
@@ -112,8 +216,15 @@ export function VenueCourtsScreen({ venueId, venue: venueProp = null, onBack, on
           {venue ? <VenueHeroHeader venue={venue} onBack={hideBack ? null : onBack} hideBack={hideBack} /> : null}
           <EmptyState
             title="Nenhuma quadra encontrada"
-            message={`Não encontramos nenhuma quadra cadastrada para a modalidade "${selectedSportFilter}".`}
-            onResetFilters={() => setSelectedSportFilter('Todas')}
+            message={
+              venue
+                ? 'Não encontramos quadras para os filtros selecionados neste complexo.'
+                : 'Não encontramos nenhuma quadra cadastrada neste complexo.'
+            }
+            onResetFilters={() => {
+              setSelectedSportFilter(ALL_SPORTS);
+              setSelectedCoverFilter(ALL_COVER);
+            }}
           />
         </View>
       );
@@ -121,11 +232,12 @@ export function VenueCourtsScreen({ venueId, venue: venueProp = null, onBack, on
 
     return (
       <FlatList
+        key={`courts-grid-${numColumns}`}
         data={filteredCourts}
         keyExtractor={(item) => String(item.id)}
-        renderItem={({ item }) => (
-          <CourtCard court={item} onSelectCourt={handleSelectCourt} />
-        )}
+        renderItem={renderCourt}
+        numColumns={numColumns}
+        columnWrapperStyle={numColumns > 1 ? styles.gridRow : null}
         contentContainerStyle={styles.paddingContainer}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -157,24 +269,9 @@ export function VenueCourtsScreen({ venueId, venue: venueProp = null, onBack, on
                   : 'Escolha a quadra ideal para ver os horários de agendamento.'}
               </Text>
 
-              {/* Sports Category Filter Chips */}
-              {availableSportsFilters.length > 1 ? (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={styles.filterScroll}
-                  contentContainerStyle={styles.filterScrollContent}
-                >
-                  {availableSportsFilters.map((filter) => (
-                    <FilterChip
-                      key={filter}
-                      label={filter}
-                      isSelected={selectedSportFilter === filter}
-                      onPress={() => setSelectedSportFilter(filter)}
-                    />
-                  ))}
-                </ScrollView>
-              ) : null}
+              {/* Filtros: modalidade (se houver mais de uma) e Coberta/Ao ar livre (fallback) */}
+              {showSportFilter ? renderFilterChips(availableSportsFilters, selectedSportFilter, setSelectedSportFilter) : null}
+              {showCoverFilter ? renderFilterChips(coverFilters, selectedCoverFilter, setSelectedCoverFilter) : null}
             </View>
           </View>
         }
@@ -215,7 +312,7 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     width: '100%',
-    maxWidth: 1280,
+    maxWidth: 1100,
     alignSelf: 'center',
   },
   paddingContainer: {
@@ -259,5 +356,11 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingRight: theme.spacing.md,
     paddingVertical: 6,
+  },
+  gridRow: {
+    gap: 0,
+  },
+  gridCell: {
+    flex: 1,
   },
 });

@@ -41,11 +41,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: theme.spacing.sm + 4,
-    paddingVertical: theme.spacing.sm,
+    paddingVertical: theme.spacing.sm + 3,
     borderRadius: theme.radius.full,
     gap: theme.spacing.xs,
+    minHeight: 44,
   },
   label: {
-    fontSize: theme.typography.sizes.bodySmall,
+    fontSize: theme.typography.sizes.label,
   },
 });
