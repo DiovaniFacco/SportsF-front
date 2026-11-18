@@ -5,13 +5,11 @@ import { useTheme } from '../../context/ThemeContext';
 import { theme } from '../../styles/theme';
 import { SportsBadgeGroup } from '../common/SportsBadgeGroup';
 import { optimizeImageUrl } from '../../utils/imageUtils';
-import { formatBRL } from '../../utils/payment';
 
 /**
  * Card de quadra da lista pública.
  * `availability` (opcional) = { freeCount, minPrice } — resumo de hoje
- * buscado pela tela pai: mostra "N horários livres hoje" e "a partir de R$ X"
- * sem precisar abrir a quadra.
+ * buscado pela tela pai: mostra "N horários livres hoje".
  */
 export function CourtCard({ court, onSelectCourt, availability = null }) {
   const { colors } = useTheme();
@@ -21,12 +19,6 @@ export function CourtCard({ court, onSelectCourt, availability = null }) {
   const sportsList = court.sports && court.sports.length > 0
     ? court.sports
     : (court.type ? court.type.split('•').map(s => s.trim()) : []);
-
-  const minPrice = availability?.minPrice != null
-    ? availability.minPrice
-    : court.hourly_rate != null
-    ? parseFloat(court.hourly_rate)
-    : null;
 
   return (
     <TouchableOpacity
@@ -88,15 +80,6 @@ export function CourtCard({ court, onSelectCourt, availability = null }) {
             <View style={[styles.specChip, { backgroundColor: colors.backgroundSecondary }]}>
               <Layers size={13} color={colors.textMuted} />
               <Text style={[styles.specChipText, { color: colors.textSecondary }]}>{court.surface}</Text>
-            </View>
-          ) : null}
-
-          {/* Preço "a partir de" + esportes ficam no hero — não repetir aqui */}
-          {minPrice != null && minPrice > 0 ? (
-            <View style={[styles.specChip, styles.priceChip, { backgroundColor: colors.primaryLight }]}>
-              <Text style={[styles.priceChipText, { color: colors.primary }]}>
-                a partir de {formatBRL(minPrice)}
-              </Text>
             </View>
           ) : null}
         </View>
@@ -209,11 +192,6 @@ const styles = StyleSheet.create({
   specChipText: {
     fontSize: theme.typography.sizes.bodySmall,
     fontWeight: '600',
-  },
-  priceChip: {},
-  priceChipText: {
-    fontSize: theme.typography.sizes.bodySmall,
-    fontWeight: '800',
   },
   cardFooter: {
     flexDirection: 'row',

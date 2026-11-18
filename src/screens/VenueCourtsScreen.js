@@ -43,7 +43,7 @@ export function VenueCourtsScreen({ venueId, venue: venueProp = null, onBack, on
   const [error, setError] = useState(null);
   const [selectedSportFilter, setSelectedSportFilter] = useState(ALL_SPORTS);
   const [selectedCoverFilter, setSelectedCoverFilter] = useState(ALL_COVER);
-  const [availability, setAvailability] = useState({}); // { [courtId]: { freeCount, minPrice } }
+  const [availability, setAvailability] = useState({}); // { [courtId]: { freeCount } }
   const [activeTab, setActiveTab] = useState('explorar');
   const [windowWidth, setWindowWidth] = useState(Dimensions.get('window').width);
 
@@ -87,7 +87,7 @@ export function VenueCourtsScreen({ venueId, venue: venueProp = null, onBack, on
     fetchVenueDetailsData();
   }, [fetchVenueDetailsData, venueProp]);
 
-  // Disponibilidade de hoje por quadra ("N horários livres hoje" / "a partir de R$ X").
+  // Disponibilidade de hoje por quadra ("N horários livres hoje").
   const fetchAvailability = useCallback(async (venueData) => {
     const courts = venueData?.courts || [];
     if (courts.length === 0) return;
@@ -96,20 +96,16 @@ export function VenueCourtsScreen({ venueId, venue: venueProp = null, onBack, on
       courts.map(async (court) => {
         const data = await getAvailableSlots(court.id, today);
         const freeSlots = Array.isArray(data?.slots) ? data.slots : [];
-        const prices = freeSlots
-          .map((s) => (s.price != null ? parseFloat(s.price) : null))
-          .filter((p) => p != null && p > 0);
         return {
           courtId: court.id,
           freeCount: freeSlots.length,
-          minPrice: prices.length > 0 ? Math.min(...prices) : null,
         };
       })
     );
     const next = {};
     for (const res of results) {
       if (res.status === 'fulfilled') {
-        next[res.value.courtId] = { freeCount: res.value.freeCount, minPrice: res.value.minPrice };
+        next[res.value.courtId] = { freeCount: res.value.freeCount };
       }
     }
     setAvailability(next);
